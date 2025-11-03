@@ -1,0 +1,9 @@
+/.qtc_clangd
+/temp
+/*.LowXRayFSS
+object_script.LowXRayFSSd
+Makefile
+*.user
+LowXRayFSS.pro.user
+LowXRayFSS.pro.user
+/*.LowXRayFSSd

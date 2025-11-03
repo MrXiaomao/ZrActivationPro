@@ -1,0 +1,149 @@
+#ifndef COMMHELPER_H
+#define COMMHELPER_H
+
+#include <QObject>
+#include <QTcpSocket>
+#include <QMutex>
+#include <QFile>
+#include <QElapsedTimer>
+#include <QWaitCondition>
+#include <QTimer>
+#include <QEventLoop>
+
+#include "qlitethread.h"
+#include "dataprocessor.h"
+#include "TcpAgentServer.h"
+#include "QTelnet.h"
+#include "unfoldSpec.h"
+
+class CommHelper : public QObject
+{
+    Q_OBJECT
+public:
+    explicit CommHelper(QObject *parent = nullptr);
+    ~CommHelper();
+
+    static CommHelper *instance() {
+        static CommHelper commHelper;
+        return &commHelper;
+    }
+
+    /*
+     打开服务
+    */
+    bool startServer();
+    /*
+     关闭服务
+    */
+    void stopServer();
+
+    /*
+     打开电源
+    */
+    void openPower();
+    /*
+     断开电源
+    */
+    void closePower();
+
+    /*
+     开始测量
+    */
+    void startMeasure(CommandAdapter::WorkMode mode, quint8 index = 0);
+    /*
+     停止测量
+    */
+    void stopMeasure(quint8 index = 0);
+
+    /*
+     设置发次信息
+    */
+    void setShotInformation(const QString shotDir, const quint32 shotNum);
+
+    /*
+     解析历史文件
+    */
+    bool openHistoryWaveFile(const QString &filePath);
+
+    /*
+     数据另存为
+    */
+    bool saveAs(QString dstPath);
+
+signals:
+    Q_SIGNAL void connectPeerConnection(QString,quint16);//客户端上线
+    Q_SIGNAL void disconnectPeerConnection(QString,quint16);//客户端上线
+
+    Q_SIGNAL void switcherConnected();//交换机连接
+    Q_SIGNAL void switcherDisconnected();//交换机断开
+
+    Q_SIGNAL void detectorOnline(quint8 index);  //数采板
+    Q_SIGNAL void detectorOffline(quint8 index);
+
+    Q_SIGNAL void measureStart(quint8 index); //测量开始
+    Q_SIGNAL void measureStop(quint8 index); //测量停止
+
+    Q_SIGNAL void settingfinished();//配置完成
+
+    void showHistoryCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
+    void showRealCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
+    void showEnerygySpectrumCurve(const QVector<QPair<double, double>>& data);//反解能谱
+    void exportEnergyPlot(const QString fileDir, const QString triggerTime);
+
+private:    
+    /*********************************************************
+     交换机指令
+    ***********************************************************/
+    /*
+     打开交换机POE口输出电源
+    */
+    void openSwitcherPOEPower();
+
+    /*
+     关闭交换机POE口输出电源
+    */
+    void closeSwitcherPOEPower();
+
+    /*
+     反解能谱
+    */
+    void calEnerygySpectrumCurve(bool needSave = true);
+
+private:
+    TcpAgentServer *mTcpServer = nullptr;//本地服务器
+    QMutex mPeersMutex;
+    QVector<PeerConnection*> mConnectionPeers; //客户端连接表
+
+    QTelnet *mTelnet = nullptr;//华为交换机控制POE电源
+    QTimer *mSwitcherStatusRefreshTimer = nullptr;
+    QEventLoop mSwitcherEventLoop;
+    bool mSwitcherIsBusy = false;
+    bool mSwitcherIsLoginOk = false;// 交换机是否登录成功
+
+    QString mShotDir;// 保存路径
+    QString mShotNum;// 测量发次
+
+    QMap<quint8, DataProcessor*> mDetectorDataProcessor;//24路探测器数据处理器
+    QMap<quint8, QVector<quint16>> mWaveAllData;
+    UnfoldSpec* unfoldData = nullptr;
+    QString mResMatrixFileName;
+
+    /*
+     初始化网络
+    */
+    void initSocket();
+    void initDataProcessor();
+
+    /*
+     分配数据处理器
+    */
+    void allocDataProcessor(QTcpSocket *socket);
+    void freeDataProcessor(QTcpSocket *socket);
+
+    /*
+     根据IP和端口号，解析探测器编号
+    */
+    qint8 indexOfAddress(QString, quint16);
+};
+
+#endif // COMMHELPER_H
