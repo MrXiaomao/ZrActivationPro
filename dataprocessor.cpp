@@ -7,7 +7,6 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
     , mIndex(index)
 {
     mDataProcessThread = new QLiteThread(this);
-    //mDataProcessThread->setObjectName("mDataProcessThread");
     mDataProcessThread->setWorkThreadProc([=](){
         while (!mTerminatedDataThread)
         {

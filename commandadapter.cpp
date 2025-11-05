@@ -539,10 +539,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 //继续检查包尾
                 if (chunk.endsWith(QByteArray::fromHex(QString("FF FF CC D1").toUtf8()))){
                     mValidDataPkgRef++;
-                    cachePool.remove(0, invalidPkgSize);
-
-                    chunk.remove(0, 8);
-                    chunk.chop(4);
+                    cachePool.remove(0, invalidPkgSize);                    
 
                     if (dataType == dtWaveform)
                         QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));

@@ -1005,10 +1005,6 @@ void CentralWidget::on_action_startMeasure_triggered()
         settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
     }
 
-    // 保存界面参数
-    if (ui->checkBox_autoIncrease->isChecked()){
-        ui->spinBox_shotNum->setValue(ui->spinBox_shotNum->value() + 1);
-    }
     {
         GlobalSettings settings(CONFIG_FILENAME);
         settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
@@ -1029,6 +1025,12 @@ void CentralWidget::on_action_startMeasure_triggered()
 
 void CentralWidget::on_action_stopMeasure_triggered()
 {
+    if (ui->checkBox_autoIncrease->isChecked()){
+        ui->spinBox_shotNum->setValue(ui->spinBox_shotNum->value() + 1);
+        GlobalSettings settings(CONFIG_FILENAME);
+        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+    }
+
     // 停止波形测量
     commHelper->stopMeasure();
 }
@@ -1461,10 +1463,6 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
         settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
     }
 
-    // 保存界面参数
-    if (ui->checkBox_autoIncrease->isChecked()){
-        ui->spinBox_shotNum->setValue(ui->spinBox_shotNum->value() + 1);
-    }
     {
         GlobalSettings settings(CONFIG_FILENAME);
         settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());

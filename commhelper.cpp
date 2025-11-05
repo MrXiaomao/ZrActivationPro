@@ -366,6 +366,21 @@ void CommHelper::initDataProcessor()
 
         connect(detectorDataProcessor, &DataProcessor::reportStopMeasure, this, [=](){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            /*
+             * 停止保存
+            */
+            {
+                QMutexLocker locker(&mMutexTriggerTimer);
+                if (mDetectorFileProcessor.contains(processor->index())){
+                    if (mDetectorFileProcessor[processor->index()]->isOpen()){
+                        mDetectorFileProcessor[processor->index()]->flush();
+                        mDetectorFileProcessor[processor->index()]->close();
+                        mDetectorFileProcessor[processor->index()]->deleteLater();
+                        mDetectorFileProcessor.remove(processor->index());
+                    }
+                }
+            }
+
             emit measureStop(processor->index());
         });
 
@@ -376,6 +391,30 @@ void CommHelper::initDataProcessor()
 
         connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray& data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            /*
+                保存数据
+            */
+            {
+                QMutexLocker locker(&mMutexTriggerTimer);
+                if (mTriggerTimer.isEmpty()){
+                    mTriggerTimer = QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss");
+                }
+
+                if (!mDetectorFileProcessor.contains(processor->index())){
+                    QString filePath = QString("%1/%2/测量数据/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    mDetectorFileProcessor[processor->index()] = new QFile(filePath);
+                    mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
+                }
+
+                if (mDetectorFileProcessor[processor->index()]->isOpen()){
+                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                }
+            }
+
+            bool ok;
+            quint16 serialNumber = data.mid(4, 2).toHex().toUShort(&ok, 16);//设备编号
+            data.remove(0, 8);//移除包头
+            data.chop(4);//移除包尾
             emit reportWaveformData(processor->index(), data);
         });
 
@@ -564,14 +603,31 @@ void CommHelper::setShotInformation(const QString shotDir, const quint32 shotNum
 void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*/)
 {
     mWaveAllData.clear();
+    mTriggerTimer.clear();
 
     if (index == 0){
         for (index = 1; index <= DET_NUM; ++index){
+            if (mDetectorFileProcessor.contains(index)){
+                if (mDetectorFileProcessor[index]->isOpen()){
+                    mDetectorFileProcessor[index]->close();
+                    mDetectorFileProcessor[index]->deleteLater();
+                    mDetectorFileProcessor.remove(index);
+                }
+            }
+
             DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
-            detectorDataProcessor->startMeasure(mode);
+            detectorDataProcessor->startMeasure(mode);                         
         }
     }
     else if (index >= 1 && index <= DET_NUM){
+        if (mDetectorFileProcessor.contains(index)){
+            if (mDetectorFileProcessor[index]->isOpen()){
+                mDetectorFileProcessor[index]->close();
+                mDetectorFileProcessor[index]->deleteLater();
+                mDetectorFileProcessor.remove(index);
+            }
+        }
+
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         detectorDataProcessor->startMeasure(mode);
     }

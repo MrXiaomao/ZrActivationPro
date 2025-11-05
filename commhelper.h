@@ -119,7 +119,11 @@ private:
     QString mShotDir;// 保存路径
     QString mShotNum;// 测量发次
 
+    QMutex mMutexTriggerTimer;
+    QString mTriggerTimer;//触发时钟
+
     QMap<quint8, DataProcessor*> mDetectorDataProcessor;//24路探测器数据处理器
+    QMap<quint8, QFile*> mDetectorFileProcessor;//24路探测器数据处理器
     QMap<quint8, QVector<quint16>> mWaveAllData;
     UnfoldSpec* unfoldData = nullptr;
     QString mResMatrixFileName;
