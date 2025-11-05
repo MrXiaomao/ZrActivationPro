@@ -21,7 +21,6 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     applyColorTheme();
 
     connect(this, SIGNAL(sigWriteLog(const QString&,QtMsgType)), this, SLOT(slotWriteLog(const QString&,QtMsgType)));
-    connect(commHelper, &CommHelper::showRealCurve, this, &CentralWidget::showRealCurve);
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
@@ -53,16 +52,16 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     connect(commHelper, &CommHelper::detectorOnline, this, [=](quint8 index){
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
-        cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::green));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
         qInfo().nospace().nospace() << "谱仪#" << index << "上线";
     });
     connect(commHelper, &CommHelper::detectorOffline, this, [=](quint8 index){
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
-        cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::red));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
         cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
-        cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::red));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
         qInfo().nospace().nospace() << "谱仪#" << index << "下线";
     });
@@ -73,7 +72,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
-        cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::green));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
         qInfo().nospace().nospace() << "谱仪#" << index << "实验开始，准备接收数据";
     });
@@ -83,7 +82,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
-        cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::red));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
         qInfo().nospace().nospace() << "谱仪#" << index << "实验已停止";
     });
@@ -130,9 +129,20 @@ CentralWidget::~CentralWidget()
 void CentralWidget::initUi()
 {
     ui->leftStackedWidget->hide();
+
+    // 隐藏页面【历史数据、数据分析、数据管理】
     ui->centralHboxTabWidget->setTabVisible(1, false);
     ui->centralHboxTabWidget->setTabVisible(2, false);
     ui->centralHboxTabWidget->setTabVisible(3, false);
+
+    // 只显示一个谱仪
+    {
+        ui->spectroMeterWidget2->setVisible(false);
+        ui->spectroMeterWidget3->setVisible(false);
+        ui->spectroMeterWidget4->setVisible(false);
+        ui->spectroMeterWidget5->setVisible(false);
+        ui->spectroMeterWidget6->setVisible(false);
+    }
 
     mClientPeersWindow = new ClientPeersWindow();
     // mClientPeersWindow->setAttribute(Qt::WA_TranslucentBackground);
@@ -203,11 +213,11 @@ void CentralWidget::initUi()
         QGraphicsTextItem *textItem = scene->addText(tr("工作日志"));
         textItem->setObjectName("logGraphicsTextItem");
         textItem->setPos(0,0);
-        textItem->setRotation(-90);
+        //textItem->setRotation(-90);
         ui->graphicsView_2->setFrameStyle(0);
         ui->graphicsView_2->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         ui->graphicsView_2->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        ui->graphicsView_2->setFixedWidth(50);
+        ui->graphicsView_2->setFixedHeight(30);
         ui->graphicsView_2->setScene(scene);
     }
 
@@ -389,7 +399,7 @@ void CentralWidget::initUi()
     for (int row=0; row<ui->tableWidget_detector->rowCount(); ++row){
         for (int column=0; column<=2; ++column){
             QLabel* cell = new QLabel();
-            cell->setPixmap(dblroundPixmap(QSize(24,24), Qt::gray));
+            cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::gray));
             cell->setAlignment(Qt::AlignCenter);
             ui->tableWidget_detector->setCellWidget(row, column, cell);
         }
@@ -522,6 +532,60 @@ void CentralWidget::initUi()
     initCustomPlot(100, spectroMeter_left, tr("能谱时间演变 时间/ns"), tr("计数率/cps"), 1);
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
     initCustomPlot(101, spectroMeter_right, tr("实时能谱 时间/ns"), tr("计数率/cps"), 1);
+
+    connect(commHelper, &CommHelper::reportWaveformData, this, [=](quint8 index, QByteArray& waveformBytes){
+        QVector<double> x, y;
+        for(int i=0; i<waveformBytes.size() / 2; i+=2)
+        {
+            x << i;
+            bool ok;
+            y << waveformBytes.mid(i, 2).toHex().toUShort(&ok, 16);
+        }
+
+        ui->spectroMeter1_top->graph(0)->setData(x, y);
+        ui->spectroMeter1_top->xAxis->rescale(true);
+        ui->spectroMeter1_top->yAxis->rescale(true);
+        ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
+    });
+
+    // QTimer *timer = new QTimer(this);
+    // static QElapsedTimer elapsedTimer;
+    // elapsedTimer.start();
+    // connect(timer, &QTimer::timeout, this, [=](){
+    //     if (elapsedTimer.elapsed() > 10000)
+    //         return;
+
+    //     static quint64 base = 0;
+    //     quint16 waveformLength = 512;
+    //     quint16 period = 128;  //周期
+    //     quint16 amplitude = 10000; // 振幅
+    //     quint16 grain = 1;    //粒度
+    //     QVector<double> x2, y2;
+    //     for(quint64 x=base; x < base + waveformLength; x += grain)
+    //     {
+    //         double angle = (float) x / period * 2 * 3.1415926;
+    //         quint16 data = (double)amplitude * sin(angle) + amplitude;
+
+    //         QByteArray waveformBytes;
+    //         waveformBytes.push_back(quint8((data >> 8) & 0xFF));
+    //         waveformBytes.push_back(quint8(data & 0xFF));
+
+    //         x2 << x - base;
+    //         //y2 << data;
+    //         bool ok;
+    //         y2 << waveformBytes.mid(0, 2).toHex().toUShort(&ok, 16);
+    //     }
+
+    //     base++;
+    //     ui->spectroMeter1_top->graph(0)->setData(x2, y2);
+    //     ui->spectroMeter1_top->xAxis->rescale(true);
+    //     ui->spectroMeter1_top->yAxis->rescale(true);
+    //     //ui->spectroMeter1_top->yAxis->setRange(0, 4100);
+    //     ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
+
+    //     qDebug() << "elapsedTimer:" << elapsedTimer.elapsed() << base;
+    // });
+    // timer->start(10);
 }
 
 QPixmap CentralWidget::roundPixmap(QSize sz, QColor clrOut)
@@ -621,8 +685,8 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
         graph->selectionDecorator()->setPen(QPen(colors[i]));
         graph->setLineStyle(QCPGraph::lsLine);
         graph->setSelectable(QCP::SelectionType::stNone);
-        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, colors[i], 2));//显示散点图
-        graph->setSmooth(true);    
+        //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, colors[i], 2));//显示散点图
+        //graph->setSmooth(true);
     }
 
     // 添加可选项
@@ -656,19 +720,19 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
         });
     }
 
-    if (graphCount == 1){
-        QSharedPointer<QCPAxisTickerLog> logTicker(new QCPAxisTickerLog);
-        customPlot->yAxis->setTicker(logTicker);
-        //customPlot->yAxis2->setTicker(logTicker);
-        customPlot->yAxis->setScaleType(QCPAxis::ScaleType::stLogarithmic);
-        customPlot->yAxis->setNumberFormat("eb");//使用科学计数法表示刻度
-        customPlot->yAxis->setNumberPrecision(0);//小数点后面小数位数
+    // if (graphCount == 1){
+    //     QSharedPointer<QCPAxisTickerLog> logTicker(new QCPAxisTickerLog);
+    //     customPlot->yAxis->setTicker(logTicker);
+    //     //customPlot->yAxis2->setTicker(logTicker);
+    //     customPlot->yAxis->setScaleType(QCPAxis::ScaleType::stLogarithmic);
+    //     customPlot->yAxis->setNumberFormat("eb");//使用科学计数法表示刻度
+    //     customPlot->yAxis->setNumberPrecision(0);//小数点后面小数位数
 
-        customPlot->yAxis2->setTicker(logTicker);
-        customPlot->yAxis2->setScaleType(QCPAxis::ScaleType::stLogarithmic);
-        customPlot->yAxis2->setNumberFormat("eb");//使用科学计数法表示刻度
-        customPlot->yAxis2->setNumberPrecision(0);//小数点后面小数位数
-    }
+    //     customPlot->yAxis2->setTicker(logTicker);
+    //     customPlot->yAxis2->setScaleType(QCPAxis::ScaleType::stLogarithmic);
+    //     customPlot->yAxis2->setNumberFormat("eb");//使用科学计数法表示刻度
+    //     customPlot->yAxis2->setNumberPrecision(0);//小数点后面小数位数
+    // }
     // else {
     //     QSharedPointer<QCPAxisTicker> ticker(new QCPAxisTicker);
     //     customPlot->yAxis->setTicker(ticker);
@@ -694,6 +758,9 @@ void CentralWidget::closeEvent(QCloseEvent *event) {
     }
     else
     {
+        // 断开网络
+        commHelper->stopMeasure();
+        commHelper->stopServer();
         event->accept();
     }
 }

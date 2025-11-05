@@ -1720,7 +1720,7 @@
           </item>
           <item>
            <widget class="QWidget" name="logWidget" native="true">
-            <layout class="QHBoxLayout" name="horizontalLayout_13">
+            <layout class="QVBoxLayout" name="verticalLayout_2">
              <property name="spacing">
               <number>0</number>
              </property>

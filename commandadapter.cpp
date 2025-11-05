@@ -8,8 +8,7 @@ CommandAdapter::CommandAdapter(QObject *parent)
     mCmdProcessThread = new QLiteThread(this);
     //mCmdProcessThread->setObjectName("mCmdProcessThread");
     mCmdProcessThread->setWorkThreadProc([=](){
-        qDebug() << "CommandAdapter create thread, id:" << this->thread()->currentThreadId();
-
+        qRegisterMetaType<QByteArray>("QByteArray&");
         while (!mTerminatedThread)
         {
             {
@@ -18,8 +17,8 @@ CommandAdapter::CommandAdapter(QObject *parent)
                     mCmdWaitCondition.wait(&mCmdMutex);
                 }
 
-                if (mCmdStack.size() > 0){
-                    QByteArray askCmd = mCmdStack.pop();
+                if (mCmdQueue.size() > 0){
+                    QByteArray askCmd = mCmdQueue.dequeue();
                     sendCmdToSocket(askCmd);
                 }
                 mCmdReady = false;
@@ -27,8 +26,6 @@ CommandAdapter::CommandAdapter(QObject *parent)
 
             QThread::msleep(1);
         }
-
-        qDebug() << "CommandAdapter thread exit, id:" << this->thread()->currentThreadId();
     });
     mCmdProcessThread->start();
     connect(this, &CommandAdapter::destroyed, [=]() {
@@ -51,11 +48,7 @@ CommandAdapter::~CommandAdapter()
 void CommandAdapter::pushCmd(QByteArray& askCmd)
 {
     QMutexLocker locket(&mCmdMutex);
-    mCmdStack.push(askCmd);
-
-    if (mCmdStack.size() == 1){
-        notifySendNextCmd();
-    }
+    mCmdQueue.enqueue(askCmd);
 }
 
 /*
@@ -65,6 +58,15 @@ void CommandAdapter::notifySendNextCmd()
 {
     mCmdReady = true;
     mCmdWaitCondition.wakeAll();
+}
+
+/*
+     清空指令
+    */
+void CommandAdapter::clear()
+{
+    QMutexLocker locket(&mCmdMutex);
+    mCmdQueue.clear();
 }
 
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)
@@ -488,8 +490,10 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             QMetaObject::invokeMethod(this, "reportRetHostProgramSuccess", Qt::QueuedConnection);
         }
 
-        if (findNaul)
+        if (findNaul){
             notifySendNextCmd();
+            findNaul = false;
+        }
 
         if (cachePool.startsWith(QByteArray::fromHex("FF FF AA B1"))){
             findNaul = true;
@@ -501,7 +505,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             quint16 deviceNumber = cachePool.mid(4, 2).toShort();
 
             //数据类型
-            DataType dataType = (DataType)cachePool.mid(6, 2).toShort();
+            bool ok;
+            DataType dataType = (DataType)cachePool.mid(6, 2).toHex().toUShort(&ok, 16);
             if (dataType == dtWaveform){
                 //波形
                 //包头0xFFFFAAB1 + 设备编号（16bit） + 数据类型（0x00D1）+ 波形数据（波形长度*16bit） + 保留位（32bit）+ 包尾0xFFFFCCD1
@@ -536,29 +541,36 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                     mValidDataPkgRef++;
                     cachePool.remove(0, invalidPkgSize);
 
+                    chunk.remove(0, 8);
+                    chunk.chop(4);
+
                     if (dataType == dtWaveform)
-                        QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray, chunk));
+                        QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
                     else if (dataType == dtSpectrum)
-                        QMetaObject::invokeMethod(this, "reportSpectrumData", Qt::QueuedConnection, Q_ARG(QByteArray, chunk));
+                        QMetaObject::invokeMethod(this, "reportSpectrumData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
                     else if (dataType == dtParticle)
-                        QMetaObject::invokeMethod(this, "reportParticleData", Qt::QueuedConnection, Q_ARG(QByteArray, chunk));
+                        QMetaObject::invokeMethod(this, "reportParticleData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
 
                     //上报有效数据包个数
                     QMetaObject::invokeMethod(this, "reportValidDataPkgRef", Qt::QueuedConnection, Q_ARG(quint32, mValidDataPkgRef));
                 }
                 else {
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
-                    findNaul = false;
-
-                    qDebug() << "Invalid: " << chunk.toHex(' ');
-
-                    /*包头对了，但是包尾不正确，继续寻找包头,删除包头继续寻找*/
-                    cachePool.remove(0, 4);
+                    findNaul = false;                    
                 }
             }
             else{
-                findNaul = false;
+                //波形数据不足
+                break;
             }
+        }
+
+        if (!findNaul && cachePool.size()>0){
+            /*包头/包尾不对*/
+            qDebug() << "Invalid: " << cachePool.left(4).toHex(' ');
+
+            /*继续寻找包头,删除包头继续寻找*/
+            cachePool.remove(0, 4);
         }
     }
 }

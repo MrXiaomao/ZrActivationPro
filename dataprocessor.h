@@ -59,8 +59,8 @@ signals:
     void detectorConnected(quint8 index);  // 探测器
     void detectorDisconnected(quint8 index);
 
-    void showRealCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
-    void showEnerygySpectrumCurve(const QVector<QPair<double, double>>& data);//反解能谱
+    // void showRealCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
+    // void showEnerygySpectrumCurve(const QVector<QPair<double, double>>& data);//反解能谱
 
 private:
     quint8 mIndex;//探测器索引

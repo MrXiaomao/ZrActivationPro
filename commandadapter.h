@@ -6,7 +6,7 @@
 #include <QtMath>
 #include <QMutex>
 #include <QWaitCondition>
-#include <QStack>
+#include <QQueue>
 #include <qlitethread.h>
 
 class CommandAdapter : public QObject
@@ -206,26 +206,27 @@ public:
         if (isRead)
             askCurrentCmd[3] = 0x0A;
         else{
+            mWaveformLength = waveformLength;
             askCurrentCmd[3] = 0x0F;
+            askCurrentCmd[7] = triggerMode;
             switch (waveformLength) {
             case 64:
-                mWaveformLength = wl64;
+                askCurrentCmd[9] = wl64;
                 break;
             case 128:
-                mWaveformLength = wl128;
+                askCurrentCmd[9] = wl128;
                 break;
             case 256:
-                mWaveformLength = wl256;
+                askCurrentCmd[9] = wl256;
                 break;
             case 512:
-                mWaveformLength = wl512;
+                askCurrentCmd[9] = wl512;
                 break;
             default:
                 break;
             }
         }
-        askCurrentCmd[7] = triggerMode;
-        askCurrentCmd[9] = mWaveformLength;
+
         pushCmd(askCurrentCmd);
     };
 
@@ -390,18 +391,23 @@ public:
         pushCmd(askCurrentCmd);
 
         mIsMeasuring = false;
-        mCmdReady = true;
-        mCmdWaitCondition.wakeAll();
+
+        //通知发送指令
+        this->notifySendNextCmd();
     };
 
     //停止测量
     void sendStopMeasure(){
         mAskStopMeasure = true;
+
+        /*强制清空之前的指令*/
+        this->clear();
+
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F EA 10 00 00 00 00 AB CD").toUtf8());
         pushCmd(askCurrentCmd);
 
-        mCmdReady = true;
-        mCmdWaitCondition.wakeAll();
+        //通知发送指令
+        this->notifySendNextCmd();
     };
 
     /*********************************************************
@@ -445,15 +451,20 @@ public:
     */
     void notifySendNextCmd();
 
+    /*
+     清空指令
+    */
+    void clear();
+
 protected:
     bool mIsMeasuring = false;//测量是否正在进行中
     void analyzeCommands(QByteArray &cachePool);
 
 private:    
     bool mAskStopMeasure = false; //是否请求结束测量(如果已经请求了结束测量，那么就有必要解析结束测量指令)
-    QStack<QByteArray> mCmdStack;//发送指令等候区
+    QQueue<QByteArray> mCmdQueue;//发送指令等候区
 
-    WaveformLength mWaveformLength = wl64;//波形或能谱长度
+    quint16 mWaveformLength = 512;//波形或能谱长度
     quint32 mValidDataPkgRef = 0;//有效数据包个数
 
     QMutex mCmdMutex;

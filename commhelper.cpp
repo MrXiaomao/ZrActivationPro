@@ -17,7 +17,7 @@ CommHelper::CommHelper(QObject *parent)
         //更改了设置，这里需要重新对数据处理器进行关联
         auto it = this->mConnectionPeers.begin();
         while (it != this->mConnectionPeers.end()) {
-            PeerConnection* connection = *it;
+            QTcpSocket* connection = *it;
             allocDataProcessor(connection);
 
             ++it;
@@ -45,17 +45,42 @@ CommHelper::~CommHelper()
 void CommHelper::initSocket()
 {
     this->mTcpServer = new TcpAgentServer();
-    connect(this->mTcpServer, &TcpAgentServer::connectPeerConnection, this, [=](PeerConnection* connection){
+    connect(this->mTcpServer, &TcpAgentServer::newConnection, this, [=](qintptr socketDescriptor){
         QMutexLocker locker(&mPeersMutex);
+        QTcpSocket* connection = new QTcpSocket(this);
+        connection->setSocketDescriptor(socketDescriptor);
         this->mConnectionPeers.push_back(connection);
 
-        //网络异常
-        connect(connection, &QAbstractSocket::errorOccurred, this, [=](QAbstractSocket::SocketError){
+        //网络异常（与下面disconnected信号会重复）
+        // connect(connection, &QAbstractSocket::errorOccurred, this, [=](QAbstractSocket::SocketError){
+        //     QString peerAddress = connection->property("peerAddress").toString();
+        //     quint16 peerPort = connection->property("peerPort").toUInt();
+        //     QMetaObject::invokeMethod(this, "disconnectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
+
+        //     //根据配置解析是哪一路探测器下线了
+        //     qint8 index = indexOfAddress(peerAddress, peerPort);
+        //     if (index > 0)
+        //         QMetaObject::invokeMethod(this, "detectorOffline", Qt::QueuedConnection, Q_ARG(quint8, index));
+
+        //     auto it = this->mConnectionPeers.begin();
+        //     while (it != this->mConnectionPeers.end()) {
+        //         if (*it == connection) {
+        //             //网络掉线了，取消数据处理器关联
+        //             freeDataProcessor(connection);
+
+        //             connection->deleteLater();
+        //             it = this->mConnectionPeers.erase(it);
+        //         } else {
+        //             ++it;
+        //         }
+        //     }
+        // });
+        connect(connection, &QAbstractSocket::disconnected, this, [=](){
             QString peerAddress = connection->property("peerAddress").toString();
             quint16 peerPort = connection->property("peerPort").toUInt();
             QMetaObject::invokeMethod(this, "disconnectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
 
-            //根据配置解析是哪一路探测器上线了
+            //根据配置解析是哪一路探测器下线了
             qint8 index = indexOfAddress(peerAddress, peerPort);
             if (index > 0)
                 QMetaObject::invokeMethod(this, "detectorOffline", Qt::QueuedConnection, Q_ARG(quint8, index));
@@ -73,7 +98,6 @@ void CommHelper::initSocket()
                 }
             }
         });
-
         QString peerAddress = connection->peerAddress().toString();
         quint16 peerPort = connection->peerPort();
         connection->setProperty("peerAddress", peerAddress);
@@ -345,35 +369,20 @@ void CommHelper::initDataProcessor()
             emit measureStop(processor->index());
         });
 
-        connect(detectorDataProcessor, &DataProcessor::showRealCurve, this, [=](const QMap<quint8, QVector<quint16>>& data){
-            // 将map1的内容添加到map2
-            for (auto iterator = data.constBegin(); iterator != data.constEnd(); ++iterator) {
-                // 这里只保留前11个通道数据
-                if (iterator.key() >=1 && iterator.key() <= 11){
-                    mWaveAllData[iterator.key()] = iterator.value();
-                }
-            }
-
-            /*
-             计算反解能谱
-            */
-            calEnerygySpectrumCurve();
+        connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            emit reportSpectrumData(processor->index(), data);
         });
-        connect(this, &CommHelper::showHistoryCurve, this, [=](const QMap<quint8, QVector<quint16>>& data){
-            // 将map1的内容添加到map2
-            for (auto iterator = data.constBegin(); iterator != data.constEnd(); ++iterator) {
-                // 这里只保留前11个通道数据
-                if (iterator.key() >=1 && iterator.key() <= 11){
-                    mWaveAllData[iterator.key()] = iterator.value();
-                }
-            }
 
-            /*
-             计算反解能谱
-            */
-            calEnerygySpectrumCurve(false);
+        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            emit reportWaveformData(processor->index(), data);
         });
-        connect(detectorDataProcessor, &DataProcessor::showEnerygySpectrumCurve, this, &CommHelper::showEnerygySpectrumCurve);
+
+        connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            emit reportParticleData(processor->index(), data);
+        });
     }
 }
 
@@ -399,7 +408,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         ++it;
     }
 
-    //重新分配一个数据处理器
+    //重新分配一个之前从没绑定过的数据处理器
     for (int index = 1; index <= DET_NUM; ++index){
         if (mDetectorDataProcessor[index]->isFreeSocket()){
             DetParameter& detParameter = detParameters[index];
@@ -414,6 +423,16 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         }
     }
 
+    //重新分配空闲的数据处理器
+    for (int index = 1; index <= DET_NUM; ++index){
+        if (mDetectorDataProcessor[index]->isFreeSocket()){
+            DetParameter& detParameter = detParameters[index];
+            qstrcpy(detParameter.detIp, addr1.toStdString().c_str());
+            settings->sync();
+            mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
+            return;
+        }
+    }
 }
 
 void CommHelper::freeDataProcessor(QTcpSocket *socket)
@@ -484,7 +503,7 @@ void CommHelper::closeSwitcherPOEPower()
 bool CommHelper::startServer()
 {    
     GlobalSettings settings;
-    return this->mTcpServer->startServer(settings.value("Local/ServerIp", "0.0.0.0").toString(), settings.value("Local/ServerPort", 6000).toUInt());
+    return this->mTcpServer->listen(QHostAddress(settings.value("Local/ServerIp", "0.0.0.0").toString()), settings.value("Local/ServerPort", 6000).toUInt());
 }
 /*
  断开网络
@@ -592,14 +611,14 @@ bool CommHelper::openHistoryWaveFile(const QString &filePath)
                 if (rSize == 1024){
                     realCurve[i] = rawWaveData;
 
-                    if (i == 4 || i == 8 || i == 11){
-                        // 实测曲线
-                        QMetaObject::invokeMethod(this, [=]() {
-                            emit showHistoryCurve(realCurve);
-                        }, Qt::DirectConnection);
+                    // if (i == 4 || i == 8 || i == 11){
+                    //     // 实测曲线
+                    //     QMetaObject::invokeMethod(this, [=]() {
+                    //         emit showHistoryCurve(realCurve);
+                    //     }, Qt::DirectConnection);
 
-                        realCurve.clear();
-                    }
+                    //     realCurve.clear();
+                    // }
                 }
             }
         }
@@ -614,28 +633,28 @@ bool CommHelper::openHistoryWaveFile(const QString &filePath)
                     rawWaveData.push_back(qRound(line.toDouble() * 0.8));
                 }
 
-                if (rawWaveData.size() == 512){
-                    realCurve[chIndex++] = rawWaveData;
-                    // 实测曲线
-                    QMetaObject::invokeMethod(this, [=]() {
-                        emit showHistoryCurve(realCurve);
-                    }, Qt::DirectConnection);
+                // if (rawWaveData.size() == 512){
+                //     realCurve[chIndex++] = rawWaveData;
+                //     // 实测曲线
+                //     QMetaObject::invokeMethod(this, [=]() {
+                //         emit showHistoryCurve(realCurve);
+                //     }, Qt::DirectConnection);
 
-                    rawWaveData.clear();
-                    realCurve.clear();
-                }
+                //     rawWaveData.clear();
+                //     realCurve.clear();
+                // }
             }
 
             // 尾巴数据（无效数据）
-            if (rawWaveData.size() > 0){
-                realCurve[chIndex++] = rawWaveData;
-                QMetaObject::invokeMethod(this, [=]() {
-                    emit showHistoryCurve(realCurve);
-                }, Qt::DirectConnection);
+            // if (rawWaveData.size() > 0){
+            //     realCurve[chIndex++] = rawWaveData;
+            //     QMetaObject::invokeMethod(this, [=]() {
+            //         emit showHistoryCurve(realCurve);
+            //     }, Qt::DirectConnection);
 
-                rawWaveData.clear();
-                realCurve.clear();
-            }
+            //     rawWaveData.clear();
+            //     realCurve.clear();
+            // }
         }
 
         file.close();
@@ -645,99 +664,6 @@ bool CommHelper::openHistoryWaveFile(const QString &filePath)
     return false;
 }
 
-/*
- 反解能谱
-*/
-void CommHelper::calEnerygySpectrumCurve(bool needSave)
-{
-    if (mWaveAllData.size() < 11)
-        return;
-
-    emit showRealCurve(mWaveAllData);
-
-    //11个通道都收集完毕，可以进行反能谱计算了
-    QVector<QPair<double, double>> result;
-
-    QVector<quint16> rawWaveData;
-    for (int i=1; i<=mWaveAllData.size(); ++i){
-        rawWaveData.append(mWaveAllData[i]);
-    }
-
-    QString triggerTime = QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss");
-    if (needSave)
-    {
-        {
-            QString oldFilePath = QString("%1/%2/测量数据/Settings.ini").arg(mShotDir).arg(mShotNum);
-            QString newFilePath = QString("%1/%2/测量数据/%3_Settings.ini").arg(mShotDir).arg(mShotNum).arg(triggerTime);
-            QFile::rename(oldFilePath, newFilePath);
-        }
-
-        /*保存波形数据*/
-        /*二进制*/
-        {
-            QString filePath = QString("%1/%2/测量数据/%3_Wave.dat").arg(mShotDir).arg(mShotNum).arg(triggerTime);
-            QFile file(filePath);
-            if (file.open(QIODevice::WriteOnly)){
-                file.write((const char *)rawWaveData.constData(), rawWaveData.size()*sizeof(quint16));
-                file.close();
-            }
-        }
-
-        /*csv*/
-        {
-            QString filePath = QString("%1/%2/测量数据/%3_Wave.csv").arg(mShotDir).arg(mShotNum).arg(triggerTime);
-            QFile file(filePath);
-            if (file.open(QIODevice::WriteOnly | QIODevice::Text)){
-                QTextStream stream(&file);
-                for (int i=1; i<=mWaveAllData.size(); ++i){
-                    QVector<quint16> waveData = mWaveAllData[i];
-                    for (int j = 0; j < waveData.size(); ++j){
-                        stream << waveData.at(j);
-                        if (j < waveData.size() - 1)
-                            stream << ",";
-                    }
-                    stream << "\n";
-                }
-
-                file.close();
-            }
-        }
-    }
-
-    if(unfoldData != nullptr ){
-        delete unfoldData;
-        unfoldData = nullptr;
-    }
-
-    unfoldData = new UnfoldSpec();
-    unfoldData->setResFileName(this->mResMatrixFileName);
-    result = unfoldData->pulseSum(mWaveAllData);
-
-    emit showEnerygySpectrumCurve(result);
-
-    /*保存能谱数据*/
-    if (needSave)
-    {
-        /*csv*/
-        {
-            QString filePath = QString("%1/%2/处理数据/%3_En.csv").arg(mShotDir).arg(mShotNum).arg(triggerTime);
-            QFile file(filePath);
-            if (file.open(QIODevice::WriteOnly | QIODevice::Text)){
-                QTextStream stream(&file);
-                for (int i = 0; i < result.size(); i++)
-                {
-                    stream << result[i].first << "," << result[i].second << "\n";
-                }
-
-                file.close();
-            }
-        }
-
-        QString fileDir = QString("%1/%2").arg(mShotDir).arg(mShotNum);
-        emit exportEnergyPlot(fileDir, triggerTime);
-    }
-    mWaveAllData.clear();
-}
 
 bool copyDir(const QString &src, const QString &dst, bool overwrite = true) {
     QDir srcDir(src);

@@ -9,10 +9,10 @@
 #include <QWaitCondition>
 #include <QTimer>
 #include <QEventLoop>
+#include "TcpAgentServer.h"
 
 #include "qlitethread.h"
 #include "dataprocessor.h"
-#include "TcpAgentServer.h"
 #include "QTelnet.h"
 #include "unfoldSpec.h"
 
@@ -85,9 +85,10 @@ signals:
 
     Q_SIGNAL void settingfinished();//配置完成
 
-    void showHistoryCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
-    void showRealCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
-    void showEnerygySpectrumCurve(const QVector<QPair<double, double>>& data);//反解能谱
+    Q_SIGNAL void reportSpectrumData(quint8 index, QByteArray&);
+    Q_SIGNAL void reportWaveformData(quint8 index, QByteArray&);
+    Q_SIGNAL void reportParticleData(quint8 index, QByteArray&);
+
     void exportEnergyPlot(const QString fileDir, const QString triggerTime);
 
 private:    
@@ -104,15 +105,10 @@ private:
     */
     void closeSwitcherPOEPower();
 
-    /*
-     反解能谱
-    */
-    void calEnerygySpectrumCurve(bool needSave = true);
-
 private:
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
     QMutex mPeersMutex;
-    QVector<PeerConnection*> mConnectionPeers; //客户端连接表
+    QVector<QTcpSocket*> mConnectionPeers; //客户端连接表
 
     QTelnet *mTelnet = nullptr;//华为交换机控制POE电源
     QTimer *mSwitcherStatusRefreshTimer = nullptr;

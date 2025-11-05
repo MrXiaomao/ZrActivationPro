@@ -1,7 +1,7 @@
 ﻿#ifndef REGISTERSERVER_H
 #define REGISTERSERVER_H
 
-#include "PeerConnection.h"
+//#include "PeerConnection.h"
 #include <QTcpServer>
 
 class TcpAgentServer : public QTcpServer
@@ -10,14 +10,10 @@ class TcpAgentServer : public QTcpServer
 public:
     explicit TcpAgentServer(QObject *parent = 0);
 
-    bool startServer(QString ip, int port);
-
-signals:
-    void connectPeerConnection(PeerConnection *connection);
+    Q_SIGNAL void newConnection(qintptr socketDescriptor);
 
 protected:
-    // 新的连接
-    void incomingConnection(qintptr socketDescriptor);
+    virtual void incomingConnection(qintptr socketDescriptor) override;
 
 private:
     QHostAddress myIP;

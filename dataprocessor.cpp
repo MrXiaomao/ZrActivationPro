@@ -9,7 +9,6 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
     mDataProcessThread = new QLiteThread(this);
     //mDataProcessThread->setObjectName("mDataProcessThread");
     mDataProcessThread->setWorkThreadProc([=](){
-        qDebug() << "DataProcessor create thread, id:" << this->thread()->currentThreadId();
         while (!mTerminatedDataThread)
         {
             {
@@ -32,7 +31,6 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
             if (!mTerminatedDataThread)
                 analyzeCommands(mCachePool);
         }
-        qDebug() << "DataProcessor thread exit, id:";// << this->thread()->currentThreadId();
     });
     mDataProcessThread->start();
     connect(this, &DataProcessor::destroyed, [=]() {
@@ -79,6 +77,9 @@ void DataProcessor::updateSetting(DetParameter& detParameter)
 {
     // 设置基本参数
     {
+        //清空指令
+        this->clear();
+
         //#01 增益=1|0|1|1234000FFA1000000000ABCD
         this->sendGain(false, detParameter.gain);
         //#02 死时间=1|0|3|1234000FFA1100000000ABCD
@@ -104,6 +105,9 @@ void DataProcessor::updateSetting(DetParameter& detParameter)
         //#11 高压输出电平=1|0|21|1234000FF91100000000ABCD
         if (detParameter.highVoltageEnable)
             this->sendHighVolgateOutLevel(false, detParameter.highVoltageOutLevel);
+
+        //通知发送指令
+        this->notifySendNextCmd();
     }
 }
 
@@ -140,6 +144,8 @@ void DataProcessor::sendCmdToSocket(QByteArray& cmd) const
     if (mTcpSocket && mTcpSocket->isOpen()){
         mTcpSocket->write(cmd);
         mTcpSocket->waitForBytesWritten();
+
+        qDebug().noquote()<< "[" << mIndex << "] "<< "Send HEX[" << cmd.size() << "]: " << cmd.toHex(' ');
     }
 }
 
