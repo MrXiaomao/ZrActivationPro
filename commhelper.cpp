@@ -384,12 +384,12 @@ void CommHelper::initDataProcessor()
             emit measureStop(processor->index());
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray& data){
+        connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             emit reportSpectrumData(processor->index(), data);
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray& data){
+        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
                 保存数据
@@ -404,21 +404,24 @@ void CommHelper::initDataProcessor()
                     QString filePath = QString("%1/%2/测量数据/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
+
+                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
-                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), 1040/*data.size()*/);
+                    //mDetectorFileProcessor[processor->index()]->flush();
                 }
             }
 
             bool ok;
             quint16 serialNumber = data.mid(4, 2).toHex().toUShort(&ok, 16);//设备编号
             data.remove(0, 8);//移除包头
-            data.chop(4);//移除包尾
+            data.chop(8);//移除包尾
             emit reportWaveformData(processor->index(), data);
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray& data){
+        connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             emit reportParticleData(processor->index(), data);
         });
