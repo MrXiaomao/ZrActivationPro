@@ -386,11 +386,6 @@ void CommHelper::initDataProcessor()
 
         connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            emit reportSpectrumData(processor->index(), data);
-        });
-
-        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
-            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
                 保存数据
             */
@@ -415,15 +410,64 @@ void CommHelper::initDataProcessor()
             }
 
             bool ok;
-            quint16 serialNumber = data.mid(4, 2).toHex().toUShort(&ok, 16);//设备编号
-            data.remove(0, 8);//移除包头
+            quint32 serialNumber = data.mid(6, 4).toHex().toUShort(&ok, 16);//能谱序号
+            quint32 measureTime = data.mid(10, 4).toHex().toUShort(&ok, 16);//测量时间
+            quint32 deathTime = data.mid(14, 4).toHex().toUShort(&ok, 16);//死时间
+            quint32 serialNo = data.mid(18, 4).toHex().toUShort(&ok, 16);//能谱编号（1~32）
+            // data.remove(0, 6);//移除包头
+            // data.chop(16);//移除包尾
+
+            {
+                // 数据解包
+                detectorDataProcessor->inputSpectrumData(serialNo, data);
+            }
+            //emit reportSpectrumCurveData(processor->index(), data);
+        });
+
+        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            /*
+                保存数据
+            */
+            {
+                QMutexLocker locker(&mMutexTriggerTimer);
+                if (mTriggerTimer.isEmpty()){
+                    mTriggerTimer = QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss");
+                }
+
+                if (!mDetectorFileProcessor.contains(processor->index())){
+                    QString filePath = QString("%1/%2/测量数据/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    mDetectorFileProcessor[processor->index()] = new QFile(filePath);
+                    mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
+
+                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+                }
+
+                if (mDetectorFileProcessor[processor->index()]->isOpen()){
+                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                    //mDetectorFileProcessor[processor->index()]->flush();
+                }
+            }
+
+            data.remove(0, 6);//移除包头
             data.chop(8);//移除包尾
-            emit reportWaveformData(processor->index(), data);
+
+            {
+                // 数据解包
+                QVector<quint16> waveform;
+                for (int i=0; i<512; i+=2){
+                    bool ok;
+                    quint16 amplitude = data.mid(i, 2).toHex().toUShort(&ok, 16);
+                    waveform.append(amplitude);
+                }
+
+                emit reportWaveformCurveData(processor->index(), waveform);
+            }
         });
 
         connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray data){
-            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            emit reportParticleData(processor->index(), data);
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());            
+            //emit reportParticleCurveData(processor->index(), data);
         });
     }
 }

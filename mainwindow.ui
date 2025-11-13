@@ -1653,12 +1653,6 @@
                 </item>
                 <item>
                  <widget class="QWidget" name="widget_6" native="true">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>56</height>
-                   </size>
-                  </property>
                   <layout class="QHBoxLayout" name="horizontalLayout_12">
                    <property name="leftMargin">
                     <number>0</number>
@@ -1701,19 +1695,6 @@
                 </item>
                </layout>
               </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_3">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
              </item>
             </layout>
            </widget>
@@ -1906,7 +1887,6 @@
     </property>
     <addaction name="action_waveformMode"/>
     <addaction name="action_spectrumMode"/>
-    <addaction name="action_particleMode"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_setup"/>
@@ -1953,13 +1933,13 @@
      <normaloff>:/openfile.png</normaloff>:/openfile.png</iconset>
    </property>
    <property name="text">
-    <string>分析历史测量数据(&amp;O)...</string>
+    <string>离线数据分析(&amp;O)...</string>
    </property>
    <property name="iconText">
-    <string>分析历史测量数据</string>
+    <string>离线数据分析</string>
    </property>
    <property name="toolTip">
-    <string>分析历史测量数据</string>
+    <string>离线数据分析</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
@@ -2321,14 +2301,6 @@
    </property>
    <property name="text">
     <string>能谱模式</string>
-   </property>
-  </action>
-  <action name="action_particleMode">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>粒子模式</string>
    </property>
   </action>
  </widget>

@@ -165,7 +165,6 @@ void CentralWidget::initUi()
     QActionGroup *actionGrp = new QActionGroup(this);
     actionGrp->addAction(ui->action_waveformMode);
     actionGrp->addAction(ui->action_spectrumMode);
-    actionGrp->addAction(ui->action_particleMode);
 
     QToolButton* pageupButton = new QToolButton(this);
     pageupButton->setText(tr("上一页"));
@@ -533,13 +532,28 @@ void CentralWidget::initUi()
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
     initCustomPlot(101, spectroMeter_right, tr("实时能谱 时间/ns"), tr("计数率/cps"), 1);
 
-    connect(commHelper, &CommHelper::reportWaveformData, this, [=](quint8 index, QByteArray& waveformBytes){
+    connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
+        Q_UNUSED(index);
         QVector<double> x, y;
-        for(int i=0; i<waveformBytes.size() / 2; i+=2)
+        for(int i=0; i<data.size(); ++i)
         {
             x << i;
-            bool ok;
-            y << waveformBytes.mid(i, 2).toHex().toUShort(&ok, 16);
+            y << data.at(i);
+        }
+
+        ui->spectroMeter1_top->graph(0)->setData(x, y);
+        ui->spectroMeter1_top->xAxis->rescale(true);
+        ui->spectroMeter1_top->yAxis->rescale(true);
+        ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
+    });
+
+    connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
+        Q_UNUSED(index);
+        QVector<double> x, y;
+        for(int i=0; i<data.size(); ++i)
+        {
+            x << i;
+            y << data.at(i);
         }
 
         ui->spectroMeter1_top->graph(0)->setData(x, y);
@@ -1018,8 +1032,6 @@ void CentralWidget::on_action_startMeasure_triggered()
         commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform);
     else if (ui->action_spectrumMode->isChecked())
         commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum);
-    else if (ui->action_particleMode->isChecked())
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmParticle);
 }
 
 
@@ -1160,15 +1172,6 @@ void CentralWidget::on_action_colorTheme_triggered()
 
 void CentralWidget::applyColorTheme()
 {
-    // 更新图标颜色
-    // QIcon icon;
-    // QPixmap pixmap = icon.pixmap(QSize(size, size));
-    // QPainter painter(&pixmap);
-    // painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    // painter.fillRect(pixmap.rect(), color);
-    // QIcon colorIcon = QIcon(pixmap);
-    // return colorIcon;
-
     QList<QCustomPlot*> customPlots = this->findChildren<QCustomPlot*>();
     for (auto customPlot : customPlots){
         QPalette palette = customPlot->palette();
@@ -1204,12 +1207,9 @@ void CentralWidget::applyColorTheme()
                                     .arg(palette.color(QPalette::Window).red())
                                     .arg(palette.color(QPalette::Window).green())
                                     .arg(palette.color(QPalette::Window).blue())
-                                          : QString("background-color:white;color:black;");
-        ui->logWidget->setStyleSheet(styleSheet);
-
+                                : QString("background-color:white;color:black;");
         //更新样式表
         QList<QCheckBox*> checkBoxs = customPlot->findChildren<QCheckBox*>();
-        int i = 0;
         for (auto checkBox : checkBoxs){
             checkBox->setStyleSheet(styleSheet);
         }
@@ -1477,8 +1477,6 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
         commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
     else if (ui->action_spectrumMode->isChecked())
         commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
-    else if (ui->action_particleMode->isChecked())
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmParticle, index);
 }
 
 

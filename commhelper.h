@@ -85,9 +85,9 @@ signals:
 
     Q_SIGNAL void settingfinished();//配置完成
 
-    Q_SIGNAL void reportSpectrumData(quint8 index, QByteArray&);
-    Q_SIGNAL void reportWaveformData(quint8 index, QByteArray&);
-    Q_SIGNAL void reportParticleData(quint8 index, QByteArray&);
+    Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32>& data);
+    Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint16>& data);
+    Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
 
     void exportEnergyPlot(const QString fileDir, const QString triggerTime);
 

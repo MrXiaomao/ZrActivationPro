@@ -499,47 +499,42 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             findNaul = true;
 
             //有效数据包长度
-            quint32 invalidPkgSize = 0;
+            quint32 onePkgSize = 0;
 
             // 设备编号
             quint16 deviceNumber = cachePool.mid(4, 2).toShort();
 
             //数据类型
             bool ok;
-            DataType dataType = (DataType)cachePool.mid(6, 2).toHex().toUShort(&ok, 16);
+            DataType dataType = (DataType)cachePool.mid(4, 2).toHex().toUShort(&ok, 16);
             if (dataType == dtWaveform){
                 //波形
-                //包头0xFFFFAAB1 + 设备编号（16bit） + 数据类型（0x00D1）+ 波形数据（波形长度*16bit） + 保留位（32bit）+ 包尾0xFFFFCCD1
-                invalidPkgSize = 4 + 2 + 2 + mWaveformLength*2 + 4 + 4;
+                //包头0xFFFFAAB1 + 数据类型（0x00D1）+ 波形数据（波形长度*16bit） + 保留位（32bit）+ 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 512*2 + 4 + 4;
             }
             else if (dataType == dtSpectrum){
                 //能谱
-                //包头0xFFFFAAB1 + 设备编号（16bit）+ 数据类型（0x00D2）+ 能谱序号（32bit） + 测量时间（32bit） + 通道号（32bit）+ 能谱数据（能谱长度*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
-                invalidPkgSize = 4 + 2 + 2 + 4 + 4 + 4 + mWaveformLength*4 + 4 + 8  + 4;
-            }
-            else if (dataType == dtParticle){
-                //粒子
-                //包头0xFFFFAAB1 + 设备编号（16bit）+ 数据类型（0x00D3）+ 能谱序号（32bit） + 粒子数据（1000*64bit）+ 保留位（32bit） + 包尾0xFFFFCCD1
-                invalidPkgSize = 4 + 2 + 2 + 4 + 1000*8 + 4 + 4;
+                //包头0xFFFFAAB1 + 数据类型（0x00D2）+ 能谱序号（32bit） + 测量时间（32bit） + 死时间（32bit）+ 能谱编号（32bit）+ 能谱数据（256*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 4 + 4 + 4 + 4 + 256*4 + 4 + 8 + 4;
             }
             else{
                 /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
                 findNaul = false;
 
-                qInfo() << "数据包类型错误：" << cachePool.mid(6, 2).toHex(' ');
+                qInfo() << "数据包类型错误：" << cachePool.mid(4, 2).toHex(' ');
 
                 //重新开始寻找包头
                 cachePool.remove(0, 4);
             }
 
-            if (cachePool.size() >= invalidPkgSize){
+            if (cachePool.size() >= onePkgSize){
                 // 满足数据包长度
-                QByteArray chunk = cachePool.left(invalidPkgSize);
+                QByteArray chunk = cachePool.left(onePkgSize);
 
                 //继续检查包尾
                 if (chunk.endsWith(QByteArray::fromHex(QString("FF FF CC D1").toUtf8()))){
                     mValidDataPkgRef++;
-                    cachePool.remove(0, invalidPkgSize);                    
+                    cachePool.remove(0, onePkgSize);
 
                     if (dataType == dtWaveform)
                         QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
