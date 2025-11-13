@@ -11,10 +11,8 @@
 #include <QEventLoop>
 #include "TcpAgentServer.h"
 
-#include "qlitethread.h"
 #include "dataprocessor.h"
 #include "QTelnet.h"
-#include "unfoldSpec.h"
 
 class CommHelper : public QObject
 {
@@ -125,7 +123,6 @@ private:
     QMap<quint8, DataProcessor*> mDetectorDataProcessor;//24路探测器数据处理器
     QMap<quint8, QFile*> mDetectorFileProcessor;//24路探测器数据处理器
     QMap<quint8, QVector<quint16>> mWaveAllData;
-    UnfoldSpec* unfoldData = nullptr;
     QString mResMatrixFileName;
 
     /*

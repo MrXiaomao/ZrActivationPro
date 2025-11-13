@@ -143,6 +143,7 @@ void DataProcessor::sendCmdToSocket(QByteArray& cmd) const
     if (mTcpSocket && mTcpSocket->isOpen()){
         mTcpSocket->write(cmd);
         mTcpSocket->waitForBytesWritten();
+        ::QThread::msleep(50);
 
         qDebug().noquote()<< "[" << mIndex << "] "<< "Send HEX[" << cmd.size() << "]: " << cmd.toHex(' ');
     }

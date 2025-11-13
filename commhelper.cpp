@@ -27,11 +27,6 @@ CommHelper::CommHelper(QObject *parent)
 
 CommHelper::~CommHelper()
 {
-    if(unfoldData != nullptr ){
-        delete unfoldData;
-        unfoldData = nullptr;
-    }
-
     this->stopServer();
 
     for (int index = 1; index <= DET_NUM; ++index){
@@ -404,7 +399,7 @@ void CommHelper::initDataProcessor()
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
-                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), 1040/*data.size()*/);
+                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
                     //mDetectorFileProcessor[processor->index()]->flush();
                 }
             }
@@ -689,11 +684,25 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
         for (index = 1; index <= DET_NUM; ++index){
             DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
             detectorDataProcessor->stopMeasure();
+
+            //关闭文件
+            if (mDetectorFileProcessor.contains(index)){
+                mDetectorFileProcessor[index]->close();
+                mDetectorFileProcessor[index]->deleteLater();
+                mDetectorFileProcessor.remove(index);
+            }
         }
     }
     else if (index >= 1 && index <= DET_NUM){
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         detectorDataProcessor->stopMeasure();
+
+        //关闭文件
+        if (mDetectorFileProcessor.contains(index)){
+            mDetectorFileProcessor[index]->close();
+            mDetectorFileProcessor[index]->deleteLater();
+            mDetectorFileProcessor.remove(index);
+        }
     }
 }
 

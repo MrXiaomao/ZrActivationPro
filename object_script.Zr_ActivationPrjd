@@ -15,7 +15,6 @@ temp/obj/mainwindow.o
 temp/obj/netsettingwindow.o
 temp/obj/qcomboboxdelegate.o
 temp/obj/switchbutton.o
-temp/obj/unfoldSpec.o
 temp/obj/appender.o
 temp/obj/appenderskeleton.o
 temp/obj/basicconfigurator.o

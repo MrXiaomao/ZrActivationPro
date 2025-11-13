@@ -390,21 +390,22 @@ public:
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F EA 10 00 00 00 01 AB CD").toUtf8());
         pushCmd(askCurrentCmd);
 
-        mIsMeasuring = false;
+        mIsMeasuring = true;
 
         //通知发送指令
         this->notifySendNextCmd();
     };
 
     //停止测量
-    void sendStopMeasure(){
-        mAskStopMeasure = true;
-
+    void sendStopMeasure(){        
         /*强制清空之前的指令*/
         this->clear();
 
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F EA 10 00 00 00 00 AB CD").toUtf8());
         pushCmd(askCurrentCmd);
+
+        mAskStopMeasure = true;
+        mIsMeasuring = true;
 
         //通知发送指令
         this->notifySendNextCmd();

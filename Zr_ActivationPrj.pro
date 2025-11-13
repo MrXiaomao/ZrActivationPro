@@ -22,8 +22,7 @@ SOURCES += \
     mainwindow.cpp \
     netsettingwindow.cpp \
     qcomboboxdelegate.cpp \
-    switchbutton.cpp \
-    unfoldSpec.cpp
+    switchbutton.cpp
 
 HEADERS += \
     PeerConnection.h \
@@ -39,8 +38,7 @@ HEADERS += \
     globalsettings.h \
     mainwindow.h \
     netsettingwindow.h \
-    switchbutton.h \
-    unfoldSpec.h
+    switchbutton.h
 
 FORMS += \
     clientpeerswindow.ui \

@@ -48,7 +48,8 @@ CommandAdapter::~CommandAdapter()
 void CommandAdapter::pushCmd(QByteArray& askCmd)
 {
     QMutexLocker locket(&mCmdMutex);
-    mCmdQueue.enqueue(askCmd);
+    //mCmdQueue.enqueue(askCmd);//因为指令没有返回码，所以没必要加入堆栈
+    sendCmdToSocket(askCmd);
 }
 
 /*
@@ -501,9 +502,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             //有效数据包长度
             quint32 onePkgSize = 0;
 
-            // 设备编号
-            quint16 deviceNumber = cachePool.mid(4, 2).toShort();
-
             //数据类型
             bool ok;
             DataType dataType = (DataType)cachePool.mid(4, 2).toHex().toUShort(&ok, 16);
@@ -514,8 +512,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             }
             else if (dataType == dtSpectrum){
                 //能谱
-                //包头0xFFFFAAB1 + 数据类型（0x00D2）+ 能谱序号（32bit） + 测量时间（32bit） + 死时间（32bit）+ 能谱编号（32bit）+ 能谱数据（256*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
-                onePkgSize = 4 + 2 + 4 + 4 + 4 + 4 + 256*4 + 4 + 8 + 4;
+                //包头0xFFFFAAB1 + 数据类型（0x00D2）+ 能谱序号（32bit） + 测量时间（32bit） + 死时间（32bit）+ 能谱编号（16bit）+ 能谱数据（256*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 4 + 4 + 4 + 2 + 256*4 + 4 + 8 + 4;
             }
             else{
                 /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/

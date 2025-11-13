@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 
     QApplication a(argc, argv);
-    QApplication::setApplicationName("DT中子活化测量仪");
+    QApplication::setApplicationName("锆活化工程");
     QApplication::setOrganizationName("Copyright (c) 2025");
     QApplication::setOrganizationDomain("");
     QApplication::setApplicationVersion(APP_VERSION);
