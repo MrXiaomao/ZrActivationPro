@@ -667,8 +667,8 @@ typedef struct _DetParameter{
         //基本设置
         //增益
         gain = 1;
-        //死时间
-        deathTime = 300;
+        //死时间,单位*10ns
+        deathTime = 30;
         //触发阈值
         triggerThold = 100;
 
@@ -681,16 +681,16 @@ typedef struct _DetParameter{
         qstrcpy(detMacAddress, "00-08-00-00-00-00");
 
         //能谱设置
-        //能谱刷新时间
+        //能谱刷新时间,单位ms
         spectrumRefreshTime = 1000;
         //能谱长度
-        spectrumLength = 2048;
+        spectrumLength = 8192;
 
         //波形设置
         //触发模式 0-定时触发 1-普通触发
         waveformTriggerMode = 0;
         //波形长度
-        waveformLength = 64;
+        waveformLength = 512;
 
         //梯形成型
         //是否启用

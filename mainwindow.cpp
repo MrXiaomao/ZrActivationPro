@@ -54,7 +54,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
-        qInfo().nospace().nospace() << "Detector#" << index << " online";
+        qInfo().nospace().nospace() << "Detector#" << index << ": online";
     });
     connect(commHelper, &CommHelper::detectorOffline, this, [=](quint8 index){
         int row = index - 1;
@@ -63,7 +63,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
-        qInfo().nospace().nospace() << "Detector#" << index << " offline";
+        qInfo().nospace().nospace() << "Detector#" << index << ": offline";
     });
 
     //测量开始
@@ -74,7 +74,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
-        qInfo().nospace().nospace() << "Detector#" << index << "Measure is start, get ready to receive data";//开始实验，准备接收数据
+        qInfo().nospace().nospace() << "Detector#" << index << ": the measurement is start, get ready to receive data";//开始实验，准备接收数据
     });
     //测量结束
     connect(commHelper, &CommHelper::measureStop, this, [=](quint8 index){
@@ -84,7 +84,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
-        qInfo().nospace().nospace() << "谱仪#" << index << "实验已停止";
+        qInfo().nospace().nospace() << "Detector#" << index << ": the measurement has been stopped";
     });
 
     connect(ui->statusbar,&QStatusBar::messageChanged,this,[&](const QString &message){
@@ -522,28 +522,42 @@ void CentralWidget::initUi()
 
     for (int i=1; i<=6; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        initCustomPlot(i, spectroMeter_top, tr("能谱时间演变 时间/ns"), tr("计数率/cps"), 1);
+        initCustomPlot(i, spectroMeter_top, tr("时间/ns"), tr("ADC采样值"), tr("实时波形"), 1);
         QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-        initCustomPlot(i, spectroMeter_bottom, tr("实时能谱 时间/ns"), tr("计数率/cps"), 1);
+        initCustomPlot(i, spectroMeter_bottom, tr("道址"), tr("计数"), tr("累积能谱"), 1);
     }
 
     QCustomPlot *spectroMeter_left = this->findChild<QCustomPlot*>(QString("spectroMeter_left"));
-    initCustomPlot(100, spectroMeter_left, tr("能谱时间演变 时间/ns"), tr("计数率/cps"), 1);
+    initCustomPlot(100, spectroMeter_left, tr("时间/ns"), tr("ADC采样值"), tr("实时波形"), 1);
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
-    initCustomPlot(101, spectroMeter_right, tr("实时能谱 时间/ns"), tr("计数率/cps"), 1);
+    initCustomPlot(101, spectroMeter_right, tr("道址"), tr("计数"), tr("累积能谱"), 1);
 
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
         QVector<double> x, y;
-        for(int i=0; i<data.size(); ++i)
+        int count = data.size();
+        for(int i=0; i<count; ++i)
         {
             x << i;
             y << data.at(i);
         }
 
+        QCustomPlot *plot = ui->spectroMeter1_bottom;
+
+        //设置曲线的粗细，2 像素
+        ui->spectroMeter1_bottom->graph(0)->setPen(QPen(Qt::blue, 2));
+        // ui->spectroMeter1_bottom->xAxis->setPadding(5);
+
         ui->spectroMeter1_bottom->graph(0)->setData(x, y);
-        ui->spectroMeter1_bottom->xAxis->setRange(1, 8192);
+        ui->spectroMeter1_bottom->xAxis->setRange(1, count + 100);
         ui->spectroMeter1_bottom->yAxis->rescale(true);
+
+        // QCustomPlot* plot = ui->spectroMeter1_bottom;
+
+        double y_min = ui->spectroMeter1_bottom->yAxis->range().lower;
+        double y_max = ui->spectroMeter1_bottom->yAxis->range().upper;
+        y_max = y_min + (y_max - y_min) *1.1;
+        ui->spectroMeter1_bottom->yAxis->setRange(y_min-1, y_max);
         ui->spectroMeter1_bottom->replot(QCustomPlot::rpQueuedReplot);
     });
 
@@ -645,10 +659,17 @@ void CentralWidget::initNet()
     });
 }
 
-void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, int graphCount/* = 1*/)
+void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, QString str_title, int graphCount/* = 1*/)
 {
     customPlot->installEventFilter(this);
     customPlot->setProperty("index", index);
+    
+    // 创建标题文本元素
+    QCPTextElement *title = new QCPTextElement(customPlot, str_title, QFont("Microsoft YaHei", 14, QFont::Bold));
+
+    // 添加到图表布局（位于最上方）
+    customPlot->plotLayout()->insertRow(0);
+    customPlot->plotLayout()->addElement(0, 0, title);
 
     // 设置背景网格线是否显示
     //customPlot->xAxis->grid()->setVisible(true);

@@ -6,6 +6,7 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
     : CommandAdapter(parent)
     , mIndex(index)
 {
+    mAccumulateSpec.resize(8192);
     mDataProcessThread = new QLiteThread(this);
     mDataProcessThread->setWorkThreadProc([=](){
         while (!mTerminatedDataThread)
@@ -119,6 +120,8 @@ void DataProcessor::startMeasure(WorkMode workMode)
 {
     /*开始测量之前清空所有数据，防止野数据存在*/
     mCachePool.clear();
+    mAccumulateSpec.clear();
+    mAccumulateSpec.resize(8192);
 
     //测量前下发配置
     HDF5Settings *settings = HDF5Settings::instance();
@@ -252,10 +255,11 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
 
             // 6. 发送完整能谱信号（使用 QueuedConnection 避免线程阻塞）
             // 注意：QVector 拷贝完整数据，避免多线程访问冲突
-            QVector<quint32> completeData;
-            completeData.reserve(8192); // 预分配内存，提升效率
+            // QVector<quint32> completeData;
+            // completeData.reserve(8192); // 预分配内存，提升效率
             for (int i = 0; i < 8192; ++i) {
-                completeData.append(fullSpectrum->spectrumData[i]);
+                // completeData.append(fullSpectrum->spectrumData[i]);
+                mAccumulateSpec[i] += fullSpectrum->spectrumData[i];
             }
 
             // 异步发送信号（确保接收方在主线程处理，避免UI阻塞）
@@ -264,7 +268,7 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
                 "reportSpectrumCurveData",
                 Qt::QueuedConnection,
                 Q_ARG(quint8, mIndex),          // 设备索引
-                Q_ARG(QVector<quint32>, completeData) // 完整8192道数据
+                Q_ARG(QVector<quint32>, mAccumulateSpec) // 完整8192道数据
                 );
 
             // 7. 清理已完成的能谱数据（释放内存，可选：若需保留历史数据可注释）

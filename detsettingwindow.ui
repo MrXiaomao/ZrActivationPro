@@ -23,7 +23,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-247</y>
+        <y>0</y>
         <width>406</width>
         <height>801</height>
        </rect>
@@ -278,7 +278,7 @@
           <item row="2" column="0">
            <widget class="QLabel" name="label_2">
             <property name="text">
-             <string>死时间配置：</string>
+             <string>死时间配置/*10ns：</string>
             </property>
            </widget>
           </item>
@@ -318,7 +318,7 @@
              <number>65535</number>
             </property>
             <property name="value">
-             <number>300</number>
+             <number>30</number>
             </property>
            </widget>
           </item>

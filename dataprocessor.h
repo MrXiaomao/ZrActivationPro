@@ -1,3 +1,10 @@
+/*
+ * @Author: MrPan
+ * @Date: 2025-11-13 11:36:00
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2025-11-14 20:50:01
+ * @Description: 请填写简介
+ */
 #ifndef DATAPROCESSOR_H
 #define DATAPROCESSOR_H
 
@@ -87,6 +94,7 @@ private:
     // 新增成员变量
     QMutex mSpectrumLocker;
     QMap<quint32, FullSpectrum> mFullSpectrums; // 按能谱序号存储拼接中的能谱
+    QVector<quint32> mAccumulateSpec;
 };
 
 #endif // DATAPROCESSOR_H

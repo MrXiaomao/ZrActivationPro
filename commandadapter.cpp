@@ -469,7 +469,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             qint32 t = qFromBigEndian<qint32>(data.constData());
             float temperature = t * 0.0078125;// 换算系数
 
-            qInfo().noquote() << "温度：" << temperature;
+            qDebug().noquote() << "温度：" << temperature;
 
             findNaul = true;
             cachePool.remove(0, 12);
@@ -550,7 +550,13 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 }
                 else {
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
-                    findNaul = false;                    
+                    findNaul = false;
+                    /*包头/包尾不对*/
+                    qDebug() << "Invalid1: " << chunk.toHex(' ');
+
+                    /*删除异常数据继续寻找*/
+                    cachePool.remove(0, onePkgSize);
+                    continue;
                 }
             }
             else{
@@ -561,10 +567,11 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
         if (!findNaul && cachePool.size()>12){
             /*包头/包尾不对*/
-            qDebug() << "Invalid: " << cachePool.left(4).toHex(' ');
+            // qDebug() << "Invalid2: " << cachePool.left(4).toHex(' ');
 
             /*继续寻找包头,删除包头继续寻找*/
-            cachePool.remove(0, 4);
+            cachePool.remove(0, 1);
+            break;
         }
     }
 }

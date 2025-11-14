@@ -44,7 +44,7 @@ public:
     }
 
     //死时间配置(ns)
-    void sendDeathTime(bool isRead = true, quint16 deathTime = 300){
+    void sendDeathTime(bool isRead = true, quint16 deathTime = 30){
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 11 00 00 00 00 AB CD").toUtf8());
         if (isRead)
             askCurrentCmd[3] = 0x0A;

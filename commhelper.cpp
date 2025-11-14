@@ -404,21 +404,13 @@ void CommHelper::initDataProcessor()
                 }
             }
 
-            // bool ok;
-            // quint32 serialNumber = data.mid(6, 4).toHex().toUShort(&ok, 16);//能谱序号
-            // quint32 measureTime = data.mid(10, 4).toHex().toUShort(&ok, 16);//测量时间
-            // quint32 deathTime = data.mid(14, 4).toHex().toUShort(&ok, 16);//死时间
-            // quint32 serialNo = data.mid(18, 2).toHex().toUShort(&ok, 16);//能谱编号（1~32）
-            {
-                // 数据解包
-                detectorDataProcessor->inputSpectrumData(processor->index(), data);
-            }
-            // emit reportSpectrumCurveData(processor->index(), spectrum);
+            // 数据解包
+            detectorDataProcessor->inputSpectrumData(processor->index(), data);
         });
 
         connect(detectorDataProcessor, &DataProcessor::reportSpectrumCurveData,
-                this, [=](quint8 index, QVector<quint32> data){
-                    emit reportSpectrumCurveData(index, data);
+                this, [=](quint8 index, QVector<quint32> spectrum){
+                    emit reportSpectrumCurveData(index, spectrum);
                 });
 
         connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
@@ -697,22 +689,25 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
 */
 void CommHelper::stopMeasure(quint8 index/* = 0*/)
 {
+    //默认情况所有通道直接一次性停止测量
     if (index == 0){
         for (index = 1; index <= DET_NUM; ++index){
-            DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
-            detectorDataProcessor->stopMeasure();
-
-            emit measureStop(index);
-
-            //关闭文件
             if (mDetectorFileProcessor.contains(index)){
-                mDetectorFileProcessor[index]->close();
-                mDetectorFileProcessor[index]->deleteLater();
-                mDetectorFileProcessor.remove(index);
+                DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
+                detectorDataProcessor->stopMeasure();
+
+                emit measureStop(index);
+
+                //关闭文件
+                if (mDetectorFileProcessor.contains(index)){
+                    mDetectorFileProcessor[index]->close();
+                    mDetectorFileProcessor[index]->deleteLater();
+                    mDetectorFileProcessor.remove(index);
+                }
             }
         }
     }
-    else if (index >= 1 && index <= DET_NUM){
+    else if (index >= 1 && index <= DET_NUM){ //关闭单个通道
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         detectorDataProcessor->stopMeasure();
 

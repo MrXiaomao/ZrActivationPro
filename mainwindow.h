@@ -38,7 +38,7 @@ public:
     void initUi();
     void initNet();
     void restoreSettings();
-    void initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, int graphCount = 1);
+    void initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, QString title, int graphCount = 1);
     void applyColorTheme();
     bool openXRDFile(const QString &filePath, QVector<QPair<double, double>>& data);
 
