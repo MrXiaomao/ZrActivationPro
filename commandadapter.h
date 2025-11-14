@@ -234,17 +234,16 @@ public:
      能谱基本配置
     ***********************************************************/
     //能谱刷新时间修改(ms，默认值1000)
-    void sendSprectnumRefreshTimelength(bool isRead = true, quint32 sprectnumRefreshTimelength = 1000){
+    void sendSprectnumRefreshTimelength(bool isRead = true, quint32 spectrumRefreshTime = 1000){
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FD 10 00 00 00 00 AB CD").toUtf8());
         if (isRead)
             askCurrentCmd[3] = 0x0A;
         else{
             askCurrentCmd[3] = 0x0F;
-            QByteArray v = QByteArray().setNum((quint32)sprectnumRefreshTimelength);
-            askCurrentCmd[6] = v[0];
-            askCurrentCmd[7] = v[1];
-            askCurrentCmd[8] = v[2];
-            askCurrentCmd[9] = v[3];
+            askCurrentCmd[6] = (spectrumRefreshTime >> 24) & 0xFF;
+            askCurrentCmd[7] = (spectrumRefreshTime >> 16) & 0xFF;
+            askCurrentCmd[8] = (spectrumRefreshTime >> 8)  & 0xFF;
+            askCurrentCmd[9] = (spectrumRefreshTime)       & 0xFF;
         }
         pushCmd(askCurrentCmd);
     };

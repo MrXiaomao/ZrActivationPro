@@ -9,6 +9,10 @@ CommandAdapter::CommandAdapter(QObject *parent)
     //mCmdProcessThread->setObjectName("mCmdProcessThread");
     mCmdProcessThread->setWorkThreadProc([=](){
         qRegisterMetaType<QByteArray>("QByteArray&");
+        //需要参数类型已注册为元类型
+        qRegisterMetaType<QVector<quint32>>("QVector<quint32>");//用于传输能谱
+        qRegisterMetaType<quint32>("quint32");      //用于传输探测器通道号
+
         while (!mTerminatedThread)
         {
             {
@@ -542,7 +546,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                         QMetaObject::invokeMethod(this, "reportParticleData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
 
                     //上报有效数据包个数
-                    QMetaObject::invokeMethod(this, "reportValidDataPkgRef", Qt::QueuedConnection, Q_ARG(quint32, mValidDataPkgRef));
+                    // QMetaObject::invokeMethod(this, "reportValidDataPkgRef", Qt::QueuedConnection, Q_ARG(quint32, mValidDataPkgRef));
                 }
                 else {
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
@@ -555,7 +559,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             }
         }
 
-        if (!findNaul && cachePool.size()>0){
+        if (!findNaul && cachePool.size()>12){
             /*包头/包尾不对*/
             qDebug() << "Invalid: " << cachePool.left(4).toHex(' ');
 

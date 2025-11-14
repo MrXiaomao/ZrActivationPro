@@ -48,6 +48,8 @@ public:
 
     void updateSetting(DetParameter& detParameter);
 
+    bool extractSpectrumData(const QByteArray& packetData, SubSpectrumPacket& subSpec);
+
 public slots:
     void readyRead();
 
@@ -60,7 +62,7 @@ signals:
     void detectorConnected(quint8 index);  // 探测器
     void detectorDisconnected(quint8 index);
 
-    Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32>& data);
+    Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32> data);
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
 
@@ -70,7 +72,7 @@ private:
 
     QByteArray mRawData; // 存储网络原始数据
     QByteArray mCachePool; // 缓存数据，数据处理之前，先转移到二级缓存池
-    QMap<quint8, QByteArray> mSpectrumData;
+    // QMap<quint8, QByteArray> mSpectrumData;
 
     bool mDataReady = false;// 数据长度不够，还没准备好
     bool mTerminatedDataThread = false;
@@ -81,6 +83,10 @@ private:
     quint8 mTransferMode = 0x00;//传输模式
     quint32 mWaveLength = 512;// 波形长度
     quint8 mChWaveDataValidTag = 0x00;//通道数据是否完整
+
+    // 新增成员变量
+    QMutex mSpectrumLocker;
+    QMap<quint32, FullSpectrum> mFullSpectrums; // 按能谱序号存储拼接中的能谱
 };
 
 #endif // DATAPROCESSOR_H

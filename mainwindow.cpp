@@ -54,7 +54,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
-        qInfo().nospace().nospace() << "谱仪#" << index << "上线";
+        qInfo().nospace().nospace() << "Detector#" << index << " online";
     });
     connect(commHelper, &CommHelper::detectorOffline, this, [=](quint8 index){
         int row = index - 1;
@@ -63,7 +63,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
-        qInfo().nospace().nospace() << "谱仪#" << index << "下线";
+        qInfo().nospace().nospace() << "Detector#" << index << " offline";
     });
 
     //测量开始
@@ -74,7 +74,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
-        qInfo().nospace().nospace() << "谱仪#" << index << "实验开始，准备接收数据";
+        qInfo().nospace().nospace() << "Detector#" << index << "Measure is start, get ready to receive data";//开始实验，准备接收数据
     });
     //测量结束
     connect(commHelper, &CommHelper::measureStop, this, [=](quint8 index){
@@ -541,10 +541,10 @@ void CentralWidget::initUi()
             y << data.at(i);
         }
 
-        ui->spectroMeter1_top->graph(0)->setData(x, y);
-        ui->spectroMeter1_top->xAxis->rescale(true);
-        ui->spectroMeter1_top->yAxis->rescale(true);
-        ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
+        ui->spectroMeter1_bottom->graph(0)->setData(x, y);
+        ui->spectroMeter1_bottom->xAxis->setRange(1, 8192);
+        ui->spectroMeter1_bottom->yAxis->rescale(true);
+        ui->spectroMeter1_bottom->replot(QCustomPlot::rpQueuedReplot);
     });
 
     connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
@@ -552,13 +552,14 @@ void CentralWidget::initUi()
         QVector<double> x, y;
         for(int i=0; i<data.size(); ++i)
         {
-            x << i;
+            x << i*10;
             y << data.at(i);
         }
 
         ui->spectroMeter1_top->graph(0)->setData(x, y);
         ui->spectroMeter1_top->xAxis->rescale(true);
-        ui->spectroMeter1_top->yAxis->rescale(true);
+        // ui->spectroMeter1_top->yAxis->rescale(false);
+        //ui->spectroMeter1_top->yAxis->setRange(0, 10000);
         ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
     });
 
@@ -675,10 +676,10 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     // 允许轴自适应大小
     customPlot->xAxis->rescale(true);
-    customPlot->yAxis->rescale(graphCount == 1 ? true : false);
+    customPlot->yAxis->rescale(false);
     // 设置刻度范围
     customPlot->xAxis->setRange(0, 200);
-    customPlot->yAxis->setRange(graphCount == 1 ? 10e2 : 0, graphCount == 1 ? 10e8 : 4100);
+    customPlot->yAxis->setRange(0, 10000);
     customPlot->yAxis->ticker()->setTickCount(5);
     customPlot->xAxis->ticker()->setTickCount(graphCount == 1 ? 10 : 5);
 

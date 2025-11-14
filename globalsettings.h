@@ -12,6 +12,36 @@
 #include <QFileInfo>
 #include <QFileSystemWatcher>
 
+// 子能谱数据包信息
+#pragma pack(push, 1)  // 确保字节对齐
+struct SubSpectrumPacket {
+    quint32 header;        // FFFF AAB1
+    quint16 dataType;      // 00D2
+    quint32 spectrumSeq;   // 能谱序号
+    quint32 measureTime;   // 测量时间
+    quint32 deadTime;      // 死时间
+    quint16 spectrumSubNo;    // 能谱编号
+    quint32 spectrum[256]; // 能谱数据 256*32bit
+    quint32 timeMs;        // 分秒-毫秒
+    quint32 reserved1;     // 保留位 0000 0000
+    quint32 reserved2;     // 保留位 0000 0000
+    quint32 tail;          // FFFF CCD1
+};
+#pragma pack(pop)
+
+// 完整能谱数据
+#pragma pack(push, 1)  // 确保字节对齐
+struct FullSpectrum {
+    quint32 sequence;      // 能谱序号
+    quint32 measureTime;   // 测量时间,单位ms
+    quint32 deadTime;      // 死时间,单位*10ns
+    quint32 spectrumData[8192]; // 8192道完整数据
+    QDateTime completeTime; // 完成时间
+    bool isComplete;       // 是否完整
+    QSet<quint16> receivedPackets; // 已收到的包编号
+};
+#pragma pack(pop)
+
 #define GLOBAL_CONFIG_FILENAME "./Config/GSettings.ini"
 #define CONFIG_FILENAME "./Config/Settings.ini"
 class JsonSettings : public QObject{

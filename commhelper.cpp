@@ -404,26 +404,29 @@ void CommHelper::initDataProcessor()
                 }
             }
 
-            bool ok;
-            quint32 serialNumber = data.mid(6, 4).toHex().toUShort(&ok, 16);//能谱序号
-            quint32 measureTime = data.mid(10, 4).toHex().toUShort(&ok, 16);//测量时间
-            quint32 deathTime = data.mid(14, 4).toHex().toUShort(&ok, 16);//死时间
-            quint32 serialNo = data.mid(18, 4).toHex().toUShort(&ok, 16);//能谱编号（1~32）
-            // data.remove(0, 6);//移除包头
-            // data.chop(16);//移除包尾
-
+            // bool ok;
+            // quint32 serialNumber = data.mid(6, 4).toHex().toUShort(&ok, 16);//能谱序号
+            // quint32 measureTime = data.mid(10, 4).toHex().toUShort(&ok, 16);//测量时间
+            // quint32 deathTime = data.mid(14, 4).toHex().toUShort(&ok, 16);//死时间
+            // quint32 serialNo = data.mid(18, 2).toHex().toUShort(&ok, 16);//能谱编号（1~32）
             {
                 // 数据解包
-                detectorDataProcessor->inputSpectrumData(serialNo, data);
+                detectorDataProcessor->inputSpectrumData(processor->index(), data);
             }
-            //emit reportSpectrumCurveData(processor->index(), data);
+            // emit reportSpectrumCurveData(processor->index(), spectrum);
         });
+
+        connect(detectorDataProcessor, &DataProcessor::reportSpectrumCurveData,
+                this, [=](quint8 index, QVector<quint32> data){
+                    emit reportSpectrumCurveData(index, data);
+                });
 
         connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
                 保存数据
             */
+            quint8 detId = processor->index();
             {
                 QMutexLocker locker(&mMutexTriggerTimer);
                 if (mTriggerTimer.isEmpty()){
@@ -447,10 +450,18 @@ void CommHelper::initDataProcessor()
             data.remove(0, 6);//移除包头
             data.chop(8);//移除包尾
 
+            //从HDF5加载配置信息
+            HDF5Settings *settings = HDF5Settings::instance();
+            QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+            DetParameter& detParameter = detParameters[detId];
+            quint32 waveLen = detParameter.waveformLength;
+
+            //暂时只取第一个波形出来
             {
                 // 数据解包
                 QVector<quint16> waveform;
-                for (int i=0; i<512; i+=2){
+                waveform.reserve(waveLen-2);//减去包头包尾两个数据
+                for (int i=2; i<(waveLen-1)*2; i+=2){//跨过包头两个字节
                     bool ok;
                     quint16 amplitude = data.mid(i, 2).toHex().toUShort(&ok, 16);
                     waveform.append(amplitude);
@@ -658,7 +669,10 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
             }
 
             DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
-            detectorDataProcessor->startMeasure(mode);                         
+            if (!detectorDataProcessor->isFreeSocket()){
+                detectorDataProcessor->startMeasure(mode);
+                emit measureStart(index);
+            }
         }
     }
     else if (index >= 1 && index <= DET_NUM){
@@ -671,7 +685,10 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
         }
 
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
-        detectorDataProcessor->startMeasure(mode);
+        if (!detectorDataProcessor->isFreeSocket()){
+            detectorDataProcessor->startMeasure(mode);
+            emit measureStart(index);
+        }
     }
 }
 
@@ -685,6 +702,8 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
             DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
             detectorDataProcessor->stopMeasure();
 
+            emit measureStop(index);
+
             //关闭文件
             if (mDetectorFileProcessor.contains(index)){
                 mDetectorFileProcessor[index]->close();
@@ -696,6 +715,8 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
     else if (index >= 1 && index <= DET_NUM){
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         detectorDataProcessor->stopMeasure();
+
+        emit measureStop(index);
 
         //关闭文件
         if (mDetectorFileProcessor.contains(index)){
