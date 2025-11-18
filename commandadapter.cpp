@@ -552,7 +552,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
                     findNaul = false;
                     /*包头/包尾不对*/
-                    qDebug() << "Invalid1: " << chunk.toHex(' ');
+                    // qDebug() << "Invalid1: " << chunk.toHex(' ');
 
                     /*删除异常数据继续寻找*/
                     cachePool.remove(0, onePkgSize);

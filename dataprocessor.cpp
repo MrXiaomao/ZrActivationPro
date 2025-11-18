@@ -122,6 +122,7 @@ void DataProcessor::startMeasure(WorkMode workMode)
     mCachePool.clear();
     mAccumulateSpec.clear();
     mAccumulateSpec.resize(8192);
+    mFullSpectrums.clear();
 
     //测量前下发配置
     HDF5Settings *settings = HDF5Settings::instance();
