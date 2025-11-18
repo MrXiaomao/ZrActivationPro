@@ -54,7 +54,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES +=
 
-DESTDIR = $$PWD/../build_Zr_ActivationPrj
+DESTDIR = $$PWD/../build_Zr_ActivationPro
 contains(QT_ARCH, x86_64) {
     # x64
     DESTDIR = $$DESTDIR/x64
@@ -71,9 +71,9 @@ message(DESTDIR = $$DESTDIR)
 #避免创建空的debug和release目录
 CONFIG -= debug_and_release
 CONFIG(debug, debug|release) {
-    TARGET = Zr_ActivationPrjd
+    TARGET = Zr_ActivationProd
 } else {
-    TARGET = Zr_ActivationPrj
+    TARGET = Zr_ActivationPro
 }
 
 #指定编译产生的文件分门别类放到对应目录
