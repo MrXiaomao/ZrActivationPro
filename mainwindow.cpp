@@ -136,7 +136,7 @@ void CentralWidget::initUi()
     ui->centralHboxTabWidget->setTabVisible(3, false);
 
     // 只显示一个谱仪
-    {
+    if (0){
         ui->spectroMeterWidget2->setVisible(false);
         ui->spectroMeterWidget3->setVisible(false);
         ui->spectroMeterWidget4->setVisible(false);
@@ -182,26 +182,42 @@ void CentralWidget::initUi()
     ui->centralHboxTabWidget->setCornerWidget(tabWidgetButtonGroup);
 
     connect(pageupButton, &QToolButton::clicked, this, [=](){
-        if (0 == this->mCurrentPageIndex)
+        if (1 == this->mCurrentPageIndex)
             return;
 
         this->mCurrentPageIndex--;
         for (int i=1; i<=6; ++i){
             QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
             if (label_spectroMeter)
-                label_spectroMeter->setText(tr("谱仪#%1").arg(mCurrentPageIndex*6 + i));
+                label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
+        }
+
+        QMutexLocker locket(&mMutexSwitchPage);
+        for (int i=1; i<=6; ++i){
+            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+            spectroMeter_top->graph(0)->data().clear();
+            spectroMeter_bottom->graph(0)->data().clear();
         }
     });
 
     connect(pagedownButton, &QToolButton::clicked, this, [=](){
-        if (3 == this->mCurrentPageIndex)
+        if (4 == this->mCurrentPageIndex)
             return;
 
         this->mCurrentPageIndex++;
         for (int i=1; i<=6; ++i){
             QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
             if (label_spectroMeter)
-                label_spectroMeter->setText(tr("谱仪#%1").arg(mCurrentPageIndex*6 + i));
+                label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
+        }
+
+        QMutexLocker locket(&mMutexSwitchPage);
+        for (int i=1; i<=6; ++i){
+            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+            spectroMeter_top->graph(0)->data().clear();
+            spectroMeter_bottom->graph(0)->data().clear();
         }
     });
 
@@ -534,6 +550,10 @@ void CentralWidget::initUi()
 
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
+        index = index - (mCurrentPageIndex-1)*6;
+        if (index < 1 || index > 6)
+            return;
+
         QVector<double> x, y;
         int count = data.size();
         for(int i=0; i<count; ++i)
@@ -542,27 +562,32 @@ void CentralWidget::initUi()
             y << data.at(i);
         }
 
-        QCustomPlot *plot = ui->spectroMeter1_bottom;
+        QMutexLocker locket(&mMutexSwitchPage);
+        QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(index));
 
         //设置曲线的粗细，2 像素
-        ui->spectroMeter1_bottom->graph(0)->setPen(QPen(Qt::blue, 2));
-        // ui->spectroMeter1_bottom->xAxis->setPadding(5);
+        customPlot->graph(0)->setPen(QPen(Qt::blue, 2));
+        // customPlot->xAxis->setPadding(5);
 
-        ui->spectroMeter1_bottom->graph(0)->setData(x, y);
-        ui->spectroMeter1_bottom->xAxis->setRange(1, count + 100);
-        ui->spectroMeter1_bottom->yAxis->rescale(true);
+        customPlot->graph(0)->setData(x, y);
+        customPlot->xAxis->setRange(1, count + 100);
+        customPlot->yAxis->rescale(true);
 
         // QCustomPlot* plot = ui->spectroMeter1_bottom;
 
-        double y_min = ui->spectroMeter1_bottom->yAxis->range().lower;
-        double y_max = ui->spectroMeter1_bottom->yAxis->range().upper;
+        double y_min = customPlot->yAxis->range().lower;
+        double y_max = customPlot->yAxis->range().upper;
         y_max = y_min + (y_max - y_min) *1.1;
-        ui->spectroMeter1_bottom->yAxis->setRange(y_min-1, y_max);
-        ui->spectroMeter1_bottom->replot(QCustomPlot::rpQueuedReplot);
+        customPlot->yAxis->setRange(y_min-1, y_max);
+        customPlot->replot(QCustomPlot::rpQueuedReplot);
     });
 
     connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
         Q_UNUSED(index);
+        index = index - (mCurrentPageIndex-1)*6;
+        if (index < 1 || index > 6)
+            return;
+
         QVector<double> x, y;
         for(int i=0; i<data.size(); ++i)
         {
@@ -570,11 +595,13 @@ void CentralWidget::initUi()
             y << data.at(i);
         }
 
-        ui->spectroMeter1_top->graph(0)->setData(x, y);
-        ui->spectroMeter1_top->xAxis->rescale(true);
-        // ui->spectroMeter1_top->yAxis->rescale(false);
-        //ui->spectroMeter1_top->yAxis->setRange(0, 10000);
-        ui->spectroMeter1_top->replot(QCustomPlot::rpQueuedReplot);
+        QMutexLocker locket(&mMutexSwitchPage);
+        QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(index));
+        customPlot->graph(0)->setData(x, y);
+        customPlot->xAxis->rescale(true);
+        customPlot->yAxis->rescale(true);
+        //customPlot->yAxis->setRange(0, 10000);
+        customPlot->replot(QCustomPlot::rpQueuedReplot);
     });
 
     // QTimer *timer = new QTimer(this);
@@ -1091,40 +1118,6 @@ void CentralWidget::on_pushButton_startMeasureDistance_clicked()
 void CentralWidget::on_pushButton_stopMeasureDistance_clicked()
 {
 
-}
-
-#define SAMPLE_TIME 10
-void CentralWidget::showRealCurve(const QMap<quint8, QVector<quint16>>& data)
-{
-    //实测曲线
-    // for (int i=1; i<=6; ++i){
-    //     QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-    //     initCustomPlot(spectroMeter_top, tr("能谱时间演变 时间/ns"), tr("计数率/cps"), 1);
-    //     QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-    //     initCustomPlot(spectroMeter_bottom, tr("实时能谱 时间/ns"), tr("计数率/cps"), 1);
-    // }
-
-    // QColor clrLine[] = {Qt::green, Qt::blue, Qt::red, Qt::cyan};
-    // QVector<double> keys, values;
-    // QVector<QColor> colors;
-    // for (int channel=1; channel<=4; ++channel){
-    //     keys.clear();
-    //     values.clear();
-    //     colors.clear();
-    //     QVector<quint16> chData = data[channel];
-    //     if (chData.size() > 0){
-    //         for (int i=0; i<chData.size(); ++i){
-    //             keys << i * SAMPLE_TIME;
-    //             values << chData[i];
-    //             colors << clrLine[channel-1];
-    //         }
-    //         ui->customPlot->graph(channel - 1)->setData(keys, values, colors);
-    //     }
-    // }
-    // ui->customPlot->xAxis->rescale(true);
-    // ui->customPlot->yAxis->rescale(true);
-    // //ui->customPlot->yAxis->setRange(0, 4100);
-    // ui->customPlot->replot(QCustomPlot::rpQueuedReplot);
 }
 
 void CentralWidget::on_action_about_triggered()

@@ -50,7 +50,6 @@ public:
 
 public slots:
     void slotWriteLog(const QString &msg, QtMsgType msgType = QtDebugMsg);//操作日志
-    void showRealCurve(const QMap<quint8, QVector<quint16>>& data);//实测曲线
 
 signals:
     void sigUpdateBootInfo(const QString &msg);
@@ -106,6 +105,7 @@ private:
     DetSettingWindow *mDetSettingWindow = nullptr;
     bool mIsMeasuring = false;
     quint8 mCurrentPageIndex = 1;
+    QMutex mMutexSwitchPage;
 
     bool mIsDarkTheme = true;
     bool mThemeColorEnable = true;
