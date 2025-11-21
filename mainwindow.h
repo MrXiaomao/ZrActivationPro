@@ -64,6 +64,8 @@ private slots:
 
     void on_action_open_triggered();
 
+    void onTriggerModelChanged(int index);
+
     void on_action_startMeasure_triggered();
 
     void on_action_stopMeasure_triggered();

@@ -76,6 +76,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
         qInfo().nospace().nospace() << "Detector#" << index << ": the measurement is start, get ready to receive data";//开始实验，准备接收数据
     });
+
     //测量结束
     connect(commHelper, &CommHelper::measureStop, this, [=](quint8 index){
         ui->action_autoMeasure->setEnabled(true);
@@ -109,6 +110,9 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 CentralWidget::~CentralWidget()
 {
     GlobalSettings settings;
+    // 保存触发模式
+    settings.setValue("Trigger/Mode", ui->com_triggerModel->currentIndex());
+
     QSplitter *splitterH1 = this->findChild<QSplitter*>("splitterH1");// QSplitter(Qt::Horizontal,this);
     if (splitterH1){
         settings.setValue("Global/splitterH1/State", splitterH1->saveState());
@@ -143,6 +147,18 @@ void CentralWidget::initUi()
         ui->spectroMeterWidget5->setVisible(false);
         ui->spectroMeterWidget6->setVisible(false);
     }
+
+    // 触发类型
+    {
+        GlobalSettings settings;
+        // 恢复触发模式
+        int triggerMode = settings.value("Trigger/Mode", 0).toInt();
+        ui->com_triggerModel->setCurrentIndex(triggerMode); // 或者从配置文件中读取
+        onTriggerModelChanged(triggerMode);
+    }
+
+    connect(ui->com_triggerModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &CentralWidget::onTriggerModelChanged);
 
     mClientPeersWindow = new ClientPeersWindow();
     // mClientPeersWindow->setAttribute(Qt::WA_TranslucentBackground);
@@ -220,21 +236,6 @@ void CentralWidget::initUi()
             spectroMeter_bottom->graph(0)->data().clear();
         }
     });
-
-    // 工作日志
-    {
-        QGraphicsScene *scene = new QGraphicsScene(this);
-        scene->setObjectName("logGraphicsScene");
-        QGraphicsTextItem *textItem = scene->addText(tr("工作日志"));
-        textItem->setObjectName("logGraphicsTextItem");
-        textItem->setPos(0,0);
-        //textItem->setRotation(-90);
-        ui->graphicsView_2->setFrameStyle(0);
-        ui->graphicsView_2->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        ui->graphicsView_2->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        ui->graphicsView_2->setFixedHeight(30);
-        ui->graphicsView_2->setScene(scene);
-    }
 
     connect(ui->centralHboxTabWidget,&QTabWidget::tabCloseRequested,this,[=](int index){
         if (index != 0){
@@ -538,7 +539,7 @@ void CentralWidget::initUi()
 
     for (int i=1; i<=6; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        initCustomPlot(i, spectroMeter_top, tr("时间/ns"), tr("ADC采样值"), tr("实时波形"), 1);
+        initCustomPlot(i, spectroMeter_top, tr("时间/s"), tr("计数"), tr("计数曲线"), 1);
         QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
         initCustomPlot(i, spectroMeter_bottom, tr("道址"), tr("计数"), tr("累积能谱"), 1);
     }
@@ -1030,6 +1031,31 @@ void CentralWidget::on_action_stopServer_triggered()
     label_LocalServer->setText(tr("本地网络服务：断开"));
 }
 
+/**
+ * @brief CentralWidget::onTriggerModelChanged 触发模式选择：软件触发/外触发
+ * @param index 下拉框序号，触发类型
+ */
+void CentralWidget::onTriggerModelChanged(int index)
+{
+    switch(index) {
+    case 0: // 软件触发
+        ui->label_7->setVisible(false);
+        ui->lineEdit_triggerflag->setVisible(false);
+        ui->dateTime_shotTime->setEnabled(true);
+        break;
+    case 1: // 外触发
+        ui->label_7->setVisible(true);
+        ui->lineEdit_triggerflag->setVisible(true);
+        ui->dateTime_shotTime->setEnabled(false);
+        break;
+    default:
+        break;
+    }
+
+    // 实时保存触发模式
+    GlobalSettings settings;
+    settings.setValue("Trigger/Mode", index);
+}
 
 void CentralWidget::on_action_startMeasure_triggered()
 {
@@ -1229,9 +1255,12 @@ void CentralWidget::applyColorTheme()
             checkBox->setStyleSheet(styleSheet);
         }
 
-        QGraphicsScene *scene = this->findChild<QGraphicsScene*>("logGraphicsScene");
-        QGraphicsTextItem *textItem = (QGraphicsTextItem*)scene->items()[0];
-        textItem->setHtml(mIsDarkTheme ? QString("<font color='white'>工作日志</font>") : QString("<font color='black'>工作日志</font>"));
+        // 更新工作日志标签颜色
+        QLabel* workLogLabel = this->findChild<QLabel*>("label_workLog");
+        if (workLogLabel) {
+            QString style = mIsDarkTheme ? "color: white;" : "color: black;";
+            workLogLabel->setStyleSheet(style);
+        }
 
         // 窗体背景色
         customPlot->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Window) : Qt::white));
