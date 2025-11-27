@@ -12,6 +12,8 @@
 #include <QFileInfo>
 #include <QFileSystemWatcher>
 
+#include <cstring>      // 用于内存初始化（如memset）
+#include <QtEndian> //qFromBigEndian需要
 // 子能谱数据包信息
 #pragma pack(push, 1)  // 确保字节对齐
 struct SubSpectrumPacket {
@@ -19,13 +21,42 @@ struct SubSpectrumPacket {
     quint16 dataType;      // 00D2
     quint32 spectrumSeq;   // 能谱序号
     quint32 measureTime;   // 测量时间
-    quint32 deadTime;      // 死时间
-    quint16 spectrumSubNo;    // 能谱编号
+    quint32 deathTime;     // 死时间
+    quint16 spectrumSubNo; // 能谱编号
     quint32 spectrum[256]; // 能谱数据 256*32bit
     quint32 timeMs;        // 分秒-毫秒
     quint32 reserved1;     // 保留位 0000 0000
     quint32 reserved2;     // 保留位 0000 0000
     quint32 tail;          // FFFF CCD1
+
+    // 构造函数初始化
+    SubSpectrumPacket()
+        : spectrumSeq(0),
+        measureTime(0),
+        deathTime(0),
+        spectrumSubNo(0) {
+        // 初始化能谱数组
+        std::memset(spectrum, 0, sizeof(spectrum));
+    }
+
+    // 添加字节序转换成员函数
+    // 字节序问题：x86 是小端序，网络数据通常是大端序
+    void convertNetworkToHost() {
+        // 处理字节序（Windows是小端序，网络数据通常是大端序）
+        header = qFromBigEndian<quint32>(header);
+        dataType = qFromBigEndian<quint16>(dataType);
+        spectrumSeq = qFromBigEndian<quint32>(spectrumSeq);
+        measureTime = qFromBigEndian<quint32>(measureTime);
+        deathTime = qFromBigEndian<quint32>(deathTime);
+        spectrumSubNo = qFromBigEndian<quint16>(spectrumSubNo);
+        timeMs = qFromBigEndian<quint32>(timeMs);
+        tail = qFromBigEndian<quint32>(tail);
+
+        // 转换能谱数据数组
+        for (int i = 0; i < 256; ++i) {
+            spectrum[i] = qFromBigEndian<quint32>(spectrum[i]);
+        }
+    }
 };
 #pragma pack(pop)
 
@@ -34,9 +65,9 @@ struct SubSpectrumPacket {
 struct FullSpectrum {
     quint32 sequence;      // 能谱序号
     quint32 measureTime;   // 测量时间,单位ms
-    quint32 deadTime;      // 死时间,单位*10ns
-    quint32 spectrumData[8192]; // 8192道完整数据
-    QDateTime completeTime; // 完成时间
+    quint32 deathTime;      // 死时间,单位*10ns
+    quint32 spectrum[8192]; // 8192道完整数据
+    QDateTime completeTime; // 完成时间,记录一个完整能谱数据接收完的北京时间
     bool isComplete;       // 是否完整
     QSet<quint16> receivedPackets; // 已收到的包编号
 };

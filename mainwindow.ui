@@ -408,6 +408,13 @@
             </spacer>
            </item>
            <item>
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>单通道测量</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="pushButton_startMeasure">
              <property name="text">
               <string>开始实验</string>
@@ -496,7 +503,7 @@
         <item row="0" column="0">
          <widget class="QStackedWidget" name="stackedWidget">
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="spectroMeterPageInfoWidget">
            <layout class="QGridLayout" name="gridLayout_2">

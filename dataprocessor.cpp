@@ -6,6 +6,7 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
     : CommandAdapter(parent)
     , mIndex(index)
 {
+    m_parseData = nullptr;
     mAccumulateSpec.resize(8192);
     mDataProcessThread = new QLiteThread(this);
     mDataProcessThread->setWorkThreadProc([=](){
@@ -51,6 +52,12 @@ DataProcessor::~DataProcessor()
         mDataReady = true;
         mDataCondition.wakeAll();
         mDataProcessThread->wait();
+    }
+
+    // 析构时确保释放资源
+    if (m_parseData) {
+        delete m_parseData;
+        m_parseData = nullptr;
     }
 }
 
@@ -122,7 +129,16 @@ void DataProcessor::startMeasure(WorkMode workMode)
     mCachePool.clear();
     mAccumulateSpec.clear();
     mAccumulateSpec.resize(8192);
+    mCurrentSpec.clear();
+    mCurrentSpec.resize(8192);
     mFullSpectrums.clear();
+
+    if (m_parseData) {
+        delete m_parseData;
+        m_parseData = nullptr;
+    }
+    // 创建新对象，初始化测量状态
+    m_parseData = new ParseData();
 
     //测量前下发配置
     HDF5Settings *settings = HDF5Settings::instance();
@@ -235,7 +251,7 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
         const int targetOffset = (subSpecPackket.spectrumSubNo-1) * 256; // 第n个子包对应偏移 n*256 道
 
         // 拷贝子能谱数据到完整能谱（固定数组直接操作内存，高效安全）
-        memcpy(&fullSpectrum->spectrumData[targetOffset], // 目标地址：完整能谱对应偏移
+        memcpy(&fullSpectrum->spectrum[targetOffset], // 目标地址：完整能谱对应偏移
                subSpecPackket.spectrum,                   // 源数据：当前子包256道数据
                kSubSpectrumSize);                         // 拷贝字节数：256*4=1024字节
 
@@ -252,15 +268,13 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             // 5. 提取元数据（测量时间、死时间）- 从当前子包提取（确保数据完整性）
             const int kMetaDateMinLen = 18; // 测量时间(10-13) + 死时间(14-17)，需至少18字节
             fullSpectrum->measureTime = subSpecPackket.measureTime;
-            fullSpectrum->deadTime = subSpecPackket.deadTime;
+            fullSpectrum->deathTime = subSpecPackket.deathTime;
 
             // 6. 发送完整能谱信号（使用 QueuedConnection 避免线程阻塞）
             // 注意：QVector 拷贝完整数据，避免多线程访问冲突
-            // QVector<quint32> completeData;
-            // completeData.reserve(8192); // 预分配内存，提升效率
             for (int i = 0; i < 8192; ++i) {
-                // completeData.append(fullSpectrum->spectrumData[i]);
-                mAccumulateSpec[i] += fullSpectrum->spectrumData[i];
+                mAccumulateSpec[i] += fullSpectrum->spectrum[i];
+                mCurrentSpec[i] = fullSpectrum->spectrum[i];
             }
 
             // 异步发送信号（确保接收方在主线程处理，避免UI阻塞）
@@ -269,14 +283,16 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
                 "reportSpectrumCurveData",
                 Qt::QueuedConnection,
                 Q_ARG(quint8, mIndex),          // 设备索引
-                Q_ARG(QVector<quint32>, mAccumulateSpec) // 完整8192道数据
+                Q_ARG(QVector<quint32>, mCurrentSpec) // 完整8192道数据
                 );
 
-            // 7. 清理已完成的能谱数据（释放内存，可选：若需保留历史数据可注释）
-            // mFullSpectrums.remove(spectrumSeq);
             qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq
                      << ", specMeasureTime(ms):" << fullSpectrum->measureTime
-                     << ", deathTime(*10ns):" << fullSpectrum->deadTime;
+                     << ", deathTime(*10ns):" << fullSpectrum->deathTime;
+            m_parseData->mergeSpecTime_online(*fullSpectrum);
+
+            // 7. 清理已完成的能谱数据（释放内存，可选：若需保留历史数据可注释）
+            mFullSpectrums.remove(spectrumSeq);
         }
     }
 };
@@ -300,19 +316,7 @@ bool DataProcessor::extractSpectrumData(const QByteArray& packetData, SubSpectru
     memcpy(&packet, packetData.constData(), sizeof(SubSpectrumPacket));
 
     // 处理字节序（Windows是小端序，网络数据通常是大端序）
-    packet.header = qFromBigEndian<quint32>(packet.header);
-    packet.dataType = qFromBigEndian<quint16>(packet.dataType);
-    packet.spectrumSeq = qFromBigEndian<quint32>(packet.spectrumSeq);
-    packet.measureTime = qFromBigEndian<quint32>(packet.measureTime);
-    packet.deadTime = qFromBigEndian<quint32>(packet.deadTime);
-    packet.spectrumSubNo = qFromBigEndian<quint16>(packet.spectrumSubNo);
-    packet.timeMs = qFromBigEndian<quint32>(packet.timeMs);
-    packet.tail = qFromBigEndian<quint32>(packet.tail);
-
-    // 拷贝能谱数据并处理字节序
-    for (int i = 0; i < 256; ++i) {
-        packet.spectrum[i] = qFromBigEndian<quint32>(packet.spectrum[i]);
-    }
+    packet.convertNetworkToHost();
 
     // 调试信息
     qDebug() << "Get a subSpectrum Packets, spectrumSeq:" << packet.spectrumSeq

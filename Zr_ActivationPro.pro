@@ -21,8 +21,10 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     netsettingwindow.cpp \
+    parsedata.cpp \
     qcomboboxdelegate.cpp \
-    switchbutton.cpp
+    switchbutton.cpp \
+    sysutils.cpp
 
 HEADERS += \
     PeerConnection.h \
@@ -32,13 +34,15 @@ HEADERS += \
     dataprocessor.h \
     detsettingwindow.h \
     localsettingwindow.h \
+    parsedata.h \
     qcomboboxdelegate.h \
     qlitethread.h \
     commhelper.h \
     globalsettings.h \
     mainwindow.h \
     netsettingwindow.h \
-    switchbutton.h
+    switchbutton.h \
+    sysutils.h
 
 FORMS += \
     clientpeerswindow.ui \
@@ -135,6 +139,7 @@ include($$PWD/../3rdParty/QGoodWindow/QGoodCentralWidget/QGoodCentralWidget.pri)
 include($$PWD/../3rdParty/hdf5/C++/hdf5Wrapper.pri)
 include($$PWD/../3rdParty/QNtpClient/QNtpClient.pri)
 include($$PWD/../3rdParty/QTelnet/QTelnet.pri)
+include($$PWD/../3rdParty/alglib-cpp/alglib.pri)
 
 # 添加config配置
 # CONFIG += precompile_header

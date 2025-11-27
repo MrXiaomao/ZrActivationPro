@@ -74,6 +74,9 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
+        // 重置该探测器的能谱数据
+        resetDetectorSpectrum(index);
+
         qInfo().nospace().nospace() << "Detector#" << index << ": the measurement is start, get ready to receive data";//开始实验，准备接收数据
     });
 
@@ -208,13 +211,21 @@ void CentralWidget::initUi()
                 label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
         }
 
-        QMutexLocker locket(&mMutexSwitchPage);
-        for (int i=1; i<=6; ++i){
-            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-            spectroMeter_top->graph(0)->data().clear();
-            spectroMeter_bottom->graph(0)->data().clear();
+        //清空图像数据
+        {
+            QMutexLocker locket(&mMutexSwitchPage);
+            for (int i=1; i<=6; ++i){
+                QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+                QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+                spectroMeter_top->graph(0)->data().clear();
+                spectroMeter_bottom->graph(0)->data().clear();
+            }
         }
+
+        //展示当前页面的六个能谱图
+        showSpectrumDisplay(mCurrentPageIndex);
+        //展示当前页面的六个计数率图
+        showCountRateDisplay(mCurrentPageIndex);
     });
 
     connect(pagedownButton, &QToolButton::clicked, this, [=](){
@@ -228,13 +239,21 @@ void CentralWidget::initUi()
                 label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
         }
 
-        QMutexLocker locket(&mMutexSwitchPage);
-        for (int i=1; i<=6; ++i){
-            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-            spectroMeter_top->graph(0)->data().clear();
-            spectroMeter_bottom->graph(0)->data().clear();
+
+        {
+            QMutexLocker locket(&mMutexSwitchPage);
+            for (int i=1; i<=6; ++i){
+                QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+                QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+                spectroMeter_top->graph(0)->data().clear();
+                spectroMeter_bottom->graph(0)->data().clear();
+            }
         }
+
+        //展示当前页面的六个能谱图
+        showSpectrumDisplay(mCurrentPageIndex);
+        //展示当前页面的六个计数率图
+        showCountRateDisplay(mCurrentPageIndex);
     });
 
     connect(ui->centralHboxTabWidget,&QTabWidget::tabCloseRequested,this,[=](int index){
@@ -551,36 +570,20 @@ void CentralWidget::initUi()
 
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
-        index = index - (mCurrentPageIndex-1)*6;
-        if (index < 1 || index > 6)
+        // 将 QVector<quint32> 转换为 int 数组
+        if (data.size() != 8192) {
+            qWarning() << "Detector" << index << "spectrum data size mismatch:" << data.size() << "expected 8192";
             return;
-
-        QVector<double> x, y;
-        int count = data.size();
-        for(int i=0; i<count; ++i)
-        {
-            x << i;
-            y << data.at(i);
         }
 
-        QMutexLocker locket(&mMutexSwitchPage);
-        QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(index));
+        // 转换为 C 风格数组
+        int spectrumData[8192];
+        for (int i = 0; i < 8192; ++i) {
+            spectrumData[i] = data[i];
+        }
 
-        //设置曲线的粗细，2 像素
-        customPlot->graph(0)->setPen(QPen(Qt::blue, 2));
-        // customPlot->xAxis->setPadding(5);
-
-        customPlot->graph(0)->setData(x, y);
-        customPlot->xAxis->setRange(1, count + 100);
-        customPlot->yAxis->rescale(true);
-
-        // QCustomPlot* plot = ui->spectroMeter1_bottom;
-
-        double y_min = customPlot->yAxis->range().lower;
-        double y_max = customPlot->yAxis->range().upper;
-        y_max = y_min + (y_max - y_min) *1.1;
-        customPlot->yAxis->setRange(y_min-1, y_max);
-        customPlot->replot(QCustomPlot::rpQueuedReplot);
+        // 更新探测器数据
+        updateDetectorData(index, spectrumData);
     });
 
     connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
@@ -687,13 +690,16 @@ void CentralWidget::initNet()
     });
 }
 
-void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, QString str_title, int graphCount/* = 1*/)
+void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, 
+        QString str_title, int graphCount/* = 1*/)
 {
     customPlot->installEventFilter(this);
     customPlot->setProperty("index", index);
     
     // 创建标题文本元素
-    QCPTextElement *title = new QCPTextElement(customPlot, str_title, QFont("Microsoft YaHei", 14, QFont::Bold));
+    QCPTextElement *title = new QCPTextElement(customPlot, str_title, QFont("Microsoft YaHei", 12, QFont::Bold));
+    // 关键：把默认外边距/内边距压到最小
+    title->setMargins(QMargins(0, 0, 0, 0));
 
     // 添加到图表布局（位于最上方）
     customPlot->plotLayout()->insertRow(0);
@@ -736,7 +742,7 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     customPlot->xAxis2->ticker()->setTickCount(graphCount == 1 ? 10 : 5);
 
     //设置轴标签名称
-    customPlot->xAxis->setLabel(axisXLabel);
+    customPlot->xAxis->setLabel(str_title + axisXLabel);
     customPlot->yAxis->setLabel(axisYLabel);
 
     // 添加散点图
@@ -881,7 +887,7 @@ bool CentralWidget::eventFilter(QObject *watched, QEvent *event){
         }
 
         else if (event->type() == QEvent::MouseButtonDblClick){
-            QMouseEvent *e = reinterpret_cast<QMouseEvent*>(event);
+            /*QMouseEvent *e = reinterpret_cast<QMouseEvent*>(event);
             if (watched->inherits("QCustomPlot")){
                 QCustomPlot* customPlot = qobject_cast<QCustomPlot*>(watched);
                 if (e->button() == Qt::LeftButton) {
@@ -900,7 +906,7 @@ bool CentralWidget::eventFilter(QObject *watched, QEvent *event){
                     //         spectroMeterWidget->hide();
                     // }
                 }
-            }
+            }*/
         }
     }
 
@@ -1384,6 +1390,222 @@ void CentralWidget::on_pushButton_saveAs_clicked()
     }
 }
 
+// 更新探测器数据
+void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) {
+    if (detectorId < 1 || detectorId > 24) {
+        qWarning() << "Invalid detector ID:" << detectorId;
+        return;
+    }
+
+    DetectorData &data = m_detectorData[detectorId];
+
+    // 累积能谱
+    double countRate = 0.0;
+    for (int i = 0; i < 2048; ++i) {
+        countRate += newSpectrum[i];
+        data.spectrum[i] += newSpectrum[i];
+    }
+
+    // 更新计数率
+    data.countRateHistory.append(countRate);
+
+    // 更新界面显示
+    updateSpectrumDisplay(detectorId, data.spectrum);
+
+    // 更新计数率显示（如果有对应的图表）
+    updateCountRateDisplay(detectorId, countRate);
+}
+
+// 重置能谱
+void CentralWidget::resetDetectorSpectrum(int detectorId) {
+    auto it = m_detectorData.find(detectorId);
+    if (it == m_detectorData.end())
+        return;
+
+    // 清空能谱
+    for (int i = 0; i < 8192; ++i)
+        it->spectrum[i] = 0;
+
+    // 清空计数率历史并释放内存
+    QVector<double>().swap(it->countRateHistory);
+    // 如果是 QList<double>，同样写法：QList<double>().swap(it->countRateHistory);
+
+    qInfo() << "Detector" << detectorId << "spectrum and countRateHistory reset";
+}
+
+// 获取探测器数据
+DetectorData CentralWidget::getDetectorData(int detectorId) const {
+    return m_detectorData.value(detectorId, DetectorData{});
+}
+
+// 检查探测器是否在线
+bool CentralWidget::isDetectorOnline(int detectorId) const {
+    return m_detectorData.contains(detectorId);
+}
+
+// 获取在线探测器列表
+QList<int> CentralWidget::getOnlineDetectors() const {
+    return m_detectorData.keys();
+}
+
+// 更新能谱、计数率显示
+void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum[]) {
+    // 计算在页面中的索引
+    int displayIndex = detectorId - (mCurrentPageIndex - 1) * 6;
+    if (displayIndex < 1 || displayIndex > 6) {
+        return;  // 不在当前显示页面
+    }
+
+    QMutexLocker locker(&mMutexSwitchPage);
+    QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(displayIndex));
+    if (!customPlot) return;
+
+    // 转换数据格式
+    QVector<double> x, y;
+    for (int i = 0; i < 2048; ++i) {
+        x << i;
+        y << spectrum[i];
+    }
+
+    // 更新图表
+    customPlot->graph(0)->setData(x, y);
+    customPlot->xAxis->setRange(0, 2048);
+    customPlot->yAxis->rescale(true);
+
+    double y_min = customPlot->yAxis->range().lower;
+    double y_max = customPlot->yAxis->range().upper;
+    y_max = y_min + (y_max - y_min) * 1.1;
+    customPlot->yAxis->setRange(y_min - 1, y_max);
+    customPlot->replot(QCustomPlot::rpQueuedReplot);
+}
+
+// 添加计数率显示更新函数
+void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
+    // 计算在页面中的索引
+    int displayIndex = detectorId - (mCurrentPageIndex - 1) * 6;
+    if (displayIndex < 1 || displayIndex > 6) {
+        return;  // 不在当前显示页面
+    }
+DetectorData &data = m_detectorData[detectorId];
+    QMutexLocker locker(&mMutexSwitchPage);
+    QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(displayIndex));
+    if (!customPlot) return;
+
+    // 获取当前时间（使用相对时间或绝对时间）
+    static QElapsedTimer timer;
+    if (!timer.isValid()) {
+        timer.start();
+    }
+    // double currentTime = timer.elapsed() / 1000.0; // 转换为秒
+
+    int currentTime = data.countRateHistory.size();
+    // 添加新的数据点
+    customPlot->graph(0)->addData(currentTime, countRate);
+
+    // 显示最近300秒
+    const int WINDOW = 300;
+    customPlot->xAxis->setRange(qMax(0.0, currentTime*1.0 - WINDOW), currentTime + 1);
+
+    // y轴范围只由最近300秒的y决定
+    auto range = calcRecentYRange(data.countRateHistory, WINDOW);
+    double y_min = range.first;
+    double y_max = range.second;
+
+    // 稍微留点头部空间
+    double pad = (y_max - y_min) * 0.1;
+    customPlot->yAxis->setRange(y_min - pad, y_max + pad);
+
+    customPlot->replot(QCustomPlot::rpQueuedReplot);
+}
+
+// 展示当前页面的六个能谱图
+void CentralWidget::showSpectrumDisplay(int currentPageIndex)
+{
+    // 备份当前页面索引，暂时切换到要展示的页面，方便复用 updateSpectrumDisplay
+    int oldPageIndex = mCurrentPageIndex;
+    mCurrentPageIndex = currentPageIndex;
+
+    int startDetectorId = (currentPageIndex - 1) * 6 + 1;
+    int endDetectorId   = startDetectorId + 5;
+
+    for (int detectorId = startDetectorId; detectorId <= endDetectorId; ++detectorId) {
+        int displayIndex = detectorId - (currentPageIndex - 1) * 6; // 1~6
+
+        QMutexLocker locker(&mMutexSwitchPage);
+        QCustomPlot *plot = this->findChild<QCustomPlot*>(
+            QString("spectroMeter%1_bottom").arg(displayIndex));
+        if (!plot) {
+            continue;
+        }
+
+        // 如果这个探测器有数据，就画出来；否则清空这一个图
+        auto it = m_detectorData.find(detectorId);
+        if (it != m_detectorData.end()) {
+            // 复用已有的更新逻辑
+            locker.unlock(); // updateSpectrumDisplay 内部也会加锁
+            updateSpectrumDisplay(detectorId, it->spectrum);
+        } else {
+            plot->graph(0)->data()->clear();
+            plot->replot(QCustomPlot::rpQueuedReplot);
+        }
+    }
+
+    // 恢复原来的页面索引
+    mCurrentPageIndex = oldPageIndex;
+}
+
+// 展示当前页面的六个计数率图
+void CentralWidget::showCountRateDisplay(int currentPageIndex)
+{
+    int startDetectorId = (currentPageIndex - 1) * 6 + 1;
+    int endDetectorId   = startDetectorId + 5;
+
+    for (int detectorId = startDetectorId; detectorId <= endDetectorId; ++detectorId) {
+        int displayIndex = detectorId - (currentPageIndex - 1) * 6; // 1~6
+
+        QMutexLocker locker(&mMutexSwitchPage);
+        QCustomPlot *plot = this->findChild<QCustomPlot*>(
+            QString("spectroMeter%1_top").arg(displayIndex));
+        if (!plot) {
+            continue;
+        }
+
+        auto it = m_detectorData.find(detectorId);
+        if (it == m_detectorData.end() || it->countRateHistory.isEmpty()) {
+            // 没有数据，清空
+            plot->graph(0)->data()->clear();
+            plot->replot(QCustomPlot::rpQueuedReplot);
+            continue;
+        }
+
+        // 用历史计数率重绘整条曲线
+        QVector<double> x, y;
+        x.reserve(it->countRateHistory.size());
+        y.reserve(it->countRateHistory.size());
+
+        // 这里用采样序号作为 X 轴（0,1,2,...），
+        // 如果你有真实时间戳，也可以改成时间。
+        for (int i = 0; i < it->countRateHistory.size(); ++i) {
+            x << i;
+            y << it->countRateHistory[i];
+        }
+
+        plot->graph(0)->setData(x, y);
+
+        // X 轴范围：完整显示历史数据
+        plot->xAxis->setRange(0, qMax(1, x.size()));
+
+        // Y 轴自适应
+        plot->yAxis->rescale(true);
+        double y_min = plot->yAxis->range().lower;
+        double y_max = plot->yAxis->range().upper;
+        y_max = y_min + (y_max - y_min) * 1.1;
+        plot->yAxis->setRange(y_min - 1, y_max);
+
+        plot->replot(QCustomPlot::rpQueuedReplot);
+    }
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     : QGoodWindow(parent) {
@@ -1469,7 +1691,7 @@ void CentralWidget::on_action_localService_triggered()
     w->showNormal();
 }
 
-
+//单通道测量，单独测量某个通道
 void CentralWidget::on_pushButton_startMeasure_clicked()
 {
     QVector<double> keys, values;
@@ -1516,11 +1738,29 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
     commHelper->setShotInformation(shotDir, shotNum);
 
     // 再发开始测量指令
-    quint8 index = ui->tableWidget_detector->selectedItems()[0]->row() + 1;
+    auto items = ui->tableWidget_detector->selectedItems();
+    if (items.isEmpty()) {
+        // 没有选中任何单元格
+        QMessageBox::warning(
+            this,
+            tr("单通道测量——提示"),
+            tr("请先选择一个探测器通道，再执行此操作。")
+            );
+        return;  // 或者给个提示
+    }
+    int row = items.first()->row();
+
+    quint8 index = row + 1;
     if (ui->action_waveformMode->isChecked())
+    {
+        qInfo()<<"单通道测量，波形测量模式";
         commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
+    }
     else if (ui->action_spectrumMode->isChecked())
+    {
+        qInfo()<<"单通道测量，能谱测量模式";
         commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
+    }
 }
 
 

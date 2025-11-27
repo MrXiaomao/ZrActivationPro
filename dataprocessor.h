@@ -19,6 +19,7 @@
 #include "qlitethread.h"
 #include "commandadapter.h"
 #include "globalsettings.h"
+#include "parsedata.h"
 
 class DataProcessor : public CommandAdapter
 {
@@ -95,6 +96,8 @@ private:
     QMutex mSpectrumLocker;
     QMap<quint32, FullSpectrum> mFullSpectrums; // 按能谱序号存储拼接中的能谱
     QVector<quint32> mAccumulateSpec;
+    QVector<quint32> mCurrentSpec;
+    ParseData* m_parseData;
 };
 
 #endif // DATAPROCESSOR_H

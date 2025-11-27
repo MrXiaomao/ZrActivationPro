@@ -554,8 +554,9 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                     /*包头/包尾不对*/
                     // qDebug() << "Invalid1: " << chunk.toHex(' ');
 
-                    /*删除异常数据继续寻找*/
-                    cachePool.remove(0, onePkgSize);
+                    // 包头/包尾不对 重新开始寻找包头
+                    cachePool.remove(0, 4);
+                    // cachePool.remove(0, onePkgSize); //删除异常数据继续寻找
                     continue;
                 }
             }
