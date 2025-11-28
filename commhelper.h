@@ -10,7 +10,6 @@
 #include <QTimer>
 #include <QEventLoop>
 #include "TcpAgentServer.h"
-
 #include "dataprocessor.h"
 #include "QTelnet.h"
 
@@ -68,7 +67,6 @@ public:
     */
     bool saveAs(QString dstPath);
 
-signals:
     Q_SIGNAL void connectPeerConnection(QString,quint16);//客户端上线
     Q_SIGNAL void disconnectPeerConnection(QString,quint16);//客户端上线
 
@@ -87,21 +85,24 @@ signals:
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint16>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
 
+    Q_SIGNAL void reportPoePowerStatus(quint8, bool); //POE电源开关
+
     void exportEnergyPlot(const QString fileDir, const QString triggerTime);
 
-private:    
     /*********************************************************
      交换机指令
     ***********************************************************/
     /*
      打开交换机POE口输出电源
     */
-    void openSwitcherPOEPower();
+    bool openSwitcherPOEPower(quint8 port = 0);
+    void openNextSwitcherPOEPower();
 
     /*
      关闭交换机POE口输出电源
     */
-    void closeSwitcherPOEPower();
+    bool closeSwitcherPOEPower(quint8 port = 0);
+    void closeNextSwitcherPOEPower();
 
 private:
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
@@ -111,8 +112,17 @@ private:
     QTelnet *mTelnet = nullptr;//华为交换机控制POE电源
     QTimer *mSwitcherStatusRefreshTimer = nullptr;
     QEventLoop mSwitcherEventLoop;
-    bool mSwitcherIsBusy = false;
+    quint8 mCurrentQueryPort = 0;
+    bool mSwitcherIsBusy = false;    
     bool mSwitcherIsLoginOk = false;// 交换机是否登录成功
+    bool mSwitcherInSystemView = false;// 交换机是否处于视图模式
+    bool mBatchOn = false;//批量开
+    bool mSingleOn = false;//单开
+    bool mBatchOff = false;//批量关
+    bool mSingleOff = false;//批量关
+    QList<QString> mCommands;
+    QString mCurrentCommand;
+    QByteArray mRespondString;
 
     QString mShotDir;// 保存路径
     QString mShotNum;// 测量发次

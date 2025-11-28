@@ -71,7 +71,9 @@ void SwitchButton::mousePressEvent(QMouseEvent *)
         endX = 0;
     }
 
-    timer->start();
+    //timer->start();
+    startX = endX;
+    update();
 }
 
 void SwitchButton::resizeEvent(QResizeEvent *)
@@ -260,7 +262,25 @@ void SwitchButton::setChecked(bool checked)
         if (!autoChecked)
             emit toggled(checked);
 
-        update();
+        //每次移动的步长为宽度的 50分之一
+        step = qMax(1, width() / 50);
+
+        //状态切换改变后自动计算终点坐标
+        if (checked) {
+            if (buttonStyle == ButtonStyle_Rect) {
+                endX = width() - width() / 2;
+            } else if (buttonStyle == ButtonStyle_CircleIn) {
+                endX = width() - height();
+            } else if (buttonStyle == ButtonStyle_CircleOut) {
+                endX = width() - height() + space;
+            }
+        } else {
+            endX = 0;
+        }
+
+        startX = endX;
+        //timer->start();
+        this->update();
     }
 }
 

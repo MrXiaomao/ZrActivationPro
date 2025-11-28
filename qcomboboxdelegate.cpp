@@ -18,6 +18,7 @@ QComboBoxDelegate::~QComboBoxDelegate() {
 QWidget *QComboBoxDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     // 创建自己需要的控件进行返回
     QComboBox *editor = new QComboBox(parent);
+    editor->setEditable(true);
 
     return editor;
 }

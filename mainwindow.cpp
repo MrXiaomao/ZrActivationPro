@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "qcustomplot.h"
 #include "globalsettings.h"
+#include "switchbutton.h"
 
 CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
@@ -9,8 +10,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     , mIsDarkTheme(isDarkTheme)
     , mainWindow(static_cast<MainWindow *>(parent))
 {
-    ui->setupUi(this);    
-    emit sigUpdateBootInfo(tr("加载界面..."));
+    ui->setupUi(this);
     setWindowTitle(QApplication::applicationName()+" - "+APP_VERSION);
 
     commHelper = CommHelper::instance();
@@ -89,6 +89,13 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
         qInfo().nospace().nospace() << "Detector#" << index << ": the measurement has been stopped";
+    });
+
+    //POE电源状态
+    connect(commHelper, &CommHelper::reportPoePowerStatus, this, [=](quint8 index, bool on){
+        int row = index - 1;
+        SwitchButton* cell =  qobject_cast<SwitchButton*>(ui->tableWidget_detector->cellWidget(row, 0));
+        cell->setChecked(on);
     });
 
     connect(ui->statusbar,&QStatusBar::messageChanged,this,[&](const QString &message){
@@ -433,10 +440,27 @@ void CentralWidget::initUi()
 
     for (int row=0; row<ui->tableWidget_detector->rowCount(); ++row){
         for (int column=0; column<=2; ++column){
-            QLabel* cell = new QLabel();
-            cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::gray));
-            cell->setAlignment(Qt::AlignCenter);
-            ui->tableWidget_detector->setCellWidget(row, column, cell);
+            if (column == 0){
+                SwitchButton* cell = new SwitchButton();
+                cell->setAutoChecked(false);
+                ui->tableWidget_detector->setCellWidget(row, column, cell);
+                connect(cell, &SwitchButton::clicked, this, [=](){
+                    if (!cell->getChecked()){
+                        if (commHelper->openSwitcherPOEPower(row+1))
+                            cell->setChecked(true);
+                    }
+                    else{
+                        if (commHelper->closeSwitcherPOEPower(row+1))
+                            cell->setChecked(false);
+                    }
+                });
+            }
+            else {
+                QLabel* cell = new QLabel();
+                cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::gray));
+                cell->setAlignment(Qt::AlignCenter);
+                ui->tableWidget_detector->setCellWidget(row, column, cell);
+            }
         }
     }
 

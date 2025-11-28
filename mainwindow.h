@@ -171,14 +171,6 @@ private:
 
     // 探测器数据管理
     QHash<int, DetectorData> m_detectorData;  // 只存储联网探测器的数据
-
-#ifdef ENABLE_MATLAB
-    mwArray m_mwT;
-    mwArray m_mwSeq;
-    mwArray m_mwResponce_matrix;
-    mwArray m_mwRom;
-#endif // ENABLE_MATLAB
-
     CommHelper *commHelper = nullptr;
     class MainWindow *mainWindow = nullptr;
 

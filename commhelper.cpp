@@ -113,7 +113,7 @@ void CommHelper::initSocket()
     connect(mSwitcherStatusRefreshTimer,&QTimer::timeout,this,[=](){
         mSwitcherIsBusy = true;
         // 查看CPU使用率
-        {
+        if (0){
             QString data = QString("display cpu-usage\r");
             mTelnet->sendData(data.toStdString().c_str(), data.size());
             QTimer::singleShot(30000, &mSwitcherEventLoop, &QEventLoop::quit);
@@ -121,7 +121,7 @@ void CommHelper::initSocket()
         }
 
         // 查看内存使用率
-        {
+        if (0){
             QString data = QString("display memory-usage\r");
             mTelnet->sendData(data.toStdString().c_str(), data.size());
             QTimer::singleShot(3000, &mSwitcherEventLoop, &QEventLoop::quit);
@@ -129,7 +129,7 @@ void CommHelper::initSocket()
         }
 
         // 查看温度
-        {
+        if (0){
             QString data = QString("display temperature all\r");
             mTelnet->sendData(data.toStdString().c_str(), data.size());
             QTimer::singleShot(3000, &mSwitcherEventLoop, &QEventLoop::quit);
@@ -137,7 +137,7 @@ void CommHelper::initSocket()
         }
 
         // 用来查看风扇的状态
-        {
+        if (0){
             QString data = QString("display fan\r");
             mTelnet->sendData(data.toStdString().c_str(), data.size());
             QTimer::singleShot(3000, &mSwitcherEventLoop, &QEventLoop::quit);
@@ -146,8 +146,10 @@ void CommHelper::initSocket()
 
         // 查询PoE信息
         for (int i=0; i<48; ++i){
-            QString data = QString("display poe power-state interface GigabitEthernet0/0/%1\r").arg(i+1);
+            mCurrentQueryPort = i + 1;
+            QString data = QString("display poe power-state interface GigabitEthernet0/0/%1\r").arg(mCurrentQueryPort);
             mTelnet->sendData(data.toStdString().c_str(), data.size());
+            mSwitcherEventLoop.exec();
         }
 
         mSwitcherIsBusy = false;
@@ -155,184 +157,143 @@ void CommHelper::initSocket()
 
     connect(mTelnet, &QTelnet::socketReadyRead,this,[=](const char *data, int size){
         QByteArray rx_current(data, size);
-        if(rx_current.endsWith("---- More ----")){
+        mRespondString.append(rx_current);
+        if(mRespondString.endsWith("---- More ----")){
             QString data = "\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
-        else if(rx_current.endsWith("[Y/N]:")){
+        else if(mRespondString.endsWith("[Y/N]:")){
             QString data = "Y\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
-        else if(rx_current.endsWith("Username:")){
-            qDebug().noquote() << rx_current;
-            rx_current.clear();
+        else if(mRespondString.endsWith("Username:")){
+            qDebug().noquote() << mRespondString;
+            mRespondString.clear();
 
             QString data = "root\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
-        else if(rx_current.endsWith("Password:")){
-            qDebug().noquote() << rx_current;
-            rx_current.clear();
+        else if(mRespondString.endsWith("Password:")){
+            qDebug().noquote() << mRespondString;
+            mRespondString.clear();
 
             QString data = "root@12345\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
-        else if(rx_current.endsWith("<HUAWEI>") && !mSwitcherIsLoginOk){
+        else if(mRespondString.endsWith("<HUAWEI>") && !mSwitcherIsLoginOk){
             mSwitcherIsLoginOk = true;
-            qDebug().noquote() << rx_current;
-            rx_current.clear();
+            qDebug().noquote() << mRespondString;
+            mRespondString.clear();
 
             QString data = "system-view\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
-        else if(rx_current.endsWith("[HUAWEI]") && mSwitcherIsLoginOk)
+        else if(mRespondString.endsWith("[HUAWEI]") && mSwitcherIsLoginOk && !mSwitcherInSystemView)
         {
-            qDebug().noquote() << rx_current;
+            mSwitcherInSystemView = true;
+            mRespondString.clear();
 
-            rx_current.replace("\r\n","\n");
-            if (rx_current.contains("display cpu-usage")){
-                //查看CPU使用率
-                QList<QByteArray> lines = rx_current.split('\n');
-                QMap<QString, QString> mapValue;
-                mapValue["Name"] = "CPU Usage";
-                for (auto line : lines){
-                    if (line.contains("CPU Usage")){
-                        QRegularExpression re(":\\s*(\\d+%)");
-                        QRegularExpressionMatch match = re.match(line);
-                        if (match.hasMatch()) {
-                            QString value = match.captured(1).trimmed();
-                            mapValue["CPU Usage"] = value;
-                        }
-                    }
-                }
+            emit switcherConnected();
 
-                qDebug().noquote() << "CPU Usage = " << mapValue["CPU Usage"];
-                QMetaObject::invokeMethod(this, "reportCPUUsage", Qt::QueuedConnection, Q_ARG(float, mapValue["CPU Usage"].toFloat()));
+            if (mCommands.size() > 0){
+                QTimer::singleShot(0, this, [=](){
+                    mCurrentCommand = mCommands.front();
+                    mCommands.pop_front();
+                    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+                });
             }
-            else if (rx_current.contains("display memory-usage")){
-                //查看内存使用率
-                QList<QByteArray> lines = rx_current.split('\n');
-                QMap<QString, QString> mapValue;
-                for (auto line : lines){
-                    if (line.contains("System Total Memory Is")){
-                        QString str = "System Total Memory Is: 239075328 bytes";
-                        QRegularExpression re("\\d+");
-                        QRegularExpressionMatch match = re.match(str);
-                        if (match.hasMatch()) {
-                            QString numberStr = match.captured(0); // 得到"239075328"
-                            //qulonglong number = numberStr.toULongLong(); // 转换为数字
-                            mapValue["System Total Memory Is"] = numberStr;
-                        }
-                    }
-                    else if (line.contains("Total Memory Used Is")){
-                        QRegularExpression re("\\d+");
-                        QRegularExpressionMatch match = re.match(line);
-                        if (match.hasMatch()) {
-                            QString numberStr = match.captured(0); // 得到"239075328"
-                            //qulonglong number = numberStr.toULongLong(); // 转换为数字
-                            mapValue["Total Memory Used Is"] = numberStr;
-                        }
-                    }
-                    else if (line.contains("Memory Using Percentage Is")){
-                        QStringList parts = QString(line).split(':');
-                        if (parts.size() > 1) {
-                            QString percentStr = parts[1].trimmed();
-                            mapValue["Memory Using Percentage Is"] = percentStr;
-                        }
-                    }
-                }
-
-                qDebug().noquote() << "System Total Memory Is = " << mapValue["System Total Memory Is"] << " bytes";
-                qDebug().noquote() << "Total Memory Used Is = " << mapValue["Total Memory Used Is"] << " bytes";
-                qDebug().noquote() << "Memory Using Percentage Is = " << mapValue["Memory Using Percentage Is"];
-                QMetaObject::invokeMethod(this, "reportSystemTotalMemory", Qt::QueuedConnection, Q_ARG(float, mapValue["System Total Memory Is"].toFloat()));
-                QMetaObject::invokeMethod(this, "reportTotalMemoryUsed", Qt::QueuedConnection, Q_ARG(float, mapValue["Total Memory Used Is"].toFloat()));
-                QMetaObject::invokeMethod(this, "reportMemoryUsingPercentage", Qt::QueuedConnection, Q_ARG(float, mapValue["Memory Using Percentage Is"].toFloat()));
-            }
-            else if (rx_current.contains("display temperature all")){
-                //查看温度
-                QList<QByteArray> lines = rx_current.split('\n');
-                QMap<QString, QString> mapValue;
-                if (lines.size() == 8){
-                    QStringList parts = QString(lines[5]).split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-                    mapValue["Status"] = parts[3].trimmed();
-                    mapValue["Current(C)"] = parts[4].trimmed();
-                }
-
-                qDebug().noquote() << "Status = " << mapValue["Status"];
-                qDebug().noquote() << "Current(C) = " << mapValue["Current(C)"];
-                QMetaObject::invokeMethod(this, "reportCurrentTemperature", Qt::QueuedConnection, Q_ARG(float, mapValue["Current(C)"].toFloat()));
-            }
-            else if (rx_current.contains("display fan")){
-                //命令用来查看风扇的状态
-                QList<QByteArray> lines = rx_current.split('\n');
-                QMap<QString, QString> mapValue;
-                if (lines.size() == 7){
-                    QStringList parts = QString(lines[4]).split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-                    mapValue["Status0"] = parts[3].trimmed();
-                    mapValue["Speed0"] = parts[4].trimmed();
-
-                    parts = QString(lines[5]).split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
-                    mapValue["Status1"] = parts[3].trimmed();
-                    mapValue["Speed1"] = parts[4].trimmed();
-                }
-
-                qDebug().noquote() << "Status0 = " << mapValue["Status0"];
-                qDebug().noquote() << "Speed0 = " << mapValue["Speed0"];
-                qDebug().noquote() << "Status1 = " << mapValue["Status1"];
-                qDebug().noquote() << "Speed1 = " << mapValue["Speed1"];
-                QMetaObject::invokeMethod(this, "reportFanSpeed", Qt::QueuedConnection, Q_ARG(float, mapValue["Speed0"].toFloat()), Q_ARG(float, mapValue["Speed1"].toFloat()));
-            }
-            else if (rx_current.contains("display poe power-state interface")){
-                //查看接口GigabitEthernet0/0/x的PoE供电状态信息
-                QList<QByteArray> lines = rx_current.split('\n');
-                QMap<QString, QString> mapValue;
-                mapValue["Name"] = "GigabitEthernet0/0/1";
-                for (auto line : lines){
-                    QList<QByteArray> values = line.split(':');
-                    if (values.size() > 1)
-                        mapValue[values[0].trimmed()] = values[1].trimmed();
-                    else if (line.contains("display poe power-state interface")){
-                        mapValue["Name"] = line.right(QString("GigabitEthernet0/0/0").length());
-                    }
-                }
-                for (auto it = mapValue.constBegin(); it != mapValue.constEnd(); ++it) {
-                    qDebug().noquote() << it.key() << " = " << it.value();
-                }
-
-                QString name = mapValue["Name"];
-                int index = name.right(name.length()-name.lastIndexOf('/')-1).toUInt();
-                QMetaObject::invokeMethod(this, "reportFanSpeed", Qt::QueuedConnection, Q_ARG(quint32, index), Q_ARG(bool, mapValue["Power ON/OFF"].toInt()));
-
-                // index--;
-                // // 接口名称
-                // ui->tableWidget->item(index, 0)->setData(Qt::DisplayRole, mapValue["Name"]);
-                // // PoE使能状态
-                // ui->tableWidget->item(index, 1)->setData(Qt::DisplayRole, mapValue["Power enable state"]);
-                // // 供电开关
-                // ui->tableWidget->item(index, 2)->setData(Qt::DisplayRole, mapValue["Power ON/OFF"]);
-                // // 供电状态
-                // ui->tableWidget->item(index, 3)->setData(Qt::DisplayRole, mapValue["Power status"]);
-                // // 最大输出功率
-                // ui->tableWidget->item(index, 4)->setData(Qt::DisplayRole, mapValue["Max power(mW)"]);
-                // // 当前输出功率
-                // ui->tableWidget->item(index, 5)->setData(Qt::DisplayRole, mapValue["Current power(mW)"]);
-                // // 峰值功率
-                // ui->tableWidget->item(index, 6)->setData(Qt::DisplayRole, mapValue["Peak power(mW)"]);
-                // // 平均功率
-                // ui->tableWidget->item(index, 7)->setData(Qt::DisplayRole, mapValue["Average power(mW)"]);
-                // // 电流
-                // ui->tableWidget->item(index, 8)->setData(Qt::DisplayRole, mapValue["Current(mA)"]);
-                // // 电压
-                // ui->tableWidget->item(index, 9)->setData(Qt::DisplayRole, mapValue["Voltage(V)"]);
-            }
-
-            mSwitcherEventLoop.quit();
-            rx_current.clear();
         }
-        else if (rx_current.endsWith("]") && rx_current.contains("[HUAWEI-GigabitEthernet")){
+        else if (mSwitcherInSystemView){
+            //qDebug().noquote() << mRespondString;
+            /*
+             * Username:root
+             * Password:root@12345
+             * <HUAWEI>system-view
+             * [HUAWEI]interface GigabitEthernet 0/0/1
+             * [HUAWEI-GigabitEthernet0/0/1]poe enable
+             * [HUAWEI-GigabitEthernet0/0/1]poe enable
+             * Warning: This port is enabled already.
+             * [HUAWEI-GigabitEthernet0/0/1]undo poe enable
+             * [HUAWEI-GigabitEthernet0/0/1]undo poe enable
+             * Warning: This port is disabled already.
+            */
+
+            //根据结果来判断
+            mRespondString.replace("\r\n","\n");
+            qDebug().noquote() << mRespondString;
+
+            QString warnEnableCmd = "Warning: This port is enabled already.";
+            QString warnDisabledCmd = "Warning: This port is disabled already.";
+            QString switchCmd = QString("[HUAWEI-GigabitEthernet0/0/%1]").arg(mCurrentQueryPort);
+            //QString queryCmd = QString("display poe power-state interface GigabitEthernet0/0/%1").arg(mCurrentQueryPort);
+            QString queryCmd = QString("interface GigabitEthernet 0/0/%1\r").arg(mCurrentQueryPort);
+
+            if (mCurrentCommand == queryCmd){
+                if (mRespondString.endsWith(switchCmd.toLatin1())){
+                    mRespondString.clear();
+                    if (mBatchOn || mSingleOn){
+                        QTimer::singleShot(0, this, [=](){
+                            mCurrentCommand = "poe enable\r";
+                            mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+                        });
+                    }
+                    else if (mBatchOff || mSingleOff){
+                        QTimer::singleShot(0, this, [=](){
+                            mCurrentCommand = "undo poe enable\r";
+                            mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+                        });
+                    }
+                }
+            }
+            else if (mCurrentCommand == "poe enable\r"){
+                if (mRespondString.endsWith(switchCmd.toLatin1())){
+                    QList<QByteArray> lines = mRespondString.split('\n');
+                    mRespondString.clear();
+                    if (lines.size() == 2){
+                        //POE打开成功
+                        QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, true));
+                    }
+                    else if (lines.size() == 3){
+                        //POE之前已经打开
+                        if (lines.at(1) == QString("Warning: This port is enabled already.")){
+                            QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, true));
+                        }
+                    }
+
+                    if (mBatchOn){
+                        //打开下一个开关
+                        this->openNextSwitcherPOEPower();
+                    }
+                }
+            }
+            else if (mCurrentCommand == "undo poe enable\r"){
+                if (mRespondString.endsWith(switchCmd.toLatin1())){
+                    QList<QByteArray> lines = mRespondString.split('\n');
+                    mRespondString.clear();
+                    if (lines.size() == 2){
+                        //POE关闭成功
+                        QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, false));
+                    }
+                    else if (lines.size() == 3){
+                        //POE之前已经关闭
+                        if (lines.at(1) == QString("Warning: This port is disabled already.")){
+                            QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, false));
+                        }
+                    }
+
+                    if (mBatchOff){
+                        //关闭下一个开关
+                        this->closeNextSwitcherPOEPower();
+                    }
+                }
+            }
+
+            // mSwitcherEventLoop.quit();
+            // mRespondString.clear();
+        }
+        else if (mRespondString.endsWith("]") && mRespondString.contains("[HUAWEI-GigabitEthernet")){
             mSwitcherEventLoop.quit();
-            rx_current.clear();
+            mRespondString.clear();
         }
     });
     connect(mTelnet, &QTelnet::stateChanged, this, [=](QAbstractSocket::SocketState socketState){
@@ -483,7 +444,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         for (int index = 1; index <= DET_NUM; ++index){
             DetParameter& detParameter = detParameters[index];
             QString addr2 = QString::fromStdString(detParameter.detIp);
-            if (addr1 == addr2){
+            if (addr1 == addr2 || addr2 == peerAddress){
                 mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
                 return;
             }
@@ -544,40 +505,87 @@ void CommHelper::freeDataProcessor(QTcpSocket *socket)
 /*
  打开交换机POE口输出电源
 */
-void CommHelper::openSwitcherPOEPower()
+bool CommHelper::openSwitcherPOEPower(quint8 port)
 {
-    if (nullptr == mTelnet || !mTelnet->isConnected())
-        return;
+    if (nullptr == mTelnet || !mTelnet->isConnected() || !mSwitcherInSystemView)
+        return false;
 
-    for (int i=1; i<DET_NUM; ++i){
-        QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-        mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-        mSwitcherEventLoop.exec();
+    mBatchOn = port == 00 ? true : false;
+    mSingleOn = port == 00 ? false : true;
+    mBatchOff = false;
+    mSingleOff = false;
 
-        cmd = "poe enable\r";
-        mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-        mSwitcherEventLoop.exec();
-    }
+    // quint8 fromPort = port==0 ? 1 : port;
+    // quint8 toPort = port==0 ? DET_NUM : port;
+    // for (int i=fromPort; i<=toPort; ++i){
+    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
+    //     mCommands.append(cmd);
+    //     cmd = "poe enable\r";
+    //     mCommands.append(cmd);
+    // }
+
+    mCurrentQueryPort = port==0 ? 1 : port;
+    mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
+    //mCommands.pop_front();
+    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+    //mSwitcherEventLoop.exec();
+
+    return true;
 }
 
+void CommHelper::openNextSwitcherPOEPower()
+{
+    if (mCurrentQueryPort >= DET_NUM)
+        return;
 
+    mCurrentQueryPort++;
+    mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
+    //mCommands.pop_front();
+    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+}
+
+void CommHelper::closeNextSwitcherPOEPower()
+{
+    if (mCurrentQueryPort >= DET_NUM)
+        return;
+
+    mCurrentQueryPort++;
+    mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
+    //mCommands.pop_front();
+    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+}
 /*
  关闭交换机POE口输出电源
 */
-void CommHelper::closeSwitcherPOEPower()
+bool CommHelper::closeSwitcherPOEPower(quint8 port)
 {
-    if (nullptr == mTelnet || !mTelnet->isConnected())
-        return;
+    if (nullptr == mTelnet || !mTelnet->isConnected() || !mSwitcherInSystemView)
+        return false;
 
-    for (int i=1; i<DET_NUM; ++i){
-        QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-        mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-        mSwitcherEventLoop.exec();
+    mBatchOn = false;
+    mSingleOn = false;
+    mBatchOff = port == 00 ? true : false;
+    mSingleOff = port == 00 ? false : true;
 
-        cmd = "undo poe enable\r";
-        mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-        mSwitcherEventLoop.exec();
-    }
+    // quint8 fromPort = port==0 ? 1 : port;
+    // quint8 toPort = port==0 ? DET_NUM : port;
+    // for (int i=fromPort; i<=toPort; ++i){
+    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
+    //     mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+    //     mSwitcherEventLoop.exec();
+
+    //     cmd = "undo poe enable\r";
+    //     mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+    //     mSwitcherEventLoop.exec();
+    // }
+
+    mCurrentQueryPort = port==0 ? 1 : port;
+    mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
+    //mCommands.pop_front();
+    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+    //mSwitcherEventLoop.exec();
+
+    return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -610,14 +618,35 @@ void CommHelper::stopServer()
 */
 void CommHelper::openPower()
 {
+    mBatchOn = true;
+    mSingleOn = false;
+    mBatchOff = false;
+    mSingleOff = false;
+    mCommands.clear();
+    quint8 fromPort = 1;
+    quint8 toPort = DET_NUM;
+    for (int i=fromPort; i<=toPort; ++i){
+        QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
+        mCommands.append(cmd);
+        cmd = "poe enable\r";
+        mCommands.append(cmd);
+    }
+
+    mCurrentQueryPort = 1;
+    mTelnet->disconnectFromHost();
+
     GlobalSettings settings;
     QString hostname = settings.value("Switcher/Telnet/Ip", "192.168.1.253").toString();
     quint16 port = settings.value("Switcher/Telnet/Port", 23).toUInt();
     mTelnet->setType(QTelnet::TCP);
     if (mTelnet->connectToHost(hostname, port)){
-        emit switcherConnected();
-
-        this->openSwitcherPOEPower();
+        // QString cmd = mCommands.front();
+        // mCommands.pop_front();
+        // mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+    }
+    else
+    {
+        emit switcherDisconnected();
     }
 }
 /*
@@ -625,10 +654,17 @@ void CommHelper::openPower()
 */
 void CommHelper::closePower()
 {
+    mBatchOn = false;
+    mSingleOn = false;
+    mBatchOff = true;
+    mSingleOff = false;
+
     if (mTelnet->isConnected()){
         //再发送关闭指令
         this->closeSwitcherPOEPower();
     }
+
+    emit switcherDisconnected();
 }
 
 /*
@@ -829,7 +865,7 @@ qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
         for (int index = 1; index <= DET_NUM; ++index){
             DetParameter& detParameter = detParameters[index];
             QString addr2 = QString::fromStdString(detParameter.detIp);
-            if (addr2 == addr1){
+            if (addr2 == addr1 || addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
                 return index;
             }
         }
