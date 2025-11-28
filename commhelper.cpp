@@ -439,18 +439,38 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
     QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
 
-    auto it = this->mConnectionPeers.begin();
-    while (it != this->mConnectionPeers.end()) {
-        for (int index = 1; index <= DET_NUM; ++index){
-            DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.detIp);
-            if (addr1 == addr2 || addr2 == peerAddress){
-                mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-                return;
+    // IP+Port全匹配
+    {
+        auto it = this->mConnectionPeers.begin();
+        while (it != this->mConnectionPeers.end()) {
+            for (int index = 1; index <= DET_NUM; ++index){
+                DetParameter& detParameter = detParameters[index];
+                QString addr2 = QString::fromStdString(detParameter.detIp);
+                if (addr1 == addr2){
+                    mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
+                    return;
+                }
             }
-        }
 
-        ++it;
+            ++it;
+        }
+    }
+
+    // IP匹配
+    {
+        auto it = this->mConnectionPeers.begin();
+        while (it != this->mConnectionPeers.end()) {
+            for (int index = 1; index <= DET_NUM; ++index){
+                DetParameter& detParameter = detParameters[index];
+                QString addr2 = QString::fromStdString(detParameter.detIp);
+                if (addr2 == peerAddress){
+                    mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
+                    return;
+                }
+            }
+
+            ++it;
+        }
     }
 
     //重新分配一个之前从没绑定过的数据处理器
@@ -458,7 +478,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         if (mDetectorDataProcessor[index]->isFreeSocket()){
             DetParameter& detParameter = detParameters[index];
             QString addr2 = QString::fromStdString(detParameter.detIp);
-            if (addr2 == "0.0.0.0:6000"){
+            if (addr2 == "0.0.0.0:6000"){//0.0.0.0:6000是数据库默认初始化值
                 //给新上线网络连接分配一个空闲的探测器
                 qstrcpy(detParameter.detIp, addr1.toStdString().c_str());
                 settings->sync();
@@ -859,18 +879,37 @@ qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
     HDF5Settings *settings = HDF5Settings::instance();
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
 
-    QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
-    auto it = this->mConnectionPeers.begin();
-    while (it != this->mConnectionPeers.end()) {
-        for (int index = 1; index <= DET_NUM; ++index){
-            DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.detIp);
-            if (addr2 == addr1 || addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
-                return index;
+    //IP和端口全匹配
+    {
+        QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
+        auto it = this->mConnectionPeers.begin();
+        while (it != this->mConnectionPeers.end()) {
+            for (int index = 1; index <= DET_NUM; ++index){
+                DetParameter& detParameter = detParameters[index];
+                QString addr2 = QString::fromStdString(detParameter.detIp);
+                if (addr2 == addr1 || addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
+                    return index;
+                }
             }
-        }
 
-        ++it;
+            ++it;
+        }
+    }
+
+    //仅IP匹配
+    {
+        auto it = this->mConnectionPeers.begin();
+        while (it != this->mConnectionPeers.end()) {
+            for (int index = 1; index <= DET_NUM; ++index){
+                DetParameter& detParameter = detParameters[index];
+                QString addr2 = QString::fromStdString(detParameter.detIp);
+                if (addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
+                    return index;
+                }
+            }
+
+            ++it;
+        }
     }
 
     return -1;
