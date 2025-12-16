@@ -240,28 +240,20 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
     {
         QMutexLocker locker(&mDataLocker);
         // 跳过已接收的重复子包（避免覆盖和重复计数）
-        if (fullSpectrum->receivedPackets.contains(subSpecPackket.spectrumSubNo)) {
-            qDebug() << "Duplicate sub-spectrum packet, seq:" << spectrumSeq
+        const quint8 part = subSpecPackket.spectrumSubNo; // 1..32
+        const quint32 bit = 1u << (part - 1);
+        if (fullSpectrum->receivedMask & bit)
+        {
+            qCritical() << "Duplicate sub-spectrum packet, seq:" << spectrumSeq
                      << ", part:" << static_cast<int>(subSpecPackket.spectrumSubNo) << "(ignored)";
             return;
         }
 
-        // 计算子包在完整能谱中的偏移量（256道/子包）
-        const int kSubSpectrumSize = sizeof(quint32) * 256;
-        const int targetOffset = (subSpecPackket.spectrumSubNo-1) * 256; // 第n个子包对应偏移 n*256 道
-
         // 拷贝子能谱数据到完整能谱（固定数组直接操作内存，高效安全）
-        memcpy(&fullSpectrum->spectrum[targetOffset], // 目标地址：完整能谱对应偏移
-               subSpecPackket.spectrum,                   // 源数据：当前子包256道数据
-               kSubSpectrumSize);                         // 拷贝字节数：256*4=1024字节
+        memcpy(fullSpectrum->spectrum + (part-1)*256, subSpecPackket.spectrum, 256*4);
+        fullSpectrum->receivedMask |= bit;
 
-        // 标记该子包已接收
-        fullSpectrum->receivedPackets.insert(subSpecPackket.spectrumSubNo);
-
-        // 4. 检查是否所有子包都已接收（32个子包齐全则拼接完成）
-        const quint8 kMinPacketNo = 1;
-        const quint8 kMaxPacketNo = 32;
-        if (fullSpectrum->receivedPackets.size() == kMaxPacketNo) {
+        if (fullSpectrum->receivedMask == 0xFFFFFFFFu) {
             fullSpectrum->isComplete = true;
             fullSpectrum->completeTime = QDateTime::currentDateTime();
 
@@ -274,28 +266,29 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             // 注意：QVector 拷贝完整数据，避免多线程访问冲突
             for (int i = 0; i < 8192; ++i) {
                 mAccumulateSpec[i] += fullSpectrum->spectrum[i];
-                mCurrentSpec[i] = fullSpectrum->spectrum[i];
             }
-
+            memcpy(mCurrentSpec.data(), fullSpectrum->spectrum, 8192*4);
             // 异步发送信号（确保接收方在主线程处理，避免UI阻塞）
-            QMetaObject::invokeMethod(
-                this,
-                "reportSpectrumCurveData",
-                Qt::QueuedConnection,
-                Q_ARG(quint8, mIndex),          // 设备索引
-                Q_ARG(QVector<quint32>, mCurrentSpec) // 完整8192道数据
-                );
+            // QMetaObject::invokeMethod(
+            //     this,
+            //     "reportSpectrumCurveData",
+            //     Qt::QueuedConnection,
+            //     Q_ARG(quint8, mIndex),          // 设备索引
+            //     Q_ARG(QVector<quint32>, mCurrentSpec) // 完整8192道数据
+            //     );
 
-            qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq
+            if(spectrumSeq%1000 == 0){
+                qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq
                      << ", specMeasureTime(ms):" << fullSpectrum->measureTime
                      << ", deathTime(*10ns):" << fullSpectrum->deathTime;
+            }
             m_parseData->mergeSpecTime_online(*fullSpectrum);
 
             // 7. 清理已完成的能谱数据（释放内存，可选：若需保留历史数据可注释）
             mFullSpectrums.remove(spectrumSeq);
         }
     }
-};
+}
 
 /**
  * @brief 从数据包中提取能谱数据
@@ -319,8 +312,8 @@ bool DataProcessor::extractSpectrumData(const QByteArray& packetData, SubSpectru
     packet.convertNetworkToHost();
 
     // 调试信息
-    qDebug() << "Get a subSpectrum Packets, spectrumSeq:" << packet.spectrumSeq
-             << "subSquenceID:" << packet.spectrumSubNo;
+    // qDebug() << "Get a subSpectrum Packets, spectrumSeq:" << packet.spectrumSeq
+    //          << "subSquenceID:" << packet.spectrumSubNo;
 
     return true;
 }

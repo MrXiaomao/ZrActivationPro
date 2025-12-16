@@ -80,8 +80,6 @@ private:
 
     QByteArray mRawData; // 存储网络原始数据
     QByteArray mCachePool; // 缓存数据，数据处理之前，先转移到二级缓存池
-    // QMap<quint8, QByteArray> mSpectrumData;
-
     bool mDataReady = false;// 数据长度不够，还没准备好
     bool mTerminatedDataThread = false;
     QMutex mDataLocker;
@@ -94,7 +92,7 @@ private:
 
     // 新增成员变量
     QMutex mSpectrumLocker;
-    QMap<quint32, FullSpectrum> mFullSpectrums; // 按能谱序号存储拼接中的能谱
+    QHash<quint32, FullSpectrum> mFullSpectrums; // 按能谱序号存储拼接中的能谱
     QVector<quint32> mAccumulateSpec;
     QVector<quint32> mCurrentSpec;
     ParseData* m_parseData;

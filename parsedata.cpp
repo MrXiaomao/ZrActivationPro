@@ -14,69 +14,89 @@ ParseData::ParseData() {
 
 ParseData::~ParseData() {}
 
-void ParseData::mergeSpecTime_online(FullSpectrum specPack)
+void ParseData::mergeSpecTime_online(const FullSpectrum& specPack)
 {
-    // 统计计数率
-    int sumCount = 0;
-    for (int i = 0; i < 2045; ++i) {
-        sumCount += specPack.spectrum[i];
+    // -------- 0. 先做道址压缩：8192 道 -> 2048 道，每 4 道求和 --------
+    // 注意：这里直接写死 8192/4，避免和成员 G_CHANNEL 搞成运行期常量，编译更稳
+    const int kCompressedCh = 8192 / 4;   // 2048
+    quint32 compressedSpec[kCompressedCh];
+
+    for (int ch = 0; ch < kCompressedCh; ++ch) {
+        const int base = ch * 4;
+        // 简单相加，和你后面 m_mergeSpec 的累加一样，本身就可能溢出，所以这里不额外做饱和判断
+        compressedSpec[ch] =
+            specPack.spectrum[base]
+            + specPack.spectrum[base + 1]
+            + specPack.spectrum[base + 2]
+            + specPack.spectrum[base + 3];
     }
 
-    allSpecTime.push_back(specPack.sequence*specPack.measureTime);
+    // -------- 1. 统计计数率：用压缩后的谱 --------
+    int sumCount = 0;
+    //最后三道计数可能比较高，暂时不考虑它
+    for (int i = 0; i < 2045; ++i) {
+        sumCount += compressedSpec[i];
+    }
+
+    allSpecTime.push_back(specPack.sequence * specPack.measureTime);
     allSpecCount.push_back(sumCount);
 
-    //记录打靶时刻，根据计数率大于指定数值来确定打靶时刻。
-    if(shotTime<0 && sumCount>1000){
+    // 记录打靶时刻
+    if (shotTime < 0 && sumCount > 1000) {
         shotTime = specPack.sequence * specPack.measureTime;
-        spectDeltaT = specPack.measureTime; //直接利用首个包给出能谱单个测量时长
+        spectDeltaT = specPack.measureTime; // 单个能谱测量时长
     }
 
-    //说明当前数据为打靶后的数据，对其做处理
+    // 当前时刻（ms）
     qint64 currentTime = specPack.sequence * specPack.measureTime;
-    //若当前时刻大于解析起始时刻，则开始合并数据
-    int timeAfterShot = (currentTime - shotTime)/1000; //单位s
-    if(timeAfterShot > startTime_online){
-        quint64 lossTime = 0; //死时间，单位ns。
-        // qint64 accumulateTime = 0; //计算自打靶开始到当前能谱的时间。单位ms
-        int timeMerge = timeAfterShot - startTime_online; //开始解析的能谱时长
-        int mergeID = int(ceil(timeMerge *1.0/ timeBin_online));
+    int timeAfterShot = (currentTime - shotTime) / 1000; // 单位 s
 
-        //计算丢包带来的死时间
-        qint64 lossTimeTemp = (specPack.sequence - lastSpecID_online - 1)*spectDeltaT; //单位ms
-        lossTime = lossTimeTemp * 1000000 + specPack.deathTime*10; //ns
+    if (timeAfterShot > startTime_online) {
+        quint64 lossTime = 0; // ns
 
-        if(m_mergeSpec.size() < mergeID)//新的分时能谱
-        {
-            //这里先对完整的分时能谱组暂存一份
-            if(m_mergeSpec.size()>0)
-            {
+        int timeMerge = timeAfterShot - startTime_online; // s
+        int mergeID = int(ceil(timeMerge * 1.0 / timeBin_online));
+
+        // 计算丢包带来的死时间
+        qint64 lossTimeTemp =
+            (specPack.sequence - lastSpecID_online - 1) * spectDeltaT; // ms
+        lossTime = lossTimeTemp * 1000000 + specPack.deathTime * 10;   // ns
+
+        if (m_mergeSpec.size() < mergeID) {
+            // 新的分时能谱
+            if (m_mergeSpec.size() > 0) {
                 QVector<mergeSpecData> mergeSpec_temp = m_mergeSpec;
-                //处理分时能谱，进行拟合
+                // 处理前面已完整的分时能谱，进行拟合
                 bool flag = getResult(mergeSpec_temp);
+                Q_UNUSED(flag);
             }
 
             mergeSpecData tempMerge;
             tempMerge.currentTime = currentTime;
-            tempMerge.deathTime = lossTime;
-            for(int i=0; i<G_CHANNEL; i++)
-            {
-                tempMerge.spectrum[i] += specPack.spectrum[i];
+            tempMerge.deathTime   = lossTime;
+
+            // ★ 这里用压缩后的 2048 道
+            for (int i = 0; i < kCompressedCh; ++i) {
+                tempMerge.spectrum[i] += compressedSpec[i];
             }
+            // 后面 [kCompressedCh, 8192) 区间在构造函数里已经是 0，无需处理
             m_mergeSpec.push_back(tempMerge);
 
-            qDebug()<<"合并一个分时能谱，mergeID = "<<mergeID;
-        }
-        else{
-            m_mergeSpec[mergeID-1].currentTime = currentTime; //相当于取的区间右端点
-            m_mergeSpec[mergeID-1].deathTime += lossTime;
-            for(int i=0; i<G_CHANNEL; i++)
-            {
-                m_mergeSpec[mergeID-1].spectrum[i] += specPack.spectrum[i];
+            qDebug() << "合并一个分时能谱，mergeID = " << mergeID;
+        } else {
+            // 往已有分时能谱里继续累加
+            m_mergeSpec[mergeID - 1].currentTime = currentTime;
+            m_mergeSpec[mergeID - 1].deathTime  += lossTime;
+
+            for (int i = 0; i < kCompressedCh; ++i) {
+                m_mergeSpec[mergeID - 1].spectrum[i] += compressedSpec[i];
             }
         }
     }
+
     lastSpecID_online = specPack.sequence;
 }
+
 
 bool ParseData::getResult(QVector<mergeSpecData> mergeSpec)
 {
@@ -142,7 +162,20 @@ bool ParseData::getResult(QVector<mergeSpecData> mergeSpec)
     }
 
     //对909全能峰计数取对数做线性拟合
-    fit909data();
+    if(count909_count.size()>1)
+    {
+        fit909data();
+        //调试用,打印909相关结果
+        for(int i=0; i<count909_count.size(); i++)
+        {
+            qDebug() << QString("数据点[%1]: 时间=%2 min, 计数=%3, 拟合值=%4, 残差率=%5%").arg(i)
+                        .arg(count909_time.at(i), 0, 'f', 3)
+                        .arg(count909_count.at(i), 0, 'f', 2)
+                        .arg(count909_fitcount.at(i), 0, 'f', 2)
+                        .arg(count909_residual.at(i), 0, 'f', 3);
+        }
+        qDebug() << "================================================";
+    }
 
     return true;
 }
@@ -237,8 +270,6 @@ bool lsqcurvefit1(QVector<double> fit_x, QVector<double> fit_y, double* fit_c, d
         lsfitstate state; //拟合的所有信息，每调用一次函数，相关的参数值变更新到state中存放。
         lsfitreport rep;
 
-        // double diffstep = 0.0001;
-
         //
         // Fitting without weights
         //
@@ -309,8 +340,6 @@ bool lsqcurvefit2(QVector<double> fit_x, QVector<double> fit_y, double* fit_c)
         ae_int_t maxits = 10000;
         lsfitstate state; //所有的参数数据都存储到state中的。
         lsfitreport rep;
-
-        // double diffstep = 0.0001;
 
         lsfitcreatef(x, y, c, diffstep, state); //参数存储到state中
         alglib::lsfitsetcond(state, epsx, maxits); //参数存储到state中
@@ -901,6 +930,8 @@ bool ParseData::SpecStripping(double* spectrum, double energy_scale[], QVector<d
  */
 bool ParseData::fit909data()
 {
+    count909_fitcount.clear();
+    count909_residual.clear();
     int ch_count = count909_count.size();
     //提取拟合数据
     QVector<double> fitx = count909_time; //浅拷贝，共用一块内存

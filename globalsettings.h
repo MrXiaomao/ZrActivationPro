@@ -68,8 +68,9 @@ struct FullSpectrum {
     quint32 deathTime;      // 死时间,单位*10ns
     quint32 spectrum[8192]; // 8192道完整数据
     QDateTime completeTime; // 完成时间,记录一个完整能谱数据接收完的北京时间
+    quint32 receivedMask = 0;   // 32个子包位图
     bool isComplete;       // 是否完整
-    QSet<quint16> receivedPackets; // 已收到的包编号
+    // QSet<quint16> receivedPackets; // 已收到的包编号
 };
 #pragma pack(pop)
 

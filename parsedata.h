@@ -72,7 +72,7 @@ public:
      * @brief mergeSpecTime_online
      *
      */
-    void mergeSpecTime_online(FullSpectrum specPack);
+    void mergeSpecTime_online(const FullSpectrum& specPack);
 
     // 对第一段能谱尝试寻峰
     bool initial_PeakFind(double* spectrum, double energy_scale[], QVector<fit_result>& fit_c_2);
@@ -104,7 +104,7 @@ private:
     const double m_energyCalibration[2] = {511.0, 909.0}; //用于能量刻度的特征峰
     const double energyRange[2] = {800.0, 1150.0};//设定剥谱能量范围
 
-    const int G_CHANNEL = 8192; //能谱的道数
+    const int G_CHANNEL = 2048; //能谱的道数
     qint32 T0_beforeShot = 0; //能谱开测时刻相对于打靶零时刻的时间（单位s，可正数可负数)T0_beforeShot = 开测时刻 - 打靶时刻
 
     // 用来存放剥谱处理结果的图像数据，结合GetStripData()
