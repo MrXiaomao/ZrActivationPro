@@ -177,10 +177,6 @@ void CentralWidget::initUi()
     connect(commHelper, &CommHelper::connectPeerConnection, mClientPeersWindow, &ClientPeersWindow::connectPeerConnection);
     connect(commHelper, &CommHelper::disconnectPeerConnection, mClientPeersWindow, &ClientPeersWindow::disconnectPeerConnection);
 
-    mNetSettingWindow = new NetSettingWindow();
-    mNetSettingWindow->setWindowFlags(Qt::Widget | Qt::WindowStaysOnTopHint);
-    mNetSettingWindow->hide();
-
     mDetSettingWindow = new DetSettingWindow();
     mDetSettingWindow->setWindowFlags(Qt::Widget | Qt::WindowStaysOnTopHint);
     mDetSettingWindow->hide();
@@ -980,11 +976,6 @@ void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
         }
         cursor.removeSelectedText();//删除选择的文本
     }
-}
-
-void CentralWidget::on_action_netCfg_triggered()
-{
-    mNetSettingWindow->show();
 }
 
 

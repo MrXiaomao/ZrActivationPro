@@ -111,8 +111,6 @@ signals:
     void detectorDataUpdated(int detectorId, double countRate, const int spectrum[]);
 
 private slots:
-    void on_action_netCfg_triggered();
-
     void on_action_cfgParam_triggered();
 
     void on_action_exit_triggered();
@@ -158,7 +156,6 @@ private slots:
 private:
     Ui::CentralWidget *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
-    NetSettingWindow *mNetSettingWindow = nullptr;
     DetSettingWindow *mDetSettingWindow = nullptr;
     bool mIsMeasuring = false;
     quint8 mCurrentPageIndex = 1;

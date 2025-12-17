@@ -445,7 +445,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         while (it != this->mConnectionPeers.end()) {
             for (int index = 1; index <= DET_NUM; ++index){
                 DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.detIp);
+                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
                 if (addr1 == addr2){
                     mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
                     return;
@@ -462,7 +462,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         while (it != this->mConnectionPeers.end()) {
             for (int index = 1; index <= DET_NUM; ++index){
                 DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.detIp);
+                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
                 if (addr2 == peerAddress){
                     mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
                     return;
@@ -477,10 +477,10 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
     for (int index = 1; index <= DET_NUM; ++index){
         if (mDetectorDataProcessor[index]->isFreeSocket()){
             DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.detIp);
+            QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
             if (addr2 == "0.0.0.0:6000"){//0.0.0.0:6000是数据库默认初始化值
                 //给新上线网络连接分配一个空闲的探测器
-                qstrcpy(detParameter.detIp, addr1.toStdString().c_str());
+                qstrcpy(detParameter.det_Ip_port, addr1.toStdString().c_str());
                 settings->sync();
                 mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
                 return;
@@ -492,7 +492,7 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
     for (int index = 1; index <= DET_NUM; ++index){
         if (mDetectorDataProcessor[index]->isFreeSocket()){
             DetParameter& detParameter = detParameters[index];
-            qstrcpy(detParameter.detIp, addr1.toStdString().c_str());
+            qstrcpy(detParameter.det_Ip_port, addr1.toStdString().c_str());
             settings->sync();
             mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
             return;
@@ -512,7 +512,7 @@ void CommHelper::freeDataProcessor(QTcpSocket *socket)
     while (it != this->mConnectionPeers.end()) {
         for (int index = 1; index <= DET_NUM; ++index){
             DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.detIp);
+            QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
             if (addr2 == addr1){
                 mDetectorDataProcessor[index]->reallocSocket(nullptr, detParameter);
                 break;
@@ -886,7 +886,7 @@ qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
         while (it != this->mConnectionPeers.end()) {
             for (int index = 1; index <= DET_NUM; ++index){
                 DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.detIp);
+                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
                 if (addr2 == addr1 || addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
                     return index;
                 }
@@ -902,7 +902,7 @@ qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
         while (it != this->mConnectionPeers.end()) {
             for (int index = 1; index <= DET_NUM; ++index){
                 DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.detIp);
+                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
                 if (addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
                     return index;
                 }

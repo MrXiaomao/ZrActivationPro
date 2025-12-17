@@ -97,8 +97,7 @@ void DataProcessor::updateSetting(DetParameter& detParameter)
         this->sendWaveformMode(false, (TriggerMode)detParameter.waveformTriggerMode, detParameter.waveformLength);
         //#05 能谱刷新时间=1|0|9|1234000FFD1000000000ABCD
         this->sendSprectnumRefreshTimelength(false, detParameter.spectrumRefreshTime);
-        //#06 能谱长度=1|0|11|1234000FFD1100000000ABCD
-        //this->sendSpectrumLength(false, detParameter.spectrumLength);
+
         if (detParameter.trapShapeEnable){
             //#07 梯形成型常数=1|0|13|1234000FFE1000000000ABCD
             this->sendTrapTimeConst(false, detParameter.trapShapeTimeConstD1, detParameter.trapShapeTimeConstD2);

@@ -76,7 +76,7 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     QMap<quint8, DetParameter> detParameters = settings->detParameters();
     for (int i=1; i<=DET_NUM; ++i){
         DetParameter detParameter = detParameters[i];
-        ui->tableWidget->item(i - 1, 1)->setText(detParameter.detIp);
+        ui->tableWidget->item(i - 1, 1)->setText(detParameter.det_Ip_port);
     }
 
     ui->tableWidget->setCurrentItem(ui->tableWidget->item(0, 0));
@@ -108,17 +108,6 @@ void DetSettingWindow::saveAt(quint8 detId)
 
     detParameter.pluseCheckTime = ui->spinBox_pluseCheckTime->value();
 
-    //数据接收服务器
-    //IP地址
-    memset(detParameter.srvIp, 0, IP_LENGTH);
-    strcpy(detParameter.srvIp, ui->lineEdit_srvIp->text().toStdString().c_str());
-    //子网掩码
-    memset(detParameter.srvSubnetMask, 0, IP_LENGTH);
-    strcpy(detParameter.srvSubnetMask, ui->lineEdit_srvSubnetMask->text().toStdString().c_str());
-    //网关
-    memset(detParameter.srvGateway, 0, IP_LENGTH);
-    strcpy(detParameter.srvGateway, ui->lineEdit_srvGateway->text().toStdString().c_str());
-
     //时间服务器
     //IP地址
     memset(detParameter.timerSrvIp, 0, IP_LENGTH);
@@ -135,11 +124,9 @@ void DetSettingWindow::saveAt(quint8 detId)
     // //网络设置
     //IP地址
     QAbstractItemModel *model = ui->tableWidget->model();
-    memset(detParameter.detIp, 0, IP_LENGTH);
-    QString detIp = model->data(model->index(detId - 1, 1)).toString();
-    strcpy(detParameter.detIp, detIp.toStdString().c_str());
-    //MAC地址
-    // char detMacAddress[MAC_LENGTH];
+    memset(detParameter.det_Ip_port, 0, IP_LENGTH);
+    QString det_Ip_port = model->data(model->index(detId - 1, 1)).toString();
+    strcpy(detParameter.det_Ip_port, det_Ip_port.toStdString().c_str());
 
     //能谱设置
     //能谱刷新时间（毫秒）
@@ -170,7 +157,7 @@ void DetSettingWindow::saveAt(quint8 detId)
     //高压电源
     //是否启用
     detParameter.highVoltageEnable = ui->highVoltageEnable->isChecked();
-    //DAC高压输出电平
+    //输出高压，单位：V
     detParameter.highVoltageOutLevel = ui->spinBox_highVoltageOutLevel->value();
 
     settings->sync();
@@ -186,14 +173,6 @@ void DetSettingWindow::loadAt(quint8 detId)
     //心跳指令间隔
     ui->spinBox_pluseCheckTime->setValue(detParameter.pluseCheckTime);
 
-    //数据接收服务器
-    //IP地址
-    ui->lineEdit_srvIp->setText(QString::fromStdString(detParameter.srvIp));
-    //子网掩码
-    ui->lineEdit_srvSubnetMask->setText(QString::fromStdString(detParameter.srvSubnetMask));
-    //网关
-    ui->lineEdit_srvGateway->setText(QString::fromStdString(detParameter.srvGateway));
-
     //时间服务器
     //IP地址
     ui->lineEdit_timerSrvIp->setText(QString::fromStdString(detParameter.timerSrvIp));
@@ -208,7 +187,7 @@ void DetSettingWindow::loadAt(quint8 detId)
 
     //网络设置
     //IP地址
-    //MAC地址
+
 
     //能谱设置
     //能谱刷新时间（毫秒）

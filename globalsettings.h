@@ -591,7 +591,7 @@ private:
 };
 
 #define DET_NUM 24
-#define IP_LENGTH 16
+#define IP_LENGTH 17
 #define MAC_LENGTH 18
 #define DEFAULT_HDF5_FILENAME "./Config/Settings.H5"
 //参数结构定义
@@ -604,14 +604,6 @@ typedef struct _DetParameter{
     quint32 pluseCheckTime;
     //交换机地址
     //char switcherIp[IP_LENGTH];
-
-    //数据接收服务器
-    //IP地址
-    char srvIp[IP_LENGTH];
-    //子网掩码
-    char srvSubnetMask[IP_LENGTH];
-    //网关
-    char srvGateway[IP_LENGTH];
 
     //时间服务器
     //IP地址
@@ -635,12 +627,10 @@ typedef struct _DetParameter{
     //触发阈值
     quint32 triggerThold;
 
-    // //网络设置
-    //IP地址
-    char detIp[IP_LENGTH];
-    //MAC地址
-    char detMacAddress[MAC_LENGTH];
-
+    // 探测器网络设置，用于界面匹配对应通道，并不下发指令
+    //IP,端口地址 192.168.0:5000
+    char det_Ip_port[IP_LENGTH];
+ 
     //能谱设置
     //能谱刷新时间（毫秒）
     quint32 spectrumRefreshTime;
@@ -680,16 +670,6 @@ typedef struct _DetParameter{
         //交换机地址
         // memset(switcherIp, 0, sizeof(switcherIp));
         // qstrcpy(switcherIp, "192.168.1.253");
-        //数据接收服务器
-        //IP地址
-        memset(srvIp, 0, sizeof(srvIp));
-        qstrcpy(srvIp, "192.168.0.200");
-        //子网掩码
-        memset(srvSubnetMask, 0, sizeof(srvSubnetMask));
-        qstrcpy(srvSubnetMask, "255.255.255.0");
-        //网关
-        memset(srvGateway, 0, sizeof(srvGateway));
-        qstrcpy(srvGateway, "192.168.0.1");
 
         //时间服务器
         //IP地址
@@ -706,11 +686,8 @@ typedef struct _DetParameter{
 
         //网络设置
         //IP地址
-        memset(detIp, 0, sizeof(detIp));
-        qstrcpy(detIp, "0.0.0.0:6000");
-        //MAC地址
-        memset(detMacAddress, 0, sizeof(detMacAddress));
-        qstrcpy(detMacAddress, "00-08-00-00-00-00");
+        memset(det_Ip_port, 0, sizeof(det_Ip_port));
+        qstrcpy(det_Ip_port, "0.0.0.0:6000");
 
         //能谱设置
         //能谱刷新时间,单位ms

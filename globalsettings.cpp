@@ -42,10 +42,8 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
     //初始化数据类型
     mCompDataType = H5::CompType(sizeof(DetParameter));//复合数据类型
 
-    //H5::StrType ipStrType(H5::PredType::C_S1, H5T_VARIABLE);
     // 定义固定长度字符串类型(20字符)
     H5::StrType ipStrType(H5::PredType::C_S1, IP_LENGTH);
-    H5::StrType macStrType(H5::PredType::C_S1, MAC_LENGTH);
 
     mCompDataType.insertMember("id", HOFFSET(DetParameter, id), H5::PredType::NATIVE_UINT8);
 
@@ -55,13 +53,7 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
         mCompDataType.insertMember("pluseCheckTime", HOFFSET(DetParameter, pluseCheckTime), H5::PredType::NATIVE_INT);
         //交换机地址
         //mCompDataType.insertMember("switcherIp", HOFFSET(DetParameter, switcherIp), ipStrType);
-        //数据接收服务器
-        //IP地址
-        mCompDataType.insertMember("srvIp", HOFFSET(DetParameter, srvIp), ipStrType);
-        //子网掩码
-        mCompDataType.insertMember("srvSubnetMask", HOFFSET(DetParameter, srvSubnetMask), ipStrType);
-        //网关
-        mCompDataType.insertMember("srvGateway", HOFFSET(DetParameter, srvGateway), ipStrType);
+
         //时间服务器
         //IP地址
         mCompDataType.insertMember("timerSrvIp", HOFFSET(DetParameter, timerSrvIp), ipStrType);
@@ -77,13 +69,11 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
         mCompDataType.insertMember("triggerThold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_ULONG);
     }
 
-    //网络设置
+    // 探测器网络设置，用于界面匹配对应通道
     {
-        //IP地址
-        char detIp[16];
-        mCompDataType.insertMember("detIp", HOFFSET(DetParameter, detIp), ipStrType);
-        //MAC地址
-        mCompDataType.insertMember("detMacAddress", HOFFSET(DetParameter, detMacAddress), macStrType);
+        //IP地址,port号
+        char det_Ip_port[16];
+        mCompDataType.insertMember("det_Ip_port", HOFFSET(DetParameter, det_Ip_port), ipStrType);
     }
 
     //能谱设置

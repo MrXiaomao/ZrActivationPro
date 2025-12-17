@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>732</width>
-    <height>530</height>
+    <height>864</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,8 +24,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>406</width>
-        <height>801</height>
+        <width>423</width>
+        <height>815</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -97,129 +97,9 @@
            </layout>
           </item>
           <item>
-           <widget class="QGroupBox" name="groupBox_5">
-            <property name="title">
-             <string>数据接收服务器</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_7">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_4">
-               <property name="minimumSize">
-                <size>
-                 <width>140</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>140</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>IP地址：</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="lineEdit_srvIp">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>200</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>192.168.0.10</string>
-               </property>
-               <property name="maxLength">
-                <number>15</number>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="minimumSize">
-                <size>
-                 <width>131</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>子网掩码：</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLineEdit" name="lineEdit_srvSubnetMask">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>200</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>255.255.255.0</string>
-               </property>
-               <property name="maxLength">
-                <number>15</number>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_6">
-               <property name="minimumSize">
-                <size>
-                 <width>131</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>网关：</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QLineEdit" name="lineEdit_srvGateway">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>200</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>192.168.0.1</string>
-               </property>
-               <property name="maxLength">
-                <number>15</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
            <widget class="QGroupBox" name="groupBox_6">
             <property name="title">
-             <string>时间服务器</string>
+             <string>时间同步服务器</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_8">
              <item row="0" column="1">
@@ -427,7 +307,7 @@
           <item row="1" column="1" colspan="2">
            <widget class="QComboBox" name="comboBox_spectrumLength">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="currentIndex">
              <number>3</number>
@@ -530,7 +410,7 @@
           <item>
            <widget class="QLabel" name="label_15">
             <property name="text">
-             <string>DAC输出电平：</string>
+             <string>电压（V）：</string>
             </property>
            </widget>
           </item>
@@ -575,7 +455,7 @@
              <number>65535</number>
             </property>
             <property name="value">
-             <number>0</number>
+             <number>59310</number>
             </property>
            </widget>
           </item>
@@ -593,6 +473,9 @@
             </property>
             <property name="singleStep">
              <number>100</number>
+            </property>
+            <property name="value">
+             <number>24111</number>
             </property>
            </widget>
           </item>
@@ -619,7 +502,7 @@
              <number>255</number>
             </property>
             <property name="value">
-             <number>15</number>
+             <number>10</number>
             </property>
            </widget>
           </item>
@@ -653,7 +536,7 @@
              <number>255</number>
             </property>
             <property name="value">
-             <number>15</number>
+             <number>10</number>
             </property>
            </widget>
           </item>

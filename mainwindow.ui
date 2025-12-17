@@ -317,6 +317,11 @@
             <string>工作状态</string>
            </property>
           </column>
+          <column>
+           <property name="text">
+            <string>温度</string>
+           </property>
+          </column>
           <item row="0" column="0">
            <property name="text">
             <string/>
@@ -1919,7 +1924,6 @@
       <string>远程配置</string>
      </property>
      <addaction name="action_cfgParam"/>
-     <addaction name="action_netCfg"/>
     </widget>
     <addaction name="menu_remote"/>
     <addaction name="action_localService"/>

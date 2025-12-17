@@ -248,29 +248,6 @@ public:
         pushCmd(askCurrentCmd);
     };
 
-    //能谱长度修改
-    enum SpectrumLength{
-        sl1024 = 0x00, //能谱长度1024；
-        sl2048 = 0x01, //能谱长度2048；
-        sl4096 = 0x02, //能谱长度4096；
-        sl8192 = 0x03  //能谱长度8192；默认值为0001
-    };
-    void sendSpectrumLength(bool isRead = true, quint16 spectrumLength = 1024){
-        QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FD 11 00 00 00 00 AB CD").toUtf8());
-        if (isRead)
-            askCurrentCmd[3] = 0x0A;
-        else{
-            askCurrentCmd[3] = 0x0F;
-            switch (spectrumLength){
-            case 1024: askCurrentCmd[9] = sl1024; break;
-            case 2048: askCurrentCmd[9] = sl2048; break;
-            case 4096: askCurrentCmd[9] = sl4096; break;
-            case 8192: askCurrentCmd[9] = sl8192; break;
-            }
-        }
-        pushCmd(askCurrentCmd);
-    };
-
     /*********************************************************
      梯形成型基本配置
     ***********************************************************/

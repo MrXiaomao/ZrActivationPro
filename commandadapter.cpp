@@ -90,12 +90,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FA 10"))){
-                qInfo().noquote() << "下发指令返回：设置增益指令";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         //死时间配置(ns)
@@ -106,110 +100,12 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FA 11"))){
-                qInfo().noquote() << "下发指令返回：设置死时间配置";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         //触发阈值
         {
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 12"))){
                 qInfo().noquote() << "触发阈值：" << cachePool.mid(8, 2).toShort();
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FA 12"))){
-                qInfo().noquote() << "下发指令返回：设置触发阈值";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-        }
-
-        //FPGA的IP地址修改
-        {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FB 10"))){
-                qInfo().noquote() << "IP地址：" << QString("%1.%2.%3.%4").arg(cachePool.mid(6, 1).toShort())
-                    .arg(cachePool.mid(7, 1).toShort())
-                    .arg(cachePool.mid(8, 1).toShort())
-                    .arg(cachePool.mid(9, 1).toShort());
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FB 10"))){
-                qInfo().noquote() << "下发指令返回：设置IP地址";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-        }
-
-        //FPGA的MAC地址修改
-        {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FB 11"))){
-                qInfo().noquote() << "MAC地址：" << QString("%1.%2.%3.%4").arg(cachePool.mid(6, 1).toShort())
-                                                       .arg(cachePool.mid(7, 1).toShort())
-                                                       .arg(cachePool.mid(8, 1).toShort())
-                                                       .arg(cachePool.mid(9, 1).toShort());
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FB 11"))){
-                qInfo().noquote() << "下发指令返回：设置MAC地址";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-        }
-
-        //服务端通讯地址修改
-        {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FB 12"))){
-                qInfo().noquote() << "服务器IP地址：" << QString("%1.%2.%3.%4").arg(cachePool.mid(6, 1).toShort())
-                                                        .arg(cachePool.mid(7, 1).toShort())
-                                                        .arg(cachePool.mid(8, 1).toShort())
-                                                        .arg(cachePool.mid(9, 1).toShort());
-                qInfo().noquote() << "服务器子网掩码：" << QString("%1.%2.%3.%4").arg(cachePool.mid(10, 1).toShort())
-                                                             .arg(cachePool.mid(11, 1).toShort())
-                                                             .arg(cachePool.mid(12, 1).toShort())
-                                                             .arg(cachePool.mid(13, 1).toShort());
-                qInfo().noquote() << "服务器网关：" << QString("%1.%2.%3.%4").arg(cachePool.mid(14, 1).toShort())
-                                                             .arg(cachePool.mid(15, 1).toShort())
-                                                             .arg(cachePool.mid(16, 1).toShort())
-                                                             .arg(cachePool.mid(17, 1).toShort());
-                qInfo().noquote() << "服务器端口：" << cachePool.mid(18, 2).toShort();
-
-                findNaul = true;
-                cachePool.remove(0, 22);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FB 11"))){
-                qInfo().noquote() << "下发指令返回：设置服务器地址";
-
-                findNaul = true;
-                cachePool.remove(0, 22);
-            }
-        }
-
-        //UDP通讯地址修改
-        {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FB 13"))){
-                qInfo().noquote() << "UDP地址：" << QString("%1.%2.%3.%4").arg(cachePool.mid(6, 1).toShort())
-                                                        .arg(cachePool.mid(7, 1).toShort())
-                                                        .arg(cachePool.mid(8, 1).toShort())
-                                                        .arg(cachePool.mid(9, 1).toShort());
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FB 11"))){
-                qInfo().noquote() << "下发指令返回：设置UDP地址";
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -225,20 +121,14 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 WaveformLength waveformLength = (WaveformLength)cachePool.mid(9, 1).toShort();
                 if (waveformLength == wl64)
                     qInfo().noquote() << "波形长度：64";
-                else if (waveformLength == wl64)
+                else if (waveformLength == wl128)
                     qInfo().noquote() << "波形长度：128";
-                else if (waveformLength == wl64)
+                else if (waveformLength == wl256)
                     qInfo().noquote() << "波形长度：256";
-                else if (waveformLength == wl64)
+                else if (waveformLength == wl512)
                     qInfo().noquote() << "波形长度：512";
                 else
                     qInfo().noquote() << "波形长度：未知值";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FC 10"))){
-                qInfo().noquote() << "下发指令返回：波形基本配置";
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -249,46 +139,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
          能谱基本配置
         ***********************************************************/
         {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FC 10"))){
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FD 10"))){
                 qInfo().noquote() << "能谱刷新时间/ms：" << cachePool.mid(6, 4).toUInt();
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FD 10"))){
-                qInfo().noquote() << "下发指令返回：能谱刷新时间";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-        }
-
-        //能谱长度修改
-        {
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FD 11"))){
-                SpectrumLength spectrumLength = (SpectrumLength)cachePool.at(9);
-                switch (spectrumLength) {
-                case sl1024:
-                    qInfo().noquote() << "能谱长度：1024";
-                    break;
-                case sl2048:
-                    qInfo().noquote() << "能谱长度：2048";
-                    break;
-                case sl4096:
-                    qInfo().noquote() << "能谱长度：4096";
-                    break;
-                case sl8192:
-                    qInfo().noquote() << "能谱长度：8192";
-                    break;
-                default:
-                    break;
-                }
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FD 11"))){
-                qInfo().noquote() << "下发指令返回：能谱长度修改";
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -310,12 +162,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FE 10"))){
-                qInfo().noquote() << "下发指令返回：梯形成型时间常数配置";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         //上升沿、平顶、下降沿长度配置
@@ -329,12 +175,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FE 11"))){
-                qInfo().noquote() << "下发指令返回：上升沿、平顶、下降沿长度配置";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         //梯形成型使能配置
@@ -344,12 +184,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 quint8 peak = (quint8)cachePool.at(8);
                 quint8 fall = (quint8)cachePool.at(9);
                 qInfo().noquote() << "梯形成型使能状态：" << ((quint8)cachePool.at(9) == 0x00 ? "关闭" : "打开");
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FE 12"))){
-                qInfo().noquote() << "下发指令返回：梯形成型使能配置";
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -374,12 +208,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F FF 10"))){
-                qInfo().noquote() << "下发指令返回：工作模式配置";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         /*********************************************************
@@ -390,12 +218,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A F9 10"))){
                 HighVolgateOutLevelEnable highVoltageEnable = (HighVolgateOutLevelEnable)cachePool.at(9);
                 qInfo().noquote() << "高压使能状态：" << (highVoltageEnable ? "关闭" : "打开");
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F F9 10"))){
-                qInfo().noquote() << "下发指令返回：高压使能配置";
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -411,19 +233,13 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
-            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F F9 11"))){
-                qInfo().noquote() << "下发指令返回：DAC输出电平配置";
-
-                findNaul = true;
-                cachePool.remove(0, 12);
-            }
         }
 
         /*********************************************************
          控制类指令
         ***********************************************************/
         //开始测量
-        if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F EA 10 00 00 00 01 AB CD"))){
+        /*if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F EA 10 00 00 00 01 AB CD"))){
             qInfo().noquote() << "下发指令返回：开始测量";
 
             mIsMeasuring = true;
@@ -444,7 +260,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
             //上报结束测量状态
             QMetaObject::invokeMethod(this, "reportStopMeasure", Qt::QueuedConnection);
-        }
+        }*/
 
         /*********************************************************
          应答类指令
@@ -467,7 +283,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
         if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A DA 11"))){
             QByteArray data = cachePool.mid(6, 4);
             qint32 t = qFromBigEndian<qint32>(data.constData());
-            float temperature = t * 0.0078125;// 换算系数
+            float temperature = t * 0.0001;// 换算系数
 
             qDebug().noquote() << "温度：" << temperature;
 
