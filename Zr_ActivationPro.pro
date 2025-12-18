@@ -20,7 +20,6 @@ SOURCES += \
     localsettingwindow.cpp \
     main.cpp \
     mainwindow.cpp \
-    netsettingwindow.cpp \
     parsedata.cpp \
     qcomboboxdelegate.cpp \
     switchbutton.cpp \
@@ -40,7 +39,6 @@ HEADERS += \
     commhelper.h \
     globalsettings.h \
     mainwindow.h \
-    netsettingwindow.h \
     switchbutton.h \
     sysutils.h
 
@@ -48,8 +46,7 @@ FORMS += \
     clientpeerswindow.ui \
     detsettingwindow.ui \
     localsettingwindow.ui \
-    mainwindow.ui \
-    netsettingwindow.ui
+    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

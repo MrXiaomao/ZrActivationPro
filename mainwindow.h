@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include "commhelper.h"
 #include "clientpeerswindow.h"
-#include "netsettingwindow.h"
 #include "detsettingwindow.h"
 
 #include "QGoodWindow"
@@ -161,6 +160,7 @@ private:
     quint8 mCurrentPageIndex = 1;
     QMutex mMutexSwitchPage;
 
+    QVector<quint8> m_selectedChannels; // 记录所选的通道号，停止测量时使用(自定义通道测量)
     bool mIsDarkTheme = true;
     bool mThemeColorEnable = true;
     bool mIsOneLayout = false;

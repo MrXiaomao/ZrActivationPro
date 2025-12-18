@@ -171,10 +171,10 @@
            <enum>QAbstractScrollArea::AdjustIgnored</enum>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::NoSelection</enum>
+           <enum>QAbstractItemView::ExtendedSelection</enum>
           </property>
           <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectItems</enum>
+           <enum>QAbstractItemView::SelectRows</enum>
           </property>
           <property name="showGrid">
            <bool>false</bool>
@@ -399,7 +399,7 @@
            <item>
             <widget class="QLabel" name="label_8">
              <property name="text">
-              <string>单通道测量</string>
+              <string>自定义通道测量</string>
              </property>
             </widget>
            </item>
@@ -2142,7 +2142,7 @@
     <string>开始实验</string>
    </property>
    <property name="toolTip">
-    <string>开始实验</string>
+    <string>全通道开始实验</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>
@@ -2157,7 +2157,7 @@
     <string>停止实验</string>
    </property>
    <property name="toolTip">
-    <string>停止实验</string>
+    <string>全通道停止实验</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

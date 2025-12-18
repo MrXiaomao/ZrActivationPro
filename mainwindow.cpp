@@ -435,7 +435,7 @@ void CentralWidget::initUi()
     ui->tableWidget_detector->setFixedHeight(750);
 
     for (int row=0; row<ui->tableWidget_detector->rowCount(); ++row){
-        for (int column=0; column<=2; ++column){
+        for (int column=0; column<=3; ++column){
             if (column == 0){
                 SwitchButton* cell = new SwitchButton();
                 cell->setAutoChecked(false);
@@ -1753,35 +1753,66 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
     commHelper->setShotInformation(shotDir, shotNum);
 
     // 再发开始测量指令
-    auto items = ui->tableWidget_detector->selectedItems();
-    if (items.isEmpty()) {
-        // 没有选中任何单元格
+    auto rows  = ui->tableWidget_detector->selectionModel()->selectedRows();
+    if (rows .isEmpty()) {
+        // 没有选中任何行
         QMessageBox::warning(
             this,
-            tr("单通道测量——提示"),
+            tr("自定义通道测量——提示"),
             tr("请先选择一个探测器通道，再执行此操作。")
             );
         return;  // 或者给个提示
     }
-    int row = items.first()->row();
+    // 为了稳定，排序一下（可选）
+    std::sort(rows.begin(), rows.end(),
+              [](const QModelIndex &a, const QModelIndex &b){ return a.row() < b.row(); });
 
-    quint8 index = row + 1;
     if (ui->action_waveformMode->isChecked())
     {
-        qInfo()<<"单通道测量，波形测量模式";
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
+        qInfo()<<"自定义通道测量，波形测量模式";
+        QString str = QString("开始测量，通道号：");
+        for (const auto &mi : rows) {
+            int row = mi.row();
+            quint8 index = row + 1;
+            str += QString("%1, ").arg(index);
+            commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
+        }
+        qInfo()<<str;
     }
     else if (ui->action_spectrumMode->isChecked())
     {
-        qInfo()<<"单通道测量，能谱测量模式";
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
+        qInfo()<<"自定义通道测量，能谱测量模式";
+        QString str = QString("开始测量，通道号：");
+        for (const auto &mi : rows) {
+            int row = mi.row();
+            quint8 index = row + 1;
+            str += QString("%1, ").arg(index);
+            commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
+        }
+        qInfo()<<str;
+    }
+    
+    //记录下所选的通道号，保存到成员变量中，停止测量的时候使用并清空
+    m_selectedChannels.clear();
+    for (const auto &mi : rows) {
+        int row = mi.row();
+        quint8 index = row + 1;
+        m_selectedChannels.append(index);
     }
 }
 
 
 void CentralWidget::on_pushButton_stopMeasure_clicked()
 {
-    quint8 index = ui->tableWidget_detector->selectedItems()[0]->row() + 1;
-    commHelper->stopMeasure(index);
+    for (const auto &index : m_selectedChannels)
+    {
+        commHelper->stopMeasure(index);
+    }
+
+    //打印日志
+    qInfo()<<"点击(自定义通道)停止测量";
+
+    //清空所选通道号列表
+    m_selectedChannels.clear();
 }
 

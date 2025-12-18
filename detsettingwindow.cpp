@@ -26,13 +26,10 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     ui->tableWidget->setItemDelegateForColumn(1, delegate); // 将委托应用到特定列
     connect(this, &DetSettingWindow::connectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
         delegate->insertItem(QString("%1:%2").arg(peerAddress).arg(peerPort));
-        //delegate->insertItem(peerAddress);
-        //static_cast<QStandardItemModel*>(((QComboBox*)ui->tableWidget->cellWidget(0, 0))->view()->model())->item(0)->setTextAlignment(Qt::AlignCenter);
     });
 
     connect(this, &DetSettingWindow::disconnectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
         delegate->removeItem(QString("%1:%2").arg(peerAddress).arg(peerPort));
-        //delegate->removeItem(peerAddress);
     });
 
     connect(ui->tableWidget, &QTableWidget::currentItemChanged, this, [=](QTableWidgetItem *current, QTableWidgetItem *previous){

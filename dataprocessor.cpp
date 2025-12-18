@@ -268,13 +268,13 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             }
             memcpy(mCurrentSpec.data(), fullSpectrum->spectrum, 8192*4);
             // 异步发送信号（确保接收方在主线程处理，避免UI阻塞）
-            // QMetaObject::invokeMethod(
-            //     this,
-            //     "reportSpectrumCurveData",
-            //     Qt::QueuedConnection,
-            //     Q_ARG(quint8, mIndex),          // 设备索引
-            //     Q_ARG(QVector<quint32>, mCurrentSpec) // 完整8192道数据
-            //     );
+            QMetaObject::invokeMethod(
+                this,
+                "reportSpectrumCurveData",
+                Qt::QueuedConnection,
+                Q_ARG(quint8, mIndex),          // 设备索引
+                Q_ARG(QVector<quint32>, mCurrentSpec) // 完整8192道数据
+                );
 
             if(spectrumSeq%1000 == 0){
                 qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq

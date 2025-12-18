@@ -698,9 +698,11 @@ void CommHelper::setShotInformation(const QString shotDir, const quint32 shotNum
 }
 
 
-/*
- 开始测量
-*/
+/**
+ * @brief 开始测量
+ * @param mode 波形测量/能谱测量
+ * @param index index=0时则认为是全部探测器一起开始测量
+ */
 void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*/)
 {
     mWaveAllData.clear();
