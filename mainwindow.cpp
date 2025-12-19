@@ -1112,12 +1112,8 @@ void CentralWidget::on_action_startMeasure_triggered()
     quint32 shotNum = ui->spinBox_shotNum->value();
 
     // 保存测量数据
-    QString savePath = QString(tr("%1/%2/测量数据")).arg(shotDir).arg(shotNum);
-    QDir dir(QString(tr("%1/%2/测量数据")).arg(shotDir).arg(shotNum));
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
-    dir.setPath(QString(tr("%1/%2/处理数据")).arg(shotDir).arg(shotNum));
+    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNum);
+    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNum));
     if (!dir.exists()) {
         dir.mkpath(".");
     }
@@ -1741,12 +1737,8 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
     quint32 shotNum = ui->spinBox_shotNum->value();
 
     // 保存测量数据
-    QString savePath = QString(tr("%1/%2/测量数据")).arg(shotDir).arg(shotNum);
-    QDir dir(QString(tr("%1/%2/测量数据")).arg(shotDir).arg(shotNum));
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
-    dir.setPath(QString(tr("%1/%2/处理数据")).arg(shotDir).arg(shotNum));
+    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNum);
+    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNum));
     if (!dir.exists()) {
         dir.mkpath(".");
     }

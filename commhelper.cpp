@@ -359,7 +359,7 @@ void CommHelper::initDataProcessor()
                 }
 
                 if (!mDetectorFileProcessor.contains(processor->index())){
-                    QString filePath = QString("%1/%2/测量数据/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    QString filePath = QString("%1/%2/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
 
@@ -394,7 +394,7 @@ void CommHelper::initDataProcessor()
                 }
 
                 if (!mDetectorFileProcessor.contains(processor->index())){
-                    QString filePath = QString("%1/%2/测量数据/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    QString filePath = QString("%1/%2/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
 

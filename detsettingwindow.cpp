@@ -111,13 +111,13 @@ void DetSettingWindow::saveAt(quint8 detId)
     strcpy(detParameter.timerSrvIp, ui->lineEdit_timerSrvIp->text().toStdString().c_str());
 
     //基本设置
-    //增益
-    detParameter.gain = static_cast<quint8>(ui->comboBox_gain->currentIndex() + 1);
+    //增益，获取文本转double
+    detParameter.gain = ui->comboBox_gain->currentText().toDouble();
     //死时间
     detParameter.deathTime = static_cast<quint8>(ui->spinBox_deathTime->value());
     //触发阈值
     detParameter.triggerThold = static_cast<quint16>(ui->spinBox_triggerThold->value());
-    
+
     // //网络设置
     //IP地址
     QAbstractItemModel *model = ui->tableWidget->model();
@@ -141,16 +141,15 @@ void DetSettingWindow::saveAt(quint8 detId)
     //是否启用
     detParameter.trapShapeEnable = ui->trapShapeEnable->isChecked();
     //时间常数D1
-    detParameter.trapShapeTimeConstD1 = ui->spinBox_trapShapeTimeConstD1->value();
+    detParameter.trapShapeTimeConstD1 = static_cast<quint16>(ui->spinBox_trapShapeTimeConstD1->value());
     //时间常数D2
-    detParameter.trapShapeTimeConstD2 = ui->spinBox_trapShapeTimeConstD2->value();
+    detParameter.trapShapeTimeConstD2 = static_cast<quint16>(ui->spinBox_trapShapeTimeConstD2->value());
     //上升沿
-    detParameter.trapShapeRisePoint = ui->spinBox_trapShapeRisePoint->value();
+    detParameter.trapShapeRisePoint = static_cast<quint8>(ui->spinBox_trapShapeRisePoint->value());
     //平顶
-    detParameter.trapShapePeakPoint = ui->spinBox_trapShapePeakPoint->value();
+    detParameter.trapShapePeakPoint = static_cast<quint8>(ui->spinBox_trapShapePeakPoint->value());
     //下降沿
-    detParameter.trapShapeFallPoint = ui->spinBox_trapShapeFallPoint->value();
-
+    detParameter.trapShapeFallPoint = static_cast<quint8>(ui->spinBox_trapShapeFallPoint->value());
     //高压电源
     //是否启用
     detParameter.highVoltageEnable = ui->highVoltageEnable->isChecked();
@@ -175,10 +174,12 @@ void DetSettingWindow::loadAt(quint8 detId)
     ui->lineEdit_timerSrvIp->setText(QString::fromStdString(detParameter.timerSrvIp));
 
     //基本设置
-    //增益
-    ui->comboBox_gain->setCurrentIndex(detParameter.gain - 1);
+    //增益, 获取文本转double
+    ui->comboBox_gain->setCurrentText(QString::number(detParameter.gain));
+
     //死时间
     ui->spinBox_deathTime->setValue(detParameter.deathTime);
+
     //触发阈值
     ui->spinBox_triggerThold->setValue(detParameter.triggerThold);
 

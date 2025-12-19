@@ -21,9 +21,9 @@ CommandAdapter::CommandAdapter(QObject *parent)
                     mCmdWaitCondition.wait(&mCmdMutex);
                 }
 
-                if (mCmdQueue.size() > 0){
-                    QByteArray askCmd = mCmdQueue.dequeue();
-                    sendCmdToSocket(askCmd);
+                if (cmdPool.size() > 0){
+                    CommandItem cmdItem = cmdPool.takeFirst();
+                    sendCmdToSocket(cmdItem);
                 }
                 mCmdReady = false;
             }
@@ -49,11 +49,11 @@ CommandAdapter::~CommandAdapter()
 /*
  * 发送下一条指令
 */
-void CommandAdapter::pushCmd(QByteArray& askCmd)
+void CommandAdapter::pushCmd(CommandItem cmdItem)
 {
     QMutexLocker locket(&mCmdMutex);
-    //mCmdQueue.enqueue(askCmd);//因为指令没有返回码，所以没必要加入堆栈
-    sendCmdToSocket(askCmd);
+    //cmdPool.enqueue(cmdItem);//因为指令没有返回码，所以没必要加入堆栈
+    sendCmdToSocket(cmdItem);
 }
 
 /*
@@ -71,7 +71,7 @@ void CommandAdapter::notifySendNextCmd()
 void CommandAdapter::clear()
 {
     QMutexLocker locket(&mCmdMutex);
-    mCmdQueue.clear();
+    cmdPool.clear();
 }
 
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)
@@ -391,4 +391,271 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             break;
         }
     }
+}
+
+//增益指令01~08
+void CommandAdapter::sendGain(bool isRead, double gain){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 10 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else
+        askCurrentCmd[3] = 0x0F;
+
+    //根据增益值设置对应的指令值
+    quint8 gainHex = 0x07; //默认值5.01
+    if (qFuzzyCompare(gain, 0.08)) //浮点数相等的判断
+        gainHex = 0x01;
+    else if (qFuzzyCompare(gain, 0.16))
+        gainHex = 0x02;
+    else if (qFuzzyCompare(gain, 0.32))
+        gainHex = 0x03;
+    else if (qFuzzyCompare(gain, 0.63))
+        gainHex = 0x04;
+    else if (qFuzzyCompare(gain, 1.26))
+        gainHex = 0x05;
+    else if (qFuzzyCompare(gain, 2.52))
+        gainHex = 0x06;
+    else if (qFuzzyCompare(gain, 5.01))
+        gainHex = 0x07; //默认值5.01
+    else if (qFuzzyCompare(gain, 10.0))
+        gainHex = 0x08;
+
+    askCurrentCmd[9] = (gainHex & 0xFF);
+    //gain打印为为十六进制
+    pushCmd({QString("增益配置：%1").arg(gainHex, 2, 8, QLatin1Char('0')), askCurrentCmd});
+}
+
+//死时间配置(*10ns)
+void CommandAdapter::sendDeathTime(bool isRead, quint8 deathTime){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 11 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else
+        askCurrentCmd[3] = 0x0F;
+    askCurrentCmd[9] = (deathTime & 0xFF);
+    pushCmd({QString("死时间配置：%1ns").arg(deathTime*10), askCurrentCmd});
+}
+
+//触发阈值
+void CommandAdapter::sendTriggerThold(bool isRead, quint16 triggerThold){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 12 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else
+        askCurrentCmd[3] = 0x0F;
+    askCurrentCmd[8] = ((triggerThold >> 8) & 0xFF); // 高字节
+    askCurrentCmd[9] = (triggerThold & 0xFF);        // 低字节
+    pushCmd({QString("触发阈值配置：%1").arg(triggerThold), askCurrentCmd});
+}
+
+/*********************************************************
+ 波形基本配置
+***********************************************************/
+void CommandAdapter::sendWaveformMode(bool isRead, TriggerMode triggerMode, quint16 waveformLength){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FC 10 00 00 00 00 AB CD").toUtf8());
+    QString lengStr;
+
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        mWaveformLength = waveformLength;
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[7] = triggerMode;
+        switch (waveformLength) {
+        case 64:
+            askCurrentCmd[9] = wl64;
+            lengStr = "64";
+            break;
+        case 128:
+            askCurrentCmd[9] = wl128;
+            lengStr = "128";
+            break;
+        case 256:
+            askCurrentCmd[9] = wl256;
+            lengStr = "256";
+            break;
+        case 512:
+            askCurrentCmd[9] = wl512;
+            lengStr = "512";
+            break;
+        default:
+            break;
+        }
+    }
+
+    QString mode = (triggerMode == tmTimer) ? "定时触发模式" : "正常触发模式";
+    QString msg = QString("波形基本配置，触发模式：%1，波形长度：%2").arg(mode).arg(lengStr);
+    pushCmd({msg, askCurrentCmd});
+}
+
+/*********************************************************
+ 能谱基本配置
+***********************************************************/
+//能谱刷新时间修改(ms，默认值1000)
+void CommandAdapter::sendSprectnumRefreshTimelength(bool isRead, quint32 spectrumRefreshTime){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FD 10 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[6] = (spectrumRefreshTime >> 24) & 0xFF;
+        askCurrentCmd[7] = (spectrumRefreshTime >> 16) & 0xFF;
+        askCurrentCmd[8] = (spectrumRefreshTime >> 8)  & 0xFF;
+        askCurrentCmd[9] = (spectrumRefreshTime)       & 0xFF;
+    }
+    pushCmd({QString("能谱刷新时间:%1ms").arg(spectrumRefreshTime), askCurrentCmd});
+}
+
+/*********************************************************
+ 梯形成型基本配置
+***********************************************************/
+//梯形成型时间常数配置
+void CommandAdapter::sendTrapTimeConst(bool isRead, quint16 c1, quint16 c2){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FE 10 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        
+        if (c1 >= c2)
+            return;
+
+        askCurrentCmd[6] = ((c1 >> 8) & 0xFF);
+        askCurrentCmd[7] = (c1 & 0xFF);
+        askCurrentCmd[8] = ((c2 >> 8) & 0xFF);
+        askCurrentCmd[9] = (c2 & 0xFF);
+    }
+    pushCmd({QString("梯形成型时间常数配置:d1=%1，d2=%2").arg(c1).arg(c2), askCurrentCmd});
+}
+
+//上升沿、平顶、下降沿长度配置
+void CommandAdapter::sendRisePeakFallPoints(bool isRead, quint8 rise, quint8 peak, quint8 fall){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FE 11 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[7] = rise;
+        askCurrentCmd[8] = peak;
+        askCurrentCmd[9] = fall;
+    }
+    pushCmd({QString("上升沿=%1，平顶=%2，下降沿=%3").arg(rise).arg(peak).arg(fall), askCurrentCmd});
+}
+
+//梯形成型使能配置
+void CommandAdapter::sendTrapShapeEnable(bool isRead, TrapShapeEnable trapShapeEnable){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FE 12 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[9] = trapShapeEnable;
+    }
+    pushCmd({QString("梯形成型使能状态：%1").arg(trapShapeEnable == teClose ? "关闭" : "打开"), askCurrentCmd});
+}
+
+/*********************************************************
+ 高压电源配置
+***********************************************************/
+// 高压电平配置，单位V
+void CommandAdapter::sendHighVolgateOutLevel(bool isRead, quint16 highVolgateOutLevel){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F F9 10 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+
+        //高压值转DAC
+        double value = highVolgateOutLevel*1.0/441.0*65536.0/2.5;
+
+        // 四舍五入 + 范围保护
+        quint16 DAC = static_cast<quint16>(
+            qBound(0.0, std::round(value), 65535.0)
+        );
+
+        askCurrentCmd[8] = ((DAC >> 8) & 0xFF);
+        askCurrentCmd[9] = (DAC & 0xFF);
+    }
+    pushCmd({QString("高压电平配置：%1V").arg(highVolgateOutLevel), askCurrentCmd});
+}
+
+// 高压输出使能配置
+void CommandAdapter::sendHighVolgateOutLevelEnable(bool isRead, HighVolgateOutLevelEnable highVolgateOutLevelEnable){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F F9 11 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[9] = highVolgateOutLevelEnable;
+    }
+    pushCmd({QString("高压输出使能状态：%1").arg(highVolgateOutLevelEnable == hvClose ? "关闭" : "打开"), askCurrentCmd});
+}
+
+/*********************************************************
+ 工作模式配置
+***********************************************************/
+void CommandAdapter::sendWorkMode(bool isRead, WorkMode workMode){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FF 10 00 00 00 00 AB CD").toUtf8());
+    if (isRead)
+        askCurrentCmd[3] = 0x0A;
+    else{
+        askCurrentCmd[3] = 0x0F;
+        askCurrentCmd[9] = workMode;
+    }
+    pushCmd({QString("工作模式：%1").arg(workMode == wmSpectrum ? "能谱模式" : (workMode == wmWaveform ? "波形模式" : "粒子模式")), askCurrentCmd});
+}
+
+/*********************************************************
+ 控制类指令
+***********************************************************/
+//开始测量
+void CommandAdapter::sendStartMeasure(){
+    mValidDataPkgRef = 0;
+    mAskStopMeasure = false;
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F EA 10 00 00 00 01 AB CD").toUtf8());
+    
+    pushCmd({QString("开始测量指令"), askCurrentCmd});
+    mIsMeasuring = true;
+
+    //通知发送指令
+    this->notifySendNextCmd();
+}
+
+//停止测量
+void CommandAdapter::sendStopMeasure(){        
+    /*强制清空之前的指令*/
+    this->clear();
+
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F EA 10 00 00 00 00 AB CD").toUtf8());
+    pushCmd({QString("停止测量指令"), askCurrentCmd});
+
+    mAskStopMeasure = true;
+    mIsMeasuring = true;
+
+    //通知发送指令
+    this->notifySendNextCmd();
+}
+
+/*********************************************************
+ 应答类指令
+***********************************************************/
+//设备查询指令-程序版本号查询
+void CommandAdapter::sendSearchAppversion(){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0A DA 10 00 00 00 00 AB CD").toUtf8());
+    pushCmd({QString("设备查询指令-程序版本号查询"), askCurrentCmd});
+}
+
+//心跳包响应
+void CommandAdapter::sendPluse(){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0C DA 11 00 00 00 00 AB CD").toUtf8());
+    pushCmd({QString("心跳包响应指令"), askCurrentCmd});
+}
+
+/*********************************************************
+重加载FPGA程序
+***********************************************************/
+void CommandAdapter::sendSwitchHost(HostProgram hostProgram){
+    QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F CA 12 00 00 00 00 AB CD").toUtf8());
+    askCurrentCmd[9] = hostProgram;
+    pushCmd({QString("重加载FPGA程序指令"), askCurrentCmd});
 }

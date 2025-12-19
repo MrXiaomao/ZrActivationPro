@@ -50,7 +50,7 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
     // 全局
     {
         //心跳时间(秒)
-        mCompDataType.insertMember("pluseCheckTime", HOFFSET(DetParameter, pluseCheckTime), H5::PredType::NATIVE_INT);
+        mCompDataType.insertMember("checkTime", HOFFSET(DetParameter, pluseCheckTime), H5::PredType::NATIVE_INT);
         //交换机地址
         //mCompDataType.insertMember("switcherIp", HOFFSET(DetParameter, switcherIp), ipStrType);
 
@@ -62,59 +62,59 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
     //基本设置
     {
         //增益
-        mCompDataType.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_UINT8);
+        mCompDataType.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_DOUBLE);
         //死时间
-        mCompDataType.insertMember("deathTime", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_UINT8);
+        mCompDataType.insertMember("deathT", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_UINT8);
         //触发阈值
-        mCompDataType.insertMember("triggerThold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_UINT16);
+        mCompDataType.insertMember("Threshold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_UINT16);
     }
 
     // 探测器网络设置，用于界面匹配对应通道
     {
         //IP地址,port号
         char det_Ip_port[16];
-        mCompDataType.insertMember("det_Ip_port", HOFFSET(DetParameter, det_Ip_port), ipStrType);
+        mCompDataType.insertMember("detIpPort", HOFFSET(DetParameter, det_Ip_port), ipStrType);
     }
 
     //能谱设置
     {
         //能谱刷新时间（毫秒）
-        mCompDataType.insertMember("spectrumRefreshTime", HOFFSET(DetParameter, spectrumRefreshTime), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("specDeltaT", HOFFSET(DetParameter, spectrumRefreshTime), H5::PredType::NATIVE_ULONG);
         //能谱长度
-        mCompDataType.insertMember("spectrumLength", HOFFSET(DetParameter, spectrumLength), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("specLen", HOFFSET(DetParameter, spectrumLength), H5::PredType::NATIVE_ULONG);
     }
 
     //波形设置
     {
         //触发模式
-        mCompDataType.insertMember("waveformTriggerMode", HOFFSET(DetParameter, waveformTriggerMode), H5::PredType::NATIVE_UINT8);
+        mCompDataType.insertMember("waveTrigMode", HOFFSET(DetParameter, waveformTriggerMode), H5::PredType::NATIVE_UINT8);
         //波形长度
-        mCompDataType.insertMember("waveformLength", HOFFSET(DetParameter, waveformLength), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("waveLen", HOFFSET(DetParameter, waveformLength), H5::PredType::NATIVE_ULONG);
     }
 
     //梯形成型
     {
         //是否启用
 
-        mCompDataType.insertMember("trapShapeEnable", HOFFSET(DetParameter, trapShapeEnable), H5::PredType::NATIVE_HBOOL);
+        mCompDataType.insertMember("TShapeEnable", HOFFSET(DetParameter, trapShapeEnable), H5::PredType::NATIVE_HBOOL);
         //时间常数D1
-        mCompDataType.insertMember("trapShapeTimeConstD1", HOFFSET(DetParameter, trapShapeTimeConstD1), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("TShapeD1", HOFFSET(DetParameter, trapShapeTimeConstD1), H5::PredType::NATIVE_UINT16);
         //时间常数D2
-        mCompDataType.insertMember("trapShapeTimeConstD2", HOFFSET(DetParameter, trapShapeTimeConstD2), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("TShapeD2", HOFFSET(DetParameter, trapShapeTimeConstD2), H5::PredType::NATIVE_UINT16);
         //上升沿
-        mCompDataType.insertMember("trapShapeRisePoint", HOFFSET(DetParameter, trapShapeRisePoint), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("TShapeRise", HOFFSET(DetParameter, trapShapeRisePoint), H5::PredType::NATIVE_UINT8);
         //平顶
-        mCompDataType.insertMember("trapShapePeakPoint", HOFFSET(DetParameter, trapShapePeakPoint), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("TShapePeak", HOFFSET(DetParameter, trapShapePeakPoint), H5::PredType::NATIVE_UINT8);
         //下降沿
-        mCompDataType.insertMember("trapShapeFallPoint", HOFFSET(DetParameter, trapShapeFallPoint), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("TShapeFall", HOFFSET(DetParameter, trapShapeFallPoint), H5::PredType::NATIVE_UINT8);
     }
 
     //高压电源
     {
         //是否启用
-        mCompDataType.insertMember("highVoltageEnable", HOFFSET(DetParameter, highVoltageEnable), H5::PredType::NATIVE_HBOOL);
+        mCompDataType.insertMember("HV_Enable", HOFFSET(DetParameter, highVoltageEnable), H5::PredType::NATIVE_HBOOL);
         //DAC高压输出电平
-        mCompDataType.insertMember("highVoltageOutLevel", HOFFSET(DetParameter, highVoltageOutLevel), H5::PredType::NATIVE_USHORT);
+        mCompDataType.insertMember("HV_Out", HOFFSET(DetParameter, highVoltageOutLevel), H5::PredType::NATIVE_USHORT);
     }
 
     if (QFileInfo::exists(DEFAULT_HDF5_FILENAME)){
@@ -178,6 +178,8 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
             H5::DataSpace dataspace(1, dims);
             H5::Group cfgGroup = fH5Setting.createGroup("Config");
             H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
+
+
             dataset.write(data.data(), mCompDataType);
             fH5Setting.close();
         } catch (H5::FileIException& error) {
@@ -223,6 +225,7 @@ void HDF5Settings::sync()
         H5::DataSpace dataspace(1, dims);
         H5::Group cfgGroup = fH5Setting.createGroup("Config");
         H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
+        writeDetParStrAttr(dataset);
         dataset.write(data.data(), mCompDataType);
         fH5Setting.close();
     } catch (H5::FileIException& error) {
@@ -235,4 +238,39 @@ void HDF5Settings::sync()
         error.printErrorStack();
         return ;
     }
+}
+
+void HDF5Settings::writeDetParStrAttr(H5::DataSet& dataset)
+{
+    // 给每个字段写解释（多个键）
+    writeStrAttr(dataset, "id",   "通道号(0~23)");
+    writeStrAttr(dataset, "checkTime", "心跳时间(秒)");
+    writeStrAttr(dataset, "timerSrvIp", "授时服务器 IP 地址");
+    writeStrAttr(dataset, "gain", "增益(0.08~10.0)");
+    writeStrAttr(dataset, "deathT", "探测器死时间设定(*10ns)");
+    writeStrAttr(dataset, "Threshold", "触发阈值，低于阈值的波形不计入能谱");
+    writeStrAttr(dataset, "detIpPort", "探测器 IP 地址和端口号");
+    writeStrAttr(dataset, "specDeltaT", "能谱刷新时间(毫秒)");
+    writeStrAttr(dataset, "specLen", "能谱长度");
+    writeStrAttr(dataset, "waveTrigMode", "波形触发模式(0-定时触发 1-普通触发)");
+    writeStrAttr(dataset, "waveLen", "波形长度");
+    writeStrAttr(dataset, "TShapeEnable", "梯形成型使能(0/1)");
+    writeStrAttr(dataset, "TShapeD1", "梯形成型时间常数 D1");
+    writeStrAttr(dataset, "TShapeD2", "梯形成型时间常数 D2");
+    writeStrAttr(dataset, "TShapeRise", "梯形成型上升沿点数");
+    writeStrAttr(dataset, "TShapePeak", "梯形成型平顶点数");
+    writeStrAttr(dataset, "TShapeFall", "梯形成型下降沿点数");
+    writeStrAttr(dataset, "HV_Enable", "高压使能(0/1)");
+    writeStrAttr(dataset, "HV_Out", "DAC 高压输出电平(0~4095)");
+}
+
+// 写一个标量字符串 attribute（可变长）
+void HDF5Settings::writeStrAttr(H5::DataSet& ds, const std::string& key, const std::string& val) {
+    H5::StrType vstr(H5::PredType::C_S1, H5T_VARIABLE);
+    H5::DataSpace scalar(H5S_SCALAR);
+
+    H5::Attribute a = ds.createAttribute(key, vstr, scalar);
+    // H5Cpp 常见写法：写 const char*
+    const char* s = val.c_str();
+    a.write(vstr, &s);
 }

@@ -163,14 +163,17 @@ void DataProcessor::stopMeasure()
     this->sendStopMeasure();
 }
 
-void DataProcessor::sendCmdToSocket(QByteArray& cmd) const
+void DataProcessor::sendCmdToSocket(CommandItem cmdItem) const
 {
     if (mTcpSocket && mTcpSocket->isOpen()){
-        mTcpSocket->write(cmd);
+        mTcpSocket->write(cmdItem.data);
         mTcpSocket->waitForBytesWritten();
         ::QThread::msleep(50);
 
-        qDebug().noquote()<< "[" << mIndex << "] "<< "Send HEX[" << cmd.size() << "]: " << cmd.toHex(' ');
+        qDebug().noquote()<< QString("[%1]Send HEX: %2 [%3]")
+                                  .arg(mIndex)
+                                  .arg(QString(cmdItem.data.toHex(' ')))
+                                  .arg(cmdItem.name);
     }
 }
 
@@ -189,7 +192,9 @@ void DataProcessor::inputData(const QByteArray& data)
     {
         QMutexLocker locker(&mDataLocker);
         if (!mIsMeasuring)  // 进入正式测量之前，每秒钟会有一个温度数据上传过来，不打印
+        {
             // qDebug().noquote()<< "[" << mIndex << "] "<< "Recv HEX[" << data.size() << "]: " << data.toHex(' ');
+        }
 
         mRawData.append(data);
         mDataReady = true;

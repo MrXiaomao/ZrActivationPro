@@ -621,9 +621,11 @@ typedef struct _DetParameter{
      0007：对应增益为5.01；
      0008：对应增益为10.0
     */
-    quint8 gain;
+    double gain;
+
     //死时间
     quint8 deathTime;
+    
     //触发阈值
     quint16 triggerThold;
 
@@ -647,15 +649,15 @@ typedef struct _DetParameter{
     //是否启用
     bool trapShapeEnable;
     //时间常数D1
-    quint32 trapShapeTimeConstD1;
+    quint16 trapShapeTimeConstD1;
     //时间常数D2
-    quint32 trapShapeTimeConstD2;
+    quint16 trapShapeTimeConstD2;
     //上升沿
-    quint32 trapShapeRisePoint;
+    quint8 trapShapeRisePoint;
     //平顶
-    quint32 trapShapePeakPoint;
+    quint8 trapShapePeakPoint;
     //下降沿
-    quint32 trapShapeFallPoint;
+    quint8 trapShapeFallPoint;
 
     //高压电源
     //是否启用
@@ -678,9 +680,11 @@ typedef struct _DetParameter{
 
         //基本设置
         //增益
-        gain = 1;
+        gain = 1.26;
+
         //死时间,单位*10ns
         deathTime = 30;
+
         //触发阈值
         triggerThold = 100;
 
@@ -738,7 +742,14 @@ public:
 
     QMap<quint8, DetParameter>& detParameters();
     void setDetParameter(QMap<quint8, DetParameter>&);
+    
+    // 写一个标量字符串 attribute（可变长）
+    void writeStrAttr(H5::DataSet& ds, const std::string& key, const std::string& val);
 
+    // 给数据集写入探测器参数结构属性说明
+    void writeDetParStrAttr(H5::DataSet& dataset);
+
+    // 同步内存数据到文件
     void sync();
 
 private:

@@ -28,7 +28,7 @@ public:
     explicit DataProcessor(quint8 index, QTcpSocket* socket = nullptr, QObject *parent = nullptr);
     ~DataProcessor();
 
-    virtual void sendCmdToSocket(QByteArray&) const override;
+    virtual void sendCmdToSocket(CommandItem cmdItem) const override;
 
     void reallocIndex(quint8 index);//重新分配通道索引
     void reallocSocket(QTcpSocket *tcpSocket, DetParameter& detParameter);
