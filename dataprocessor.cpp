@@ -188,8 +188,8 @@ void DataProcessor::inputData(const QByteArray& data)
 {
     {
         QMutexLocker locker(&mDataLocker);
-        if (!mIsMeasuring) //进入正式测量之前，数据量偏小，都是指令集，可以输出打印
-            qDebug().noquote()<< "[" << mIndex << "] "<< "Recv HEX[" << data.size() << "]: " << data.toHex(' ');
+        if (!mIsMeasuring)  // 进入正式测量之前，每秒钟会有一个温度数据上传过来，不打印
+            // qDebug().noquote()<< "[" << mIndex << "] "<< "Recv HEX[" << data.size() << "]: " << data.toHex(' ');
 
         mRawData.append(data);
         mDataReady = true;

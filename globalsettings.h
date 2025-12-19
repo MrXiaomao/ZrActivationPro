@@ -621,11 +621,11 @@ typedef struct _DetParameter{
      0007：对应增益为5.01；
      0008：对应增益为10.0
     */
-    quint32 gain;
+    quint8 gain;
     //死时间
-    quint32 deathTime;
+    quint8 deathTime;
     //触发阈值
-    quint32 triggerThold;
+    quint16 triggerThold;
 
     // 探测器网络设置，用于界面匹配对应通道，并不下发指令
     //IP,端口地址 192.168.0:5000

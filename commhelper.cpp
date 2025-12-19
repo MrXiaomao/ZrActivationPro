@@ -220,7 +220,7 @@ void CommHelper::initSocket()
 
             //根据结果来判断
             mRespondString.replace("\r\n","\n");
-            qDebug().noquote() << mRespondString;
+            // qDebug().noquote() << mRespondString;
 
             QString warnEnableCmd = "Warning: This port is enabled already.";
             QString warnDisabledCmd = "Warning: This port is disabled already.";
@@ -340,6 +340,13 @@ void CommHelper::initDataProcessor()
             emit measureStop(processor->index());
         });
 
+        // 更新温度数据
+        connect(detectorDataProcessor, &DataProcessor::reportTemperatureData,
+        this, [=](double temperature){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            emit reportDetectorTemperature(processor->index(), temperature);
+        });
+                
         connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*

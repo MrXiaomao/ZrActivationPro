@@ -289,9 +289,12 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
             findNaul = true;
             cachePool.remove(0, 12);
-
+            
+            //上传温度数据
+            QMetaObject::invokeMethod(this, "reportTemperatureData", Qt::QueuedConnection, Q_ARG(float, temperature));
+            // emit reportTemperatureData(temperature);
             //发送心跳包，作为反馈
-            //this->sendPluse();
+            // this->sendPluse();
         }
 
         /*********************************************************
@@ -366,13 +369,10 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 }
                 else {
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
-                    findNaul = false;
-                    /*包头/包尾不对*/
-                    // qDebug() << "Invalid1: " << chunk.toHex(' ');
+                    findNaul = false;                
 
                     // 包头/包尾不对 重新开始寻找包头
                     cachePool.remove(0, 4);
-                    // cachePool.remove(0, onePkgSize); //删除异常数据继续寻找
                     continue;
                 }
             }

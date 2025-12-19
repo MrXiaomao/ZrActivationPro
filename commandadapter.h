@@ -23,6 +23,7 @@ public:
     Q_SIGNAL void reportSpectrumData(QByteArray&);
     Q_SIGNAL void reportWaveformData(QByteArray&);
     Q_SIGNAL void reportParticleData(QByteArray&);
+    Q_SIGNAL void reportTemperatureData(float temperature);
 
 signals:
 
@@ -31,27 +32,25 @@ public:
      通用基础配置
     ***********************************************************/
 
-    //增益指令
-    void sendGain(bool isRead = true, quint16 gain = 0x0000){
+    //增益指令01~08
+    void sendGain(bool isRead = true, quint8 gain = 0x0000){
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 10 00 00 00 00 AB CD").toUtf8());
         if (isRead)
             askCurrentCmd[3] = 0x0A;
         else
             askCurrentCmd[3] = 0x0F;
-        askCurrentCmd[8] = ((gain >> 8) & 0xFF); // 高字节
-        askCurrentCmd[9] = (gain & 0xFF);        // 低字节
+        askCurrentCmd[9] = (gain & 0xFF);
         pushCmd(askCurrentCmd);
     }
 
-    //死时间配置(ns)
-    void sendDeathTime(bool isRead = true, quint16 deathTime = 30){
+    //死时间配置(*10ns)
+    void sendDeathTime(bool isRead = true, quint8 deathTime = 30){
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F FA 11 00 00 00 00 AB CD").toUtf8());
         if (isRead)
             askCurrentCmd[3] = 0x0A;
         else
             askCurrentCmd[3] = 0x0F;
-        askCurrentCmd[8] = ((deathTime >> 8) & 0xFF); // 高字节
-        askCurrentCmd[9] = (deathTime & 0xFF);        // 低字节
+        askCurrentCmd[9] = (deathTime & 0xFF);
         pushCmd(askCurrentCmd);
     }
 
@@ -304,15 +303,24 @@ public:
     /*********************************************************
      高压电源配置
     ***********************************************************/
-    //高压电平使能配置
+    //高压电平使能配置，单位V
     void sendHighVolgateOutLevel(bool isRead = true, quint16 highVolgateOutLevel = 0x00){
         QByteArray askCurrentCmd = QByteArray::fromHex(QString("12 34 00 0F F9 10 00 00 00 00 AB CD").toUtf8());
         if (isRead)
             askCurrentCmd[3] = 0x0A;
         else{
             askCurrentCmd[3] = 0x0F;
-            askCurrentCmd[8] = ((highVolgateOutLevel >> 8) & 0xFF);
-            askCurrentCmd[9] = (highVolgateOutLevel & 0xFF);
+
+            //高压值转DAC
+            double value = highVolgateOutLevel*1.0/441.0*65536.0/2.5;
+
+            // 四舍五入 + 范围保护
+            quint16 DAC = static_cast<quint16>(
+                qBound(0.0, std::round(value), 65535.0)
+            );
+
+            askCurrentCmd[8] = ((DAC >> 8) & 0xFF);
+            askCurrentCmd[9] = (DAC & 0xFF);
         }
         pushCmd(askCurrentCmd);
     };

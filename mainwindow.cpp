@@ -588,6 +588,19 @@ void CentralWidget::initUi()
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
     initCustomPlot(101, spectroMeter_right, tr("道址"), tr("计数"), tr("累积能谱"), 1);
 
+    //更新温度状态
+    connect(commHelper, &CommHelper::reportDetectorTemperature, this, [=](quint8 index, float temperature){
+        int row = index - 1;
+        QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 3));
+        cell->setText(QString::number(temperature, 'f', 1) + " ℃");
+
+        if (temperature > 40.0) {
+            cell->setStyleSheet("color: red;");
+        } else {
+            cell->setStyleSheet("color: green;");
+        }
+    }, Qt::QueuedConnection);
+    
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
         // 将 QVector<quint32> 转换为 int 数组
@@ -1791,7 +1804,7 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
         }
         qInfo()<<str;
     }
-    
+
     //记录下所选的通道号，保存到成员变量中，停止测量的时候使用并清空
     m_selectedChannels.clear();
     for (const auto &mi : rows) {

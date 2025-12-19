@@ -417,13 +417,13 @@
           <item>
            <widget class="QSpinBox" name="spinBox_highVoltageOutLevel">
             <property name="maximum">
-             <number>0</number>
+             <number>1000</number>
             </property>
             <property name="singleStep">
              <number>1</number>
             </property>
             <property name="value">
-             <number>0</number>
+             <number>800</number>
             </property>
            </widget>
           </item>

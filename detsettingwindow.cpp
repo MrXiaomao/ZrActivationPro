@@ -112,12 +112,12 @@ void DetSettingWindow::saveAt(quint8 detId)
 
     //基本设置
     //增益
-    detParameter.gain = ui->comboBox_gain->currentIndex() + 1;
+    detParameter.gain = static_cast<quint8>(ui->comboBox_gain->currentIndex() + 1);
     //死时间
-    detParameter.deathTime = ui->spinBox_deathTime->value();
+    detParameter.deathTime = static_cast<quint8>(ui->spinBox_deathTime->value());
     //触发阈值
-    detParameter.triggerThold = ui->spinBox_triggerThold->value();
-
+    detParameter.triggerThold = static_cast<quint16>(ui->spinBox_triggerThold->value());
+    
     // //网络设置
     //IP地址
     QAbstractItemModel *model = ui->tableWidget->model();

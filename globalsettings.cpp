@@ -62,11 +62,11 @@ HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
     //基本设置
     {
         //增益
-        mCompDataType.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_UINT8);
         //死时间
-        mCompDataType.insertMember("deathTime", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("deathTime", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_UINT8);
         //触发阈值
-        mCompDataType.insertMember("triggerThold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_ULONG);
+        mCompDataType.insertMember("triggerThold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_UINT16);
     }
 
     // 探测器网络设置，用于界面匹配对应通道
