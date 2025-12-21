@@ -22,14 +22,15 @@ public:
     void saveAt(quint8 detId);
 
     Q_SIGNAL void settingfinished();
-
 private slots:
     void on_pushButton_save_clicked();
 
     void on_pushButton_cancel_clicked();
 
 private:
+    void updateSelectAllState();
     Ui::DetSettingWindow *ui;
+    bool mUpdatingSelectAll = true;
 };
 
 #endif // DETSETTINGWINDOW_H

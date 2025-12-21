@@ -32,12 +32,12 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
         delegate->removeItem(QString("%1:%2").arg(peerAddress).arg(peerPort));
     });
 
-    connect(ui->tableWidget, &QTableWidget::currentItemChanged, this, [=](QTableWidgetItem *current, QTableWidgetItem *previous){
-        if (previous)
-            saveAt(previous->row() + 1);
+    /*connect(ui->tableWidget, &QTableWidget::currentItemChanged, this, [=](QTableWidgetItem *current, QTableWidgetItem *previous){
+        // if (previous)
+        //     saveAt(previous->row() + 1);
         if (current)
             loadAt(current->row() + 1);
-    });
+    });*/
 
     connect(ui->tableWidget, &QTableWidget::cellChanged, this, [=](int row, int column){
         //方式IP关联重复
@@ -56,6 +56,23 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
             }
         }
     });
+    
+    connect(ui->checkBox_selectAll, &QCheckBox::stateChanged, this, [=](int state){
+        if (mUpdatingSelectAll) return;
+
+        bool checked = (state == Qt::Checked);
+
+        // 避免逐个触发导致反复更新
+        mUpdatingSelectAll = true;
+        for (int row = 0; row < ui->tableWidget->rowCount(); ++row) {
+            if (auto *cb = qobject_cast<QCheckBox*>(ui->tableWidget->cellWidget(row, 0))) {
+                cb->setChecked(checked);
+            }
+        }
+        mUpdatingSelectAll = false;
+
+        updateSelectAllState();
+    });
 
     for (int i = 1; i <= 24; ++i){
         int row = ui->tableWidget->rowCount();
@@ -66,6 +83,26 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
 
         ui->tableWidget->setItem(row, 1, new QTableWidgetItem(""));
         ui->tableWidget->item(row, 1)->setTextAlignment(Qt::AlignCenter);
+    }
+
+    // 初始化表格时：给每行第0列放checkbox
+    for (int row = 0; row < ui->tableWidget->rowCount(); ++row) {
+        auto *cb = new QCheckBox(ui->tableWidget);
+        cb->setProperty("row", row); // 方便反查
+        cb->setChecked(true); // 初始化全勾选
+        ui->tableWidget->setCellWidget(row, 0, cb);
+
+        updateSelectAllState();
+
+        connect(cb, &QCheckBox::stateChanged, this, [=](int){
+            int currentRow = row +1;
+            if(cb->isChecked()){
+                //选中
+                loadAt(currentRow);
+            }
+
+            updateSelectAllState();   // 见下方函数
+        });
     }
 
     //从HDF5加载配置信息
@@ -84,9 +121,46 @@ DetSettingWindow::~DetSettingWindow()
     delete ui;
 }
 
+void DetSettingWindow::updateSelectAllState()
+{
+    int total = ui->tableWidget->rowCount();
+    int checkedCount = 0;
+
+    for (int row = 0; row < total; ++row) {
+        if (auto *cb = qobject_cast<QCheckBox*>(ui->tableWidget->cellWidget(row, 0))) {
+            if (cb->isChecked()) checkedCount++;
+        }
+    }
+
+    // ✅ 没有勾选任何框就隐藏，有勾选就显示
+    ui->scrollArea->setVisible(checkedCount > 0);
+    ui->stackedWidget->setCurrentIndex(checkedCount > 0 ? 1 : 0);
+
+    mUpdatingSelectAll = true;
+    if (checkedCount == 0) {
+        ui->checkBox_selectAll->setTristate(false);
+        ui->checkBox_selectAll->setCheckState(Qt::Unchecked);
+    } else if (checkedCount == total) {
+        ui->checkBox_selectAll->setTristate(false);
+        ui->checkBox_selectAll->setCheckState(Qt::Checked);
+    } else {
+        ui->checkBox_selectAll->setTristate(true);
+        ui->checkBox_selectAll->setCheckState(Qt::PartiallyChecked);
+    }
+    mUpdatingSelectAll = false;
+}
+
 void DetSettingWindow::on_pushButton_save_clicked()
 {
-    saveAt(ui->tableWidget->currentRow() + 1);
+    //对选中的部分保存参数
+    for (int row = 0; row < ui->tableWidget->rowCount(); ++row) {
+        if (auto *cb = qobject_cast<QCheckBox*>(ui->tableWidget->cellWidget(row, 0))) {
+            if (cb->isChecked()) {
+                saveAt(row + 1);
+            }
+        }
+    }
+    // saveAt(ui->tableWidget->currentRow() + 1);
 }
 
 
