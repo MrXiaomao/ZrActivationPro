@@ -86,6 +86,7 @@ public:
     Q_SIGNAL void settingfinished();//配置完成
 
     Q_SIGNAL void reportDetectorTemperature(quint8, float temperature); //探测器温度报告
+    Q_SIGNAL void reportTemperatureTimeout(quint8 index); //探测器温度超时报警
     Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint16>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
@@ -109,6 +110,17 @@ public:
     */
     bool closeSwitcherPOEPower(quint8 port = 0);
     void closeNextSwitcherPOEPower();
+
+    // 手动关闭POE供电
+    void manualCloseSwitcherPOEPower(quint8 port)
+    {
+        mManualClosedPOEIDs.append(port);   
+    }
+    // 手动打开POE供电
+    void manualOpenSwitcherPOEPower(quint8 port)
+    {
+        mManualClosedPOEIDs.removeOne(port);
+    }
 
 private:
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
@@ -140,6 +152,9 @@ private:
     QMap<quint8, QFile*> mDetectorFileProcessor;//24路探测器数据处理器
     QMap<quint8, QVector<quint16>> mWaveAllData;
     QString mResMatrixFileName;
+
+    //记录手动关闭POE供电的探测器ID
+    QVector<quint8> mManualClosedPOEIDs;
 
     /*
      初始化网络

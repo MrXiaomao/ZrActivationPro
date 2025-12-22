@@ -1,6 +1,7 @@
 #include "commandadapter.h"
 #include <QDebug>
 #include <QtEndian>
+#include <QTimer>
 
 CommandAdapter::CommandAdapter(QObject *parent)
     : QObject{parent}
@@ -35,6 +36,12 @@ CommandAdapter::CommandAdapter(QObject *parent)
     connect(this, &CommandAdapter::destroyed, [=]() {
         mCmdProcessThread->exit(0);
         mCmdProcessThread->wait(500);
+    });
+
+    mTempTimeoutTimer.setSingleShot(true);
+    connect(&mTempTimeoutTimer, &QTimer::timeout, this, [this](){
+        qWarning().noquote() << "超过10秒未收到温度数据，触发报警！";
+        reportTemperatureTimeout(); // 直接调用（同线程）更稳
     });
 }
 
@@ -74,6 +81,10 @@ void CommandAdapter::clear()
     cmdPool.clear();
 }
 
+void CommandAdapter::restartTempTimeout() {
+    mTempTimeoutTimer.start(10000);
+}
+
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 {
     while(1){
@@ -82,6 +93,25 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             break;
 
         bool findNaul = false;
+
+        //温度监测（心跳检测）
+        if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A DA 11"))){
+            QByteArray data = cachePool.mid(6, 4);
+            qint32 t = qFromBigEndian<qint32>(data.constData());
+            float temperature = t * 0.0001;// 换算系数
+
+            qDebug().noquote() << "温度：" << temperature;
+
+            findNaul = true;
+            cachePool.remove(0, 12);
+
+            //上传温度数据
+            QMetaObject::invokeMethod(this, "reportTemperatureData", Qt::QueuedConnection, Q_ARG(float, temperature));
+
+            //超时监测，每次超过10s没收到温度则报警
+            QMetaObject::invokeMethod(this, "restartTempTimeout", Qt::QueuedConnection);
+        }
+
         //增益指令
         {
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 10"))){
@@ -236,33 +266,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
         }
 
         /*********************************************************
-         控制类指令
-        ***********************************************************/
-        //开始测量
-        /*if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F EA 10 00 00 00 01 AB CD"))){
-            qInfo().noquote() << "下发指令返回：开始测量";
-
-            mIsMeasuring = true;
-            findNaul = true;
-            cachePool.remove(0, 12);
-
-            //上报开始测量状态
-            QMetaObject::invokeMethod(this, "reportStartMeasure", Qt::QueuedConnection);
-        }
-
-        //停止测量
-        if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0F EA 10 00 00 00 00 AB CD"))){
-            qInfo().noquote() << "下发指令返回：停止测量";
-
-            mIsMeasuring = false;
-            findNaul = true;
-            cachePool.remove(0, 12);
-
-            //上报结束测量状态
-            QMetaObject::invokeMethod(this, "reportStopMeasure", Qt::QueuedConnection);
-        }*/
-
-        /*********************************************************
          应答类指令
         ***********************************************************/
         //程序版本号查询
@@ -277,24 +280,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
             findNaul = true;
             cachePool.remove(0, 12);
-        }
-
-        //温度监测（心跳检测）
-        if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A DA 11"))){
-            QByteArray data = cachePool.mid(6, 4);
-            qint32 t = qFromBigEndian<qint32>(data.constData());
-            float temperature = t * 0.0001;// 换算系数
-
-            qDebug().noquote() << "温度：" << temperature;
-
-            findNaul = true;
-            cachePool.remove(0, 12);
-            
-            //上传温度数据
-            QMetaObject::invokeMethod(this, "reportTemperatureData", Qt::QueuedConnection, Q_ARG(float, temperature));
-            // emit reportTemperatureData(temperature);
-            //发送心跳包，作为反馈
-            // this->sendPluse();
         }
 
         /*********************************************************

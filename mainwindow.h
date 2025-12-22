@@ -168,6 +168,10 @@ private:
     bool mIsOneLayout = false;
     QColor mThemeColor = QColor(255,255,255);
 
+    //记录温度超时报警的探测器ID
+    QVector<quint8> mTemperatureTimeoutDetectors;
+    //记录探测器是否正在测量
+    QMap<quint8, bool> mDetectorMeasuring;
     // 探测器数据管理
     QHash<int, DetectorData> m_detectorData;  // 只存储联网探测器的数据
     CommHelper *commHelper = nullptr;

@@ -56,13 +56,28 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
         qInfo().nospace().nospace() << "Detector#" << index << ": online";
+        //如果该探测器在温度超时报警列表中，则删除
+        if (mTemperatureTimeoutDetectors.contains(index)){
+            mTemperatureTimeoutDetectors.removeOne(index);
+            //如果该探测器正在测量，则重新开始测量
+            if (mDetectorMeasuring[index]){
+                commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
+                //打印日志
+                qInfo().noquote() << "探测器" << index << "自动重新开始测量";
+            }
+        }
     });
+
     connect(commHelper, &CommHelper::detectorOffline, this, [=](quint8 index){
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
         cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
+
+        // 探测器离线时，清除测量状态记录
+        // mDetectorMeasuring[index] = false;
+        // mDetectorMeasuring.remove(index);
 
         qInfo().nospace().nospace() << "Detector#" << index << ": offline";
     });
@@ -78,6 +93,9 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         // 重置该探测器的能谱数据
         resetDetectorSpectrum(index);
 
+        // 记录探测器正在测量
+        mDetectorMeasuring[index] = true;
+
         qInfo().nospace().nospace() << "Detector#" << index << ": the measurement is start, get ready to receive data";//开始实验，准备接收数据
     });
 
@@ -88,6 +106,9 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
+
+        // 记录探测器停止测量
+        // mDetectorMeasuring[index] = false;
 
         qInfo().nospace().nospace() << "Detector#" << index << ": the measurement has been stopped";
     });
@@ -444,11 +465,21 @@ void CentralWidget::initUi()
                 connect(cell, &SwitchButton::clicked, this, [=](){
                     if (!cell->getChecked()){
                         if (commHelper->openSwitcherPOEPower(row+1))
+                        {
+                            commHelper->manualOpenSwitcherPOEPower(row+1);
                             cell->setChecked(true);
+                            //打印日志
+                            qInfo().noquote() << "手动打开探测器" << row+1 << "的POE供电";
+                        }
                     }
                     else{
                         if (commHelper->closeSwitcherPOEPower(row+1))
+                        {
+                            commHelper->manualCloseSwitcherPOEPower(row+1);
                             cell->setChecked(false);
+                            //打印日志
+                            qInfo().noquote() << "手动关闭探测器" << row+1 << "的POE供电";
+                        }
                     }
                 });
             }
@@ -595,13 +626,19 @@ void CentralWidget::initUi()
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 3));
         cell->setText(QString::number(temperature, 'f', 1) + " ℃");
 
-        if (temperature > 40.0) {
+        if (temperature > 70.0) {
             cell->setStyleSheet("color: red;");
         } else {
             cell->setStyleSheet("color: green;");
         }
     }, Qt::QueuedConnection);
     
+    connect(commHelper, &CommHelper::reportTemperatureTimeout, this, [=](quint8 index){
+        QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(index-1, 3));
+        cell->setStyleSheet("color: gray;");//灰色字体
+        mTemperatureTimeoutDetectors.append(index);
+    }, Qt::QueuedConnection);
+
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
         // 将 QVector<quint32> 转换为 int 数组
@@ -1153,6 +1190,10 @@ void CentralWidget::on_action_stopMeasure_triggered()
 
     // 停止波形测量
     commHelper->stopMeasure();
+    //清空温度超时报警的探测器ID
+    mTemperatureTimeoutDetectors.clear();
+    //清空探测器正在测量记录
+    mDetectorMeasuring.clear();
 }
 
 

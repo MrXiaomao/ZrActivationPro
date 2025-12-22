@@ -191,6 +191,7 @@ void CommHelper::initSocket()
         }
         else if(mRespondString.endsWith("[HUAWEI]") && mSwitcherIsLoginOk && !mSwitcherInSystemView)
         {
+            //交换机连接正常，登录成功
             mSwitcherInSystemView = true;
             mRespondString.clear();
 
@@ -342,38 +343,37 @@ void CommHelper::initDataProcessor()
         DataProcessor* detectorDataProcessor = new DataProcessor(index, nullptr, this);
         mDetectorDataProcessor[index] = detectorDataProcessor;
 
-        connect(detectorDataProcessor, &DataProcessor::reportStartMeasure, this, [=](){
-            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            emit measureStart(processor->index());
-        });
-
-        connect(detectorDataProcessor, &DataProcessor::reportStopMeasure, this, [=](){
-            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            /*
-             * 停止保存
-            */
-            {
-                QMutexLocker locker(&mMutexTriggerTimer);
-                if (mDetectorFileProcessor.contains(processor->index())){
-                    if (mDetectorFileProcessor[processor->index()]->isOpen()){
-                        mDetectorFileProcessor[processor->index()]->flush();
-                        mDetectorFileProcessor[processor->index()]->close();
-                        mDetectorFileProcessor[processor->index()]->deleteLater();
-                        mDetectorFileProcessor.remove(processor->index());
-                    }
-                }
-            }
-
-            emit measureStop(processor->index());
-        });
-
         // 更新温度数据
         connect(detectorDataProcessor, &DataProcessor::reportTemperatureData,
         this, [=](double temperature){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             emit reportDetectorTemperature(processor->index(), temperature);
         });
-                
+        
+        //对温度超时报警进行处理
+        connect(detectorDataProcessor, &DataProcessor::reportTemperatureTimeout, this, [=](){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            emit reportTemperatureTimeout(processor->index());//上报温度超时报警
+            
+            //如果该探测器在手动关闭POE供电列表中，则不处理
+            if (mManualClosedPOEIDs.contains(processor->index())){
+                return;
+            }
+
+            //断电30min后重新打开供电
+            int detID = processor->index();
+            stopMeasure(detID);
+            //先停止测量
+            qInfo().noquote() << "探测器" << detID << "温度心跳超时报警！停止测量并断电30min后重新打开供电！";
+            //断电
+            closeSwitcherPOEPower(detID);
+            //定时30min后重新打开供电
+            QTimer::singleShot(30*60*1000, this, [=](){
+                openSwitcherPOEPower(detID);
+                qInfo().noquote() << "探测器" << detID << "重启供电";
+            });
+        });
+
         connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
