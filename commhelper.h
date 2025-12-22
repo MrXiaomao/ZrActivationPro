@@ -1,4 +1,4 @@
-#ifndef COMMHELPER_H
+﻿#ifndef COMMHELPER_H
 #define COMMHELPER_H
 
 #include <QObject>
@@ -34,6 +34,10 @@ public:
     */
     void stopServer();
 
+    /*
+     连接并查询电源状态
+    */
+    void queryPowerStatus();
     /*
      打开电源
     */
@@ -98,6 +102,7 @@ public:
     */
     bool openSwitcherPOEPower(quint8 port = 0);
     void openNextSwitcherPOEPower();
+    void queryNextSwitcherPOEPower();
 
     /*
      关闭交换机POE口输出电源

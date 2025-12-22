@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "qcustomplot.h"
 #include "globalsettings.h"
@@ -24,6 +24,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
+    ui->action_connect->setEnabled(false);
     ui->action_powerOn->setEnabled(false);
     ui->action_powerOff->setEnabled(false);
     ui->action_connect->setEnabled(false);
@@ -1029,6 +1030,7 @@ void CentralWidget::on_action_startServer_triggered()
     if (commHelper->startServer()){
         ui->action_startServer->setEnabled(false);
         ui->action_stopServer->setEnabled(true);
+        ui->action_connect->setEnabled(true);
         ui->action_powerOn->setEnabled(true);
         ui->action_powerOff->setEnabled(true);
         ui->action_startMeasure->setEnabled(true);
@@ -1052,6 +1054,7 @@ void CentralWidget::on_action_stopServer_triggered()
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
+    ui->action_connect->setEnabled(false);
     ui->action_powerOn->setEnabled(false);
     ui->action_powerOff->setEnabled(false);
     ui->action_startMeasure->setEnabled(false);
@@ -1819,5 +1822,12 @@ void CentralWidget::on_pushButton_stopMeasure_clicked()
 
     //清空所选通道号列表
     m_selectedChannels.clear();
+}
+
+
+void CentralWidget::on_action_connect_triggered()
+{
+    // 打开电源
+    commHelper->queryPowerStatus();
 }
 

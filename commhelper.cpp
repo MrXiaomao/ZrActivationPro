@@ -1,4 +1,4 @@
-#include "commhelper.h"
+﻿#include "commhelper.h"
 #include "globalsettings.h"
 
 #include <QTimer>
@@ -158,6 +158,7 @@ void CommHelper::initSocket()
     connect(mTelnet, &QTelnet::socketReadyRead,this,[=](const char *data, int size){
         QByteArray rx_current(data, size);
         mRespondString.append(rx_current);
+        qDebug() << mRespondString;
         if(mRespondString.endsWith("---- More ----")){
             QString data = "\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
@@ -224,13 +225,39 @@ void CommHelper::initSocket()
 
             QString warnEnableCmd = "Warning: This port is enabled already.";
             QString warnDisabledCmd = "Warning: This port is disabled already.";
-            QString switchCmd = QString("[HUAWEI-GigabitEthernet0/0/%1]").arg(mCurrentQueryPort);
-            //QString queryCmd = QString("display poe power-state interface GigabitEthernet0/0/%1").arg(mCurrentQueryPort);
-            QString queryCmd = QString("interface GigabitEthernet 0/0/%1\r").arg(mCurrentQueryPort);
+            QString switchCmd = QString("[HUAWEI-GigabitEthernet0/0/%1]").arg(mCurrentQueryPort);//进入interface GigabitEthernet之后
+            QString switchCmd2 = QString("<HUAWEI>");//进入视图之前
+            QString switchCmd3 = QString("[HUAWEI]");//进入视图之后
+            QString queryCmd = QString("display poe power-state interface GigabitEthernet0/0/%1\r").arg(mCurrentQueryPort);
+            QString enterInterfaceCmd = QString("interface GigabitEthernet 0/0/%1\r").arg(mCurrentQueryPort);
 
             if (mCurrentCommand == queryCmd){
+                qDebug() << mRespondString;
+                if (mRespondString.endsWith(switchCmd3.toLatin1())){
+                    QList<QByteArray> lines = mRespondString.split('\n');
+                    mRespondString.clear();
+
+                    QMap<QString, QString> mapValues;
+                    for (auto line : lines)
+                    {
+                        QList<QByteArray> values = line.split(':');
+                        if (values.size() > 1)
+                            mapValues[values[0].trimmed()] = values[1].trimmed();
+                    }
+
+                    if (mapValues["Power enable state"] == "enable")
+                        QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, true));
+                    else
+                        QMetaObject::invokeMethod(this, "reportPoePowerStatus", Qt::QueuedConnection, Q_ARG(quint8, mCurrentQueryPort), Q_ARG(bool, false));
+
+                    // 查询下一个POE供电口状态
+                    queryNextSwitcherPOEPower();
+                }
+            }
+            else if (mCurrentCommand == enterInterfaceCmd){
                 if (mRespondString.endsWith(switchCmd.toLatin1())){
                     mRespondString.clear();
+
                     if (mBatchOn || mSingleOn){
                         QTimer::singleShot(0, this, [=](){
                             mCurrentCommand = "poe enable\r";
@@ -571,6 +598,16 @@ void CommHelper::openNextSwitcherPOEPower()
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
 }
 
+void CommHelper::queryNextSwitcherPOEPower()
+{
+    if (mCurrentQueryPort >= DET_NUM)
+        return;
+
+    mCurrentQueryPort++;
+    mCurrentCommand = QString("display poe power-state interface GigabitEthernet0/0/%1").arg(mCurrentQueryPort) + "\r";
+    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+}
+
 void CommHelper::closeNextSwitcherPOEPower()
 {
     if (mCurrentQueryPort >= DET_NUM)
@@ -640,10 +677,7 @@ void CommHelper::stopServer()
     this->mTcpServer->close();
 }
 
-/*
- 打开电源
-*/
-void CommHelper::openPower()
+void CommHelper::queryPowerStatus()
 {
     mBatchOn = true;
     mSingleOn = false;
@@ -652,10 +686,18 @@ void CommHelper::openPower()
     mCommands.clear();
     quint8 fromPort = 1;
     quint8 toPort = DET_NUM;
+
+    //开机即打开POE供电
+    // for (int i=fromPort; i<=toPort; ++i){
+    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
+    //     mCommands.append(cmd);
+    //     cmd = "poe enable\r";
+    //     mCommands.append(cmd);
+    // }
+
+    //开机仅查询POE供电
     for (int i=fromPort; i<=toPort; ++i){
-        QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-        mCommands.append(cmd);
-        cmd = "poe enable\r";
+        QString cmd = QString("display poe power-state interface GigabitEthernet0/0/%1\r").arg(i);
         mCommands.append(cmd);
     }
 
@@ -675,6 +717,19 @@ void CommHelper::openPower()
     {
         emit switcherDisconnected();
     }
+}
+
+/*
+ 打开电源
+*/
+void CommHelper::openPower()
+{
+    mBatchOn = true;
+    mSingleOn = false;
+    mBatchOff = false;
+    mSingleOff = false;
+
+    openSwitcherPOEPower(0x00);
 }
 /*
  断开电源

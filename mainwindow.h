@@ -1,4 +1,4 @@
-#ifndef MAINWINDOW_H
+﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
 #include <QMainWindow>
@@ -151,6 +151,8 @@ private slots:
     void on_pushButton_startMeasure_clicked();
 
     void on_pushButton_stopMeasure_clicked();
+
+    void on_action_connect_triggered();
 
 private:
     Ui::CentralWidget *ui;

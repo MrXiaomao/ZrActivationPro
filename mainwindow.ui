@@ -1897,7 +1897,7 @@
      <x>0</x>
      <y>0</y>
      <width>1431</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -1998,6 +1998,7 @@
    </attribute>
    <addaction name="action_startServer"/>
    <addaction name="action_stopServer"/>
+   <addaction name="action_connect"/>
    <addaction name="action_powerOn"/>
    <addaction name="action_powerOff"/>
    <addaction name="separator"/>
@@ -2109,7 +2110,7 @@
      <normaloff>:/conect-on.png</normaloff>:/conect-on.png</iconset>
    </property>
    <property name="text">
-    <string>连接交换机</string>
+    <string>连接电源设备</string>
    </property>
    <property name="toolTip">
     <string>连接交换机</string>
