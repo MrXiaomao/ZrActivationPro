@@ -2110,7 +2110,7 @@
      <normaloff>:/conect-on.png</normaloff>:/conect-on.png</iconset>
    </property>
    <property name="text">
-    <string>连接电源设备</string>
+    <string>连接交换机</string>
    </property>
    <property name="toolTip">
     <string>连接交换机</string>

@@ -11,7 +11,7 @@
 #include <QEventLoop>
 #include "TcpAgentServer.h"
 #include "dataprocessor.h"
-#include "QTelnet.h"
+#include "qhuaweiswitcherhelper.h"
 
 class CommHelper : public QObject
 {
@@ -34,10 +34,16 @@ public:
     */
     void stopServer();
 
-    /*
-     连接并查询电源状态
-    */
-    void queryPowerStatus();
+    /**
+     * 根据谱仪编号找到对应的交换机
+     */
+    QHuaWeiSwitcherHelper *indexOfHuaWeiSwitcher(int index);
+    /**
+     * 根据谱仪编号找到对应的交换机POE端口号
+     */
+    quint8 indexOfPort(int index);
+
+    void connectSwitcher();
     /*
      打开电源
     */
@@ -74,8 +80,8 @@ public:
     Q_SIGNAL void connectPeerConnection(QString,quint16);//客户端上线
     Q_SIGNAL void disconnectPeerConnection(QString,quint16);//客户端上线
 
-    Q_SIGNAL void switcherConnected();//交换机连接
-    Q_SIGNAL void switcherDisconnected();//交换机断开
+    Q_SIGNAL void switcherConnected(QString);//交换机连接
+    Q_SIGNAL void switcherDisconnected(QString);//交换机断开
 
     Q_SIGNAL void detectorOnline(quint8 index);  //数采板
     Q_SIGNAL void detectorOffline(quint8 index);
@@ -101,21 +107,19 @@ public:
      打开交换机POE口输出电源
     */
     bool openSwitcherPOEPower(quint8 port = 0);
-    void openNextSwitcherPOEPower();
-    void queryNextSwitcherPOEPower();
 
     /*
      关闭交换机POE口输出电源
     */
     bool closeSwitcherPOEPower(quint8 port = 0);
-    void closeNextSwitcherPOEPower();
 
 private:
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
     QMutex mPeersMutex;
     QVector<QTcpSocket*> mConnectionPeers; //客户端连接表
 
-    QTelnet *mTelnet = nullptr;//华为交换机控制POE电源
+    quint8 mHuaWeiSwitcherCount = 0;
+    QList<QHuaWeiSwitcherHelper *> mHuaWeiSwitcherHelper;
     QTimer *mSwitcherStatusRefreshTimer = nullptr;
     QEventLoop mSwitcherEventLoop;
     quint8 mCurrentQueryPort = 0;

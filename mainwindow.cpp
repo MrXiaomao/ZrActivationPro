@@ -36,17 +36,22 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     ui->pushButton_stopMeasure->setEnabled(false);
 
     // 继电器
-    connect(commHelper, &CommHelper::switcherConnected, this, [=](){
-        QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
-        label_Connected->setStyleSheet("color:#00ff00;");
-        label_Connected->setText(tr("交换机网络状态：已连通"));
-        qInfo().noquote() << tr("交换机网络状态：已连通");
+    connect(commHelper, &CommHelper::switcherConnected, this, [=](QString ip){
+        // QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
+        // label_Connected->setStyleSheet("color:#00ff00;");
+        // label_Connected->setText(tr("交换机[%1]：已连通").arg(ip));
+        ui->action_powerOn->setEnabled(true);
+        ui->action_powerOff->setEnabled(true);
+        qInfo().noquote() << tr("交换机[%1]：已连通").arg(ip);
     });
-    connect(commHelper, &CommHelper::switcherDisconnected, this, [=](){
-        QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
-        label_Connected->setStyleSheet("color:#ff0000;");
-        label_Connected->setText(tr("交换机网络状态：断网"));
-        qInfo().noquote() << tr("交换机网络状态：断网");
+    connect(commHelper, &CommHelper::switcherDisconnected, this, [=](QString ip){
+        // QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
+        // label_Connected->setStyleSheet("color:#ff0000;");
+        // label_Connected->setText(tr("交换机[%1]：断网").arg(ip));
+
+        ui->action_powerOn->setEnabled(false);
+        ui->action_powerOff->setEnabled(false);
+        qCritical().noquote() << tr("交换机[%1]：断网").arg(ip);
     });
 
     // 探测器
@@ -315,7 +320,7 @@ void CentralWidget::initUi()
     label_Connected->setObjectName("label_Connected");
     label_Connected->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     label_Connected->setFixedWidth(300);
-    label_Connected->setText(tr("交换机网络状态：未开启"));
+    //label_Connected->setText(tr("交换机网络状态：未开启"));
     label_Connected->installEventFilter(this);
 
     /*设置任务栏信息*/
@@ -1031,8 +1036,8 @@ void CentralWidget::on_action_startServer_triggered()
         ui->action_startServer->setEnabled(false);
         ui->action_stopServer->setEnabled(true);
         ui->action_connect->setEnabled(true);
-        ui->action_powerOn->setEnabled(true);
-        ui->action_powerOff->setEnabled(true);
+        // ui->action_powerOn->setEnabled(true);
+        // ui->action_powerOff->setEnabled(true);
         ui->action_startMeasure->setEnabled(true);
         ui->action_stopMeasure->setEnabled(true);
         ui->pushButton_startMeasure->setEnabled(true);
@@ -1828,6 +1833,6 @@ void CentralWidget::on_pushButton_stopMeasure_clicked()
 void CentralWidget::on_action_connect_triggered()
 {
     // 打开电源
-    commHelper->queryPowerStatus();
+    commHelper->connectSwitcher();
 }
 

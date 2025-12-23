@@ -22,6 +22,7 @@ SOURCES += \
     mainwindow.cpp \
     parsedata.cpp \
     qcomboboxdelegate.cpp \
+    qhuaweiswitcherhelper.cpp \
     switchbutton.cpp \
     sysutils.cpp
 
@@ -35,6 +36,7 @@ HEADERS += \
     localsettingwindow.h \
     parsedata.h \
     qcomboboxdelegate.h \
+    qhuaweiswitcherhelper.h \
     qlitethread.h \
     commhelper.h \
     globalsettings.h \
