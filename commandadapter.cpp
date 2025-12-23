@@ -593,7 +593,7 @@ void CommandAdapter::sendWorkMode(bool isRead, WorkMode workMode){
 /*********************************************************
  控制类指令
 ***********************************************************/
-//开始测量
+//开始测量 波形测量/能谱测量共用一个开始
 void CommandAdapter::sendStartMeasure(){
     mValidDataPkgRef = 0;
     mAskStopMeasure = false;
@@ -606,7 +606,7 @@ void CommandAdapter::sendStartMeasure(){
     this->notifySendNextCmd();
 }
 
-//停止测量
+//停止测量，波形测量/能谱测量共用一个停止
 void CommandAdapter::sendStopMeasure(){        
     /*强制清空之前的指令*/
     this->clear();

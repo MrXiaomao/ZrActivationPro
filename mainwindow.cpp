@@ -3,6 +3,7 @@
 #include "qcustomplot.h"
 #include "globalsettings.h"
 #include "switchbutton.h"
+#include <QTimer>
 
 CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
@@ -14,6 +15,13 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     setWindowTitle(QApplication::applicationName()+" - "+APP_VERSION);
 
     commHelper = CommHelper::instance();
+    
+    // 初始化测量倒计时定时器
+    mMeasureCountdownTimer = new QTimer(this);
+    mMeasureCountdownTimer->setSingleShot(false);
+    mMeasureCountdownTimer->setInterval(1000); // 每秒触发一次
+    connect(mMeasureCountdownTimer, &QTimer::timeout, this, &CentralWidget::onMeasureCountdownTimeout);
+    
     initUi();
     initNet();
 
@@ -1172,6 +1180,17 @@ void CentralWidget::on_action_startMeasure_triggered()
 
     commHelper->setShotInformation(shotDir, shotNum);
 
+    // 读取倒计时时间（秒）
+    int countdownSeconds = ui->spinBox_3->value();
+    if (countdownSeconds > 0) {
+        mRemainingCountdown = countdownSeconds;
+        mTotalCountdown = countdownSeconds;
+        mMeasureCountdownTimer->start();
+        // 初始化测量时长显示为 00:00:00
+        ui->edit_measureTime->setText("00:00:00");
+        qInfo().noquote() << QString("开始测量，倒计时：%1 秒").arg(countdownSeconds);
+    }
+
     // 再发开始测量指令
     if (ui->action_waveformMode->isChecked())
         commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform);
@@ -1182,6 +1201,18 @@ void CentralWidget::on_action_startMeasure_triggered()
 
 void CentralWidget::on_action_stopMeasure_triggered()
 {
+    // 停止倒计时定时器
+    if (mMeasureCountdownTimer && mMeasureCountdownTimer->isActive()) {
+        mMeasureCountdownTimer->stop();
+        // 显示最终测量时长
+        int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
+        ui->edit_measureTime->setText(formatTimeString(elapsedSeconds));
+        qInfo() << "测量倒计时已停止";
+    } else {
+        // 如果没有倒计时，清空显示
+        ui->edit_measureTime->setText("00:00:00");
+    }
+
     if (ui->checkBox_autoIncrease->isChecked()){
         ui->spinBox_shotNum->setValue(ui->spinBox_shotNum->value() + 1);
         GlobalSettings settings(CONFIG_FILENAME);
@@ -1194,6 +1225,40 @@ void CentralWidget::on_action_stopMeasure_triggered()
     mTemperatureTimeoutDetectors.clear();
     //清空探测器正在测量记录
     mDetectorMeasuring.clear();
+}
+
+void CentralWidget::onMeasureCountdownTimeout()
+{
+    mRemainingCountdown--;
+    
+    // 计算已测量时长（总时长 - 剩余倒计时）
+    int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
+    // 更新测量时长显示
+    ui->edit_measureTime->setText(formatTimeString(elapsedSeconds));
+    
+    if (mRemainingCountdown > 0) {
+        // 倒计时进行中，可以在这里更新UI显示剩余时间
+        // qInfo().noquote() << QString("测量倒计时剩余：%1 秒").arg(mRemainingCountdown);
+    } else {
+        // 倒计时结束
+        mMeasureCountdownTimer->stop();
+        // 显示最终测量时长
+        ui->edit_measureTime->setText(formatTimeString(mTotalCountdown));
+        qInfo() << "测量倒计时结束，正在停止测量并关闭所有通道电源...";
+        
+        // 停止所有测量
+        commHelper->stopMeasure();
+        
+        // 关闭所有通道电源
+        commHelper->closePower();
+        
+        //清空温度超时报警的探测器ID
+        mTemperatureTimeoutDetectors.clear();
+        //清空探测器正在测量记录
+        mDetectorMeasuring.clear();
+        
+        qInfo() << "所有测量已停止，所有通道电源已关闭";
+    }
 }
 
 
@@ -1850,6 +1915,30 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
     }
 }
 
+
+QString CentralWidget::formatTimeString(int totalSeconds)
+{
+    int days = totalSeconds / 86400;  // 86400秒 = 24小时
+    int remainingSeconds = totalSeconds % 86400;
+    int hours = remainingSeconds / 3600;
+    int minutes = (remainingSeconds % 3600) / 60;
+    int seconds = remainingSeconds % 60;
+    
+    if (days > 0) {
+        // 超过24小时，显示天数
+        return QString("%1day %2:%3:%4")
+                .arg(days)
+                .arg(hours, 2, 10, QChar('0'))
+                .arg(minutes, 2, 10, QChar('0'))
+                .arg(seconds, 2, 10, QChar('0'));
+    } else {
+        // 24小时以内，只显示时分秒
+        return QString("%1:%2:%3")
+                .arg(hours, 2, 10, QChar('0'))
+                .arg(minutes, 2, 10, QChar('0'))
+                .arg(seconds, 2, 10, QChar('0'));
+    }
+}
 
 void CentralWidget::on_pushButton_stopMeasure_clicked()
 {
