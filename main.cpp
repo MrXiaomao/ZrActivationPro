@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+﻿#include "mainwindow.h"
 #include "globalsettings.h"
 #include "commhelper.h"
 
@@ -81,8 +81,8 @@ int main(int argc, char *argv[])
     QFont font = qApp->font();
     font.setStyleStrategy(QFont::PreferAntialias);
     font.setHintingPreference(QFont::PreferFullHinting);
-    font.setFamily(fontFamily);
-    font.setPointSize(fontPointSize);
+    // font.setFamily(fontFamily);
+    // font.setPointSize(fontPointSize);
     qApp->setFont(font);
     qApp->setStyle(new DarkStyle());
     qApp->style()->setObjectName("fusion");

@@ -327,7 +327,7 @@ void QHuaWeiSwitcherHelper::queryPowerStatus()
     }
     else
     {
-        emit switcherDisconnected(mIp);
+        //emit switcherDisconnected(mIp);
     }
 }
 

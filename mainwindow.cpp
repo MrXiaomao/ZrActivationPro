@@ -999,7 +999,6 @@ bool CentralWidget::eventFilter(QObject *watched, QEvent *event){
 
 void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
 {
-#if 0
     // 创建一个 QTextCursor
     QTextCursor cursor = ui->textEdit_log->textCursor();
     // 将光标移动到文本末尾
@@ -1023,9 +1022,6 @@ void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
 
     // 确保 QTextEdit 显示了光标的新位置
     ui->textEdit_log->setTextCursor(cursor);
-#else
-    ui->textEdit_log->append(QString("%1 %2").arg(QDateTime::currentDateTime().toString("[yyyy-MM-dd hh:mm:ss.zzz]"), msg));
-#endif
 
     //限制行数
     QTextDocument *document = ui->textEdit_log->document(); // 获取文档对象，想象成打开了一个TXT文件
@@ -1372,6 +1368,13 @@ void CentralWidget::applyColorTheme()
                 DarkStyle darkStyle;
                 darkStyle.polish(palette);
             }
+
+            // 创建一个 QTextCursor
+            QTextCursor cursor = ui->textEdit_log->textCursor();
+            QTextDocument *document = cursor.document();
+            QString html = document->toHtml();
+            html = html.replace("color:#000000", "color:#ffffff");
+            document->setHtml(html);
         }
         else
         {
@@ -1385,13 +1388,19 @@ void CentralWidget::applyColorTheme()
                 LightStyle lightStyle;
                 lightStyle.polish(palette);
             }
+
+            QTextCursor cursor = ui->textEdit_log->textCursor();
+            QTextDocument *document = cursor.document();
+            QString html = document->toHtml();
+            html = html.replace("color:#ffffff", "color:#000000");
+            document->setHtml(html);
         }
         //日志窗体
         QString styleSheet = mIsDarkTheme ?
                                  QString("background-color:rgb(%1,%2,%3);color:white;")
-                                    .arg(palette.color(QPalette::Window).red())
-                                    .arg(palette.color(QPalette::Window).green())
-                                    .arg(palette.color(QPalette::Window).blue())
+                                    .arg(palette.color(QPalette::Dark).red())
+                                    .arg(palette.color(QPalette::Dark).green())
+                                    .arg(palette.color(QPalette::Dark).blue())
                                 : QString("background-color:white;color:black;");
         //更新样式表
         QList<QCheckBox*> checkBoxs = customPlot->findChildren<QCheckBox*>();
@@ -1407,10 +1416,10 @@ void CentralWidget::applyColorTheme()
         }
 
         // 窗体背景色
-        customPlot->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Window) : Qt::white));
+        customPlot->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Dark) : Qt::white));
         // 四边安装轴并显示
         customPlot->axisRect()->setupFullAxesBox();
-        customPlot->axisRect()->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Window) : Qt::white));
+        customPlot->axisRect()->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Dark) : Qt::white));
         // 坐标轴线颜色
         customPlot->xAxis->setBasePen(QPen(palette.color(QPalette::WindowText)));
         customPlot->xAxis2->setBasePen(QPen(palette.color(QPalette::WindowText)));
