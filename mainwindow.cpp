@@ -32,10 +32,9 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
-    ui->action_connect->setEnabled(false);
-    ui->action_powerOn->setEnabled(false);
-    ui->action_powerOff->setEnabled(false);
-    ui->action_connect->setEnabled(false);
+    ui->action_connect->setEnabled(true);
+    ui->action_powerOn->setEnabled(true);
+    ui->action_powerOff->setEnabled(true);
     ui->action_disconnect->setEnabled(false);
     ui->action_startMeasure->setEnabled(false);
     ui->action_stopMeasure->setEnabled(false);
@@ -67,14 +66,15 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
-
+        //记录联网的探测器ID
+        mOnlineDetectors.append(index);
         qInfo().nospace().nospace() << "Detector#" << index << ": online";
         //如果该探测器在温度超时报警列表中，则删除
         if (mTemperatureTimeoutDetectors.contains(index)){
             mTemperatureTimeoutDetectors.removeOne(index);
             //如果该探测器正在测量，则重新开始测量
             if (mDetectorMeasuring[index]){
-                commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
+                commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
                 //打印日志
                 qInfo().noquote() << "探测器" << index << "自动重新开始测量";
             }
@@ -91,6 +91,8 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         // 探测器离线时，清除测量状态记录
         // mDetectorMeasuring[index] = false;
         // mDetectorMeasuring.remove(index);
+        //清除联网的探测器ID
+        mOnlineDetectors.removeOne(index);
 
         qInfo().nospace().nospace() << "Detector#" << index << ": offline";
     });
@@ -638,6 +640,17 @@ void CentralWidget::initUi()
         int row = index - 1;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 3));
         cell->setText(QString::number(temperature, 'f', 1) + " ℃");
+        
+        //将温度数据保存到文件中，实时写入，文件名称为探测器编号-日期.txt，路径为应用程序目录下的temperature文件夹中
+        QString temperatureFilePath = QApplication::applicationDirPath() + "/temperature/" + QString::number(index) + "-" + QDateTime::currentDateTime().toString("yyyy-MM-dd") + ".txt";
+        QFile temperatureFile(temperatureFilePath);
+        if (!temperatureFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            qWarning() << "Failed to open temperature file:" << temperatureFilePath;
+            return;
+        }
+        QTextStream temperatureStream(&temperatureFile);
+        temperatureStream << QString::number(temperature, 'f', 1) << " " << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << endl;
+        temperatureFile.close();
 
         if (temperature > 70.0) {
             cell->setStyleSheet("color: red;");
@@ -1076,7 +1089,7 @@ void CentralWidget::on_action_startServer_triggered()
     if (commHelper->startServer()){
         ui->action_startServer->setEnabled(false);
         ui->action_stopServer->setEnabled(true);
-        ui->action_connect->setEnabled(true);
+        // ui->action_connect->setEnabled(true);
         // ui->action_powerOn->setEnabled(true);
         // ui->action_powerOff->setEnabled(true);
         ui->action_startMeasure->setEnabled(true);
@@ -1094,15 +1107,30 @@ void CentralWidget::on_action_startServer_triggered()
 
 void CentralWidget::on_action_stopServer_triggered()
 {
+    //先记录下所有联网的探测器
+    foreach (quint8 index, mOnlineDetectors){   
+        commHelper->manualCloseSwitcherPOEPower(index);
+        //将响应在线图标设置为红色
+        int row = index - 1;
+        QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
+        cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
+        cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
+    }
+    //清除联网的探测器ID
+    mOnlineDetectors.clear();
+    //清除温度超时的探测器ID
+    mTemperatureTimeoutDetectors.clear();
+
     // 断开网络
     commHelper->stopMeasure();
     commHelper->stopServer();
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
-    ui->action_connect->setEnabled(false);
-    ui->action_powerOn->setEnabled(false);
-    ui->action_powerOff->setEnabled(false);
+    // ui->action_connect->setEnabled(false);
+    // ui->action_powerOn->setEnabled(false);
+    // ui->action_powerOff->setEnabled(false);
     ui->action_startMeasure->setEnabled(false);
     ui->action_stopMeasure->setEnabled(false);
     ui->pushButton_startMeasure->setEnabled(false);
@@ -1250,6 +1278,10 @@ void CentralWidget::onMeasureCountdownTimeout()
         // 停止所有测量
         commHelper->stopMeasure();
         
+        //记录下关闭的电源通道号
+        foreach (quint8 index, mOnlineDetectors){
+            commHelper->manualCloseSwitcherPOEPower(index);
+        }
         // 关闭所有通道电源
         commHelper->closePower();
         
@@ -1265,6 +1297,9 @@ void CentralWidget::onMeasureCountdownTimeout()
 
 void CentralWidget::on_action_powerOn_triggered()
 {
+    //清除所有
+    commHelper->manualOpenSwitcherPOEPower();
+
     // 打开电源
     commHelper->openPower();
 }
@@ -1548,7 +1583,7 @@ void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) 
 
     // 累积能谱
     double countRate = 0.0;
-    for (int i = 0; i < 2048; ++i) {
+    for (int i = 0; i < 8192; ++i) {
         countRate += newSpectrum[i];
         data.spectrum[i] += newSpectrum[i];
     }
@@ -1609,14 +1644,14 @@ void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum
 
     // 转换数据格式
     QVector<double> x, y;
-    for (int i = 0; i < 2048; ++i) {
+    for (int i = 0; i < 8192; ++i) {
         x << i;
         y << spectrum[i];
     }
 
     // 更新图表
     customPlot->graph(0)->setData(x, y);
-    customPlot->xAxis->setRange(0, 2048);
+    customPlot->xAxis->setRange(0, 8192);
     customPlot->yAxis->rescale(true);
 
     double y_min = customPlot->yAxis->range().lower;
@@ -1633,7 +1668,7 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     if (displayIndex < 1 || displayIndex > 6) {
         return;  // 不在当前显示页面
     }
-DetectorData &data = m_detectorData[detectorId];
+    DetectorData &data = m_detectorData[detectorId];
     QMutexLocker locker(&mMutexSwitchPage);
     QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(displayIndex));
     if (!customPlot) return;
@@ -1645,14 +1680,16 @@ DetectorData &data = m_detectorData[detectorId];
     }
     // double currentTime = timer.elapsed() / 1000.0; // 转换为秒
 
-    int currentTime = data.countRateHistory.size();
+    // int currentTime = data.countRateHistory.size();
     // 添加新的数据点
-    customPlot->graph(0)->addData(currentTime, countRate);
+    int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
+    qDebug().noquote()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
+    customPlot->graph(0)->addData(elapsedSeconds, countRate);
 
     // 显示最近300秒
     const int WINDOW = 300;
-    customPlot->xAxis->setRange(qMax(0.0, currentTime*1.0 - WINDOW), currentTime + 1);
-
+    customPlot->xAxis->setRange(qMax(0.0, elapsedSeconds*1.0 - WINDOW), elapsedSeconds + 1);
+    
     // y轴范围只由最近300秒的y决定
     auto range = calcRecentYRange(data.countRateHistory, WINDOW);
     double y_min = range.first;

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>741</width>
+    <width>780</width>
     <height>864</height>
    </rect>
   </property>
@@ -272,7 +272,7 @@
                  <number>1</number>
                 </property>
                 <property name="value">
-                 <number>100</number>
+                 <number>1000</number>
                 </property>
                </widget>
               </item>
@@ -299,8 +299,13 @@
               <item row="1" column="1" colspan="2">
                <widget class="QComboBox" name="comboBox_gain">
                 <property name="currentIndex">
-                 <number>3</number>
+                 <number>0</number>
                 </property>
+                <item>
+                 <property name="text">
+                  <string>1.26</string>
+                 </property>
+                </item>
                 <item>
                  <property name="text">
                   <string>0.08</string>
@@ -319,11 +324,6 @@
                 <item>
                  <property name="text">
                   <string>0.63</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>1.26</string>
                  </property>
                 </item>
                 <item>
@@ -448,12 +448,12 @@
                <widget class="QComboBox" name="comboBox_waveformTriggerMode">
                 <item>
                  <property name="text">
-                  <string>定时触发</string>
+                  <string>正常触发</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>正常触发</string>
+                  <string>定时触发</string>
                  </property>
                 </item>
                </widget>
@@ -469,12 +469,12 @@
                <widget class="QComboBox" name="comboBox_waveformLength">
                 <item>
                  <property name="text">
-                  <string>64</string>
+                  <string>128</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>128</string>
+                  <string>64</string>
                  </property>
                 </item>
                 <item>

@@ -1592,6 +1592,9 @@
                      <property name="maximum">
                       <number>1000000</number>
                      </property>
+                     <property name="value">
+                      <number>36000</number>
+                     </property>
                     </widget>
                    </item>
                    <item row="0" column="0">
@@ -1658,6 +1661,9 @@
                     <widget class="QCheckBox" name="checkBox_autoIncrease">
                      <property name="text">
                       <string>自动递增</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
@@ -1983,7 +1989,7 @@
      <x>0</x>
      <y>0</y>
      <width>1431</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">

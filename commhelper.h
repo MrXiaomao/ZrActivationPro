@@ -114,15 +114,28 @@ public:
     */
     bool closeSwitcherPOEPower(quint8 port = 0);
 
-    // 手动关闭POE供电
+    // 主动关闭POE供电，也就是温度监测被关闭的通道
     void manualCloseSwitcherPOEPower(quint8 port)
     {
+        //如果该通道已经关闭，则不重复关闭
+        if (mManualClosedPOEIDs.contains(port)){
+            return;
+        }
         mManualClosedPOEIDs.append(port);   
     }
-    // 手动打开POE供电
-    void manualOpenSwitcherPOEPower(quint8 port)
+    // 主动打开POE供电，也就是温度监测被打开的通道
+    void manualOpenSwitcherPOEPower(quint8 port=0)
     {
-        mManualClosedPOEIDs.removeOne(port);
+        //如果port为0，则表示全部打开
+        if (port == 0){
+            mManualClosedPOEIDs.clear();
+            return;
+        }
+
+        if (mManualClosedPOEIDs.contains(port))
+        {
+            mManualClosedPOEIDs.removeOne(port);    
+        }
     }
 
 private:

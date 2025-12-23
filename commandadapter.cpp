@@ -100,7 +100,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             qint32 t = qFromBigEndian<qint32>(data.constData());
             float temperature = t * 0.0001;// 换算系数
 
-            qDebug().noquote() << "温度：" << temperature;
+            // qDebug().noquote() << "temp：" << temperature;
 
             findNaul = true;
             cachePool.remove(0, 12);

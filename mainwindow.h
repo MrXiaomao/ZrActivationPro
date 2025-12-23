@@ -175,6 +175,8 @@ private:
     bool mIsOneLayout = false;
     QColor mThemeColor = QColor(255,255,255);
 
+    //记录联网的探测器ID
+    QVector<quint8> mOnlineDetectors;
     //记录温度超时报警的探测器ID
     QVector<quint8> mTemperatureTimeoutDetectors;
     //记录探测器是否正在测量

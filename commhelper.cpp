@@ -152,11 +152,13 @@ void CommHelper::initDataProcessor()
             int detID = processor->index();
             stopMeasure(detID);
             //先停止测量
-            qInfo().noquote() << "探测器" << detID << "温度心跳超时报警！停止测量并断电30min后重新打开供电！";
+            int stopDelay = 30; //min
+            qInfo().noquote() << "探测器" << detID 
+                    << QString("温度心跳超时报警！停止测量并断电%1min后重新打开供电!").arg(stopDelay);
             //断电
             closeSwitcherPOEPower(detID);
             //定时30min后重新打开供电
-            QTimer::singleShot(30*60*1000, this, [=](){
+            QTimer::singleShot(stopDelay*60*1000, this, [=](){
                 openSwitcherPOEPower(detID);
                 qInfo().noquote() << "探测器" << detID << "重启供电";
             });
