@@ -66,7 +66,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
     connect(mTelnet, &QTelnet::socketReadyRead,this,[=](const char *data, int size){
         QByteArray rx_current(data, size);
         mRespondString.append(rx_current);
-        qDebug() << mRespondString;
+        //qDebug() << mRespondString;
         if(mRespondString.endsWith("---- More ----")){
             QString data = "\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
@@ -76,14 +76,12 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
         else if(mRespondString.endsWith("Username:")){
-            qDebug().noquote() << mRespondString;
             mRespondString.clear();
 
             QString data = "root\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
         else if(mRespondString.endsWith("Password:")){
-            qDebug().noquote() << mRespondString;
             mRespondString.clear();
 
             QString data = "root@12345\r";
@@ -91,7 +89,6 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
         }
         else if(mRespondString.endsWith("<HUAWEI>") && !mSwitcherIsLoginOk){
             mSwitcherIsLoginOk = true;
-            qDebug().noquote() << mRespondString;
             mRespondString.clear();
 
             QString data = "system-view\r";
@@ -104,16 +101,11 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
 
             emit switcherConnected(mIp);
 
-            if (mCommands.size() > 0){
-                QTimer::singleShot(0, this, [=](){
-                    mCurrentCommand = mCommands.front();
-                    mCommands.pop_front();
-                    mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
-                });
-            }
+            QTimer::singleShot(0, this, [=](){
+                mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+            });
         }
         else if (mSwitcherInSystemView){
-            //qDebug().noquote() << mRespondString;
             /*
              * Username:root
              * Password:root@12345
@@ -129,7 +121,6 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
 
             //根据结果来判断
             mRespondString.replace("\r\n","\n");
-            // qDebug().noquote() << mRespondString;
 
             QString warnEnableCmd = "Warning: This port is enabled already.";
             QString warnDisabledCmd = "Warning: This port is disabled already.";
@@ -140,7 +131,6 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             QString enterInterfaceCmd = QString("interface GigabitEthernet 0/0/%1\r").arg(mCurrentQueryPort);
 
             if (mCurrentCommand == queryCmd){
-                qDebug() << mRespondString;
                 if (mRespondString.endsWith(switchCmd3.toLatin1())){
                     QList<QByteArray> lines = mRespondString.split('\n');
                     mRespondString.clear();
@@ -324,31 +314,16 @@ void QHuaWeiSwitcherHelper::queryPowerStatus()
     mSingleOn = false;
     mBatchOff = false;
     mSingleOff = false;
-    mCommands.clear();
     quint8 fromPort = 1;
     quint8 toPort = DET_NUM;
 
-    //开机即打开POE供电
-    // for (int i=fromPort; i<=toPort; ++i){
-    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-    //     mCommands.append(cmd);
-    //     cmd = "poe enable\r";
-    //     mCommands.append(cmd);
-    // }
-
     //开机仅查询POE供电
-    for (int i=fromPort; i<=toPort; ++i){
-        QString cmd = QString("display poe power-state interface GigabitEthernet0/0/%1\r").arg(i);
-        mCommands.append(cmd);
-    }
-
     mCurrentQueryPort = 1;
+    mCurrentCommand = "display poe power-state interface GigabitEthernet0/0/1\r";
     mTelnet->disconnectFromHost();
     mTelnet->setType(QTelnet::TCP);
     if (mTelnet->connectToHost(mIp, 23)){
-        // QString cmd = mCommands.front();
-        // mCommands.pop_front();
-        // mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+
     }
     else
     {
@@ -372,20 +347,9 @@ bool QHuaWeiSwitcherHelper::openSwitcherPOEPower(quint8 index/* = 0*/)
     mBatchOff = false;
     mSingleOff = false;
 
-    // quint8 fromPort = port==0 ? 1 : port;
-    // quint8 toPort = port==0 ? DET_NUM : port;
-    // for (int i=fromPort; i<=toPort; ++i){
-    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-    //     mCommands.append(cmd);
-    //     cmd = "poe enable\r";
-    //     mCommands.append(cmd);
-    // }
-
     mCurrentQueryPort = index==0 ? 1 : index;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
-    //mCommands.pop_front();
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
-    //mSwitcherEventLoop.exec();
 
     return true;
 }
@@ -397,7 +361,6 @@ void QHuaWeiSwitcherHelper::openNextSwitcherPOEPower()
 
     mCurrentQueryPort++;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
-    //mCommands.pop_front();
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
 }
 
@@ -424,23 +387,9 @@ bool QHuaWeiSwitcherHelper::closeSwitcherPOEPower(quint8 port/* = 0*/)
     mBatchOff = port == 00 ? true : false;
     mSingleOff = port == 00 ? false : true;
 
-    // quint8 fromPort = port==0 ? 1 : port;
-    // quint8 toPort = port==0 ? DET_NUM : port;
-    // for (int i=fromPort; i<=toPort; ++i){
-    //     QString cmd = QString("interface GigabitEthernet 0/0/%1").arg(i) + "\r";
-    //     mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-    //     mSwitcherEventLoop.exec();
-
-    //     cmd = "undo poe enable\r";
-    //     mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
-    //     mSwitcherEventLoop.exec();
-    // }
-
     mCurrentQueryPort = port==0 ? 1 : port;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
-    //mCommands.pop_front();
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
-    //mSwitcherEventLoop.exec();
 
     return true;
 }
@@ -452,6 +401,5 @@ void QHuaWeiSwitcherHelper::closeNextSwitcherPOEPower()
 
     mCurrentQueryPort++;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
-    //mCommands.pop_front();
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
 }

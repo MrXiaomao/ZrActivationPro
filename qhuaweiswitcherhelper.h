@@ -64,7 +64,6 @@ private:
     bool mSingleOn = false;//单开
     bool mBatchOff = false;//批量关
     bool mSingleOff = false;//批量关
-    QList<QString> mCommands;
     QString mCurrentCommand;
     QByteArray mRespondString;
     QMap<quint8/*port-POE端口号*/, quint8/*index-谱仪编号*/> mMapAssociatedDetector;

@@ -22,6 +22,7 @@ class QCPItemRect;
 class QCPGraph;
 class QCPAbstractPlottable;
 class QCPItemCurve;
+class QTimer;
 
 // 探测器数据结构
 struct DetectorData {
@@ -71,6 +72,9 @@ public:
 
     //展示当前页面的六个计数率图
     void showCountRateDisplay(int currentPageIndex);
+
+    // 将秒数转换为 天/时分秒 格式字符串
+    QString formatTimeString(int totalSeconds);
 
 private:
     //最近窗口的 min/max
@@ -154,6 +158,9 @@ private slots:
 
     void on_action_connect_triggered();
 
+    // 测量倒计时结束处理
+    void onMeasureCountdownTimeout();
+
 private:
     Ui::CentralWidget *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
@@ -168,10 +175,19 @@ private:
     bool mIsOneLayout = false;
     QColor mThemeColor = QColor(255,255,255);
 
+    //记录温度超时报警的探测器ID
+    QVector<quint8> mTemperatureTimeoutDetectors;
+    //记录探测器是否正在测量
+    QMap<quint8, bool> mDetectorMeasuring;
     // 探测器数据管理
     QHash<int, DetectorData> m_detectorData;  // 只存储联网探测器的数据
     CommHelper *commHelper = nullptr;
     class MainWindow *mainWindow = nullptr;
+    
+    // 测量倒计时定时器
+    QTimer *mMeasureCountdownTimer = nullptr;
+    int mRemainingCountdown = 0;  // 剩余倒计时（秒）
+    int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长
 
     QPixmap roundPixmap(QSize sz, QColor clrOut = Qt::gray);//单圆
     QPixmap dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut = Qt::gray);//双圆

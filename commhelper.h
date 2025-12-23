@@ -92,6 +92,7 @@ public:
     Q_SIGNAL void settingfinished();//配置完成
 
     Q_SIGNAL void reportDetectorTemperature(quint8, float temperature); //探测器温度报告
+    Q_SIGNAL void reportTemperatureTimeout(quint8 index); //探测器温度超时报警
     Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint16>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
@@ -113,6 +114,17 @@ public:
     */
     bool closeSwitcherPOEPower(quint8 port = 0);
 
+    // 手动关闭POE供电
+    void manualCloseSwitcherPOEPower(quint8 port)
+    {
+        mManualClosedPOEIDs.append(port);   
+    }
+    // 手动打开POE供电
+    void manualOpenSwitcherPOEPower(quint8 port)
+    {
+        mManualClosedPOEIDs.removeOne(port);
+    }
+
 private:
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
     QMutex mPeersMutex;
@@ -120,20 +132,6 @@ private:
 
     quint8 mHuaWeiSwitcherCount = 0;
     QList<QHuaWeiSwitcherHelper *> mHuaWeiSwitcherHelper;
-    QTimer *mSwitcherStatusRefreshTimer = nullptr;
-    QEventLoop mSwitcherEventLoop;
-    quint8 mCurrentQueryPort = 0;
-    bool mSwitcherIsBusy = false;    
-    bool mSwitcherIsLoginOk = false;// 交换机是否登录成功
-    bool mSwitcherInSystemView = false;// 交换机是否处于视图模式
-    bool mBatchOn = false;//批量开
-    bool mSingleOn = false;//单开
-    bool mBatchOff = false;//批量关
-    bool mSingleOff = false;//批量关
-    QList<QString> mCommands;
-    QString mCurrentCommand;
-    QByteArray mRespondString;
-
     QString mShotDir;// 保存路径
     QString mShotNum;// 测量发次
 
@@ -144,6 +142,9 @@ private:
     QMap<quint8, QFile*> mDetectorFileProcessor;//24路探测器数据处理器
     QMap<quint8, QVector<quint16>> mWaveAllData;
     QString mResMatrixFileName;
+
+    //记录手动关闭POE供电的探测器ID
+    QVector<quint8> mManualClosedPOEIDs;
 
     /*
      初始化网络

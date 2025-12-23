@@ -8,6 +8,7 @@
 #include <QWaitCondition>
 #include <QQueue>
 #include <qlitethread.h>
+#include <QTimer>
 
 struct CommandItem
 {
@@ -28,14 +29,15 @@ public:
 
     virtual void sendCmdToSocket(CommandItem cmdItem) const{};
 
-    Q_SIGNAL void reportStartMeasure();
-    Q_SIGNAL void reportStopMeasure();
     Q_SIGNAL void reportSpectrumData(QByteArray&);
     Q_SIGNAL void reportWaveformData(QByteArray&);
     Q_SIGNAL void reportParticleData(QByteArray&);
     Q_SIGNAL void reportTemperatureData(float temperature);
+    Q_SIGNAL void reportTemperatureTimeout();
 
-signals:
+// signals:
+public slots:
+    void restartTempTimeout();   // 收到温度时调用
 
 public:
     /*********************************************************
@@ -158,7 +160,8 @@ protected:
     bool mIsMeasuring = false;//测量是否正在进行中
     void analyzeCommands(QByteArray &cachePool);
 
-private:    
+private:
+    QTimer mTempTimeoutTimer;
     bool mAskStopMeasure = false; //是否请求结束测量(如果已经请求了结束测量，那么就有必要解析结束测量指令)
     QVector<CommandItem> cmdPool;//发送指令等候区
 
