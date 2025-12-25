@@ -73,26 +73,15 @@ void CommHelper::initSocket()
         connect(connection, &QAbstractSocket::disconnected, this, [=](){
             QString peerAddress = connection->property("peerAddress").toString();
             quint16 peerPort = connection->property("peerPort").toUInt();
-            QMetaObject::invokeMethod(this, "disconnectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
 
             //根据配置解析是哪一路探测器下线了
             qint8 index = indexOfAddress(peerAddress, peerPort);
             if (index > 0)
-                QMetaObject::invokeMethod(this, "detectorOffline", Qt::QueuedConnection, Q_ARG(quint8, index));
-
-            auto it = this->mConnectionPeers.begin();
-            while (it != this->mConnectionPeers.end()) {
-                if (*it == connection) {
-                    //网络掉线了，取消数据处理器关联
-                    freeDataProcessor(connection);
-
-                    connection->deleteLater();
-                    it = this->mConnectionPeers.erase(it);
-                } else {
-                    ++it;
-                }
+            {
+                handleDetectorDisconnection(index);
             }
         });
+
         QString peerAddress = connection->peerAddress().toString();
         quint16 peerPort = connection->peerPort();
         connection->setProperty("peerAddress", peerAddress);
@@ -141,15 +130,17 @@ void CommHelper::initDataProcessor()
         //对温度超时报警进行处理
         connect(detectorDataProcessor, &DataProcessor::reportTemperatureTimeout, this, [=](){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            emit reportTemperatureTimeout(processor->index());//上报温度超时报警
-            
+            quint8 detID = processor->index();
+            emit reportTemperatureTimeout(detID);//上报温度超时报警
+
+            handleDetectorDisconnection(detID);
+
             //如果该探测器在手动关闭POE供电列表中，则不处理
-            if (mManualClosedPOEIDs.contains(processor->index())){
+            if (mManualClosedPOEIDs.contains(detID)){
                 return;
             }
 
             //断电30min后重新打开供电
-            int detID = processor->index();
             stopMeasure(detID);
             //先停止测量
             int stopDelay = 30; //min
@@ -680,4 +671,59 @@ qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
     }
 
     return -1;
+}
+
+
+void CommHelper::handleDetectorDisconnection(quint8 index)
+{
+    QMutexLocker locker(&mPeersMutex);
+    
+    // 根据探测器索引找到对应的连接
+    HDF5Settings *settings = HDF5Settings::instance();
+    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+    DetParameter& detParameter = detParameters[index];
+    QString expectedAddr = QString::fromStdString(detParameter.det_Ip_port);
+    
+    // 在 mConnectionPeers 中查找对应的连接
+    auto it = mConnectionPeers.begin();
+    while (it != mConnectionPeers.end()) {
+        QTcpSocket* connection = *it;
+        QString peerAddress = connection->property("peerAddress").toString();
+        quint16 peerPort = connection->property("peerPort").toUInt();
+        QString addr = QString("%1:%2").arg(peerAddress).arg(peerPort);
+        
+        // 匹配探测器地址
+        if (addr == expectedAddr || peerAddress == expectedAddr.split(":")[0]) {
+            // 找到对应的连接，执行与 disconnected 信号相同的处理
+            
+            // 1. 触发 disconnectPeerConnection 信号
+            QMetaObject::invokeMethod(this, "disconnectPeerConnection", 
+                Qt::QueuedConnection, 
+                Q_ARG(QString, peerAddress), 
+                Q_ARG(quint16, peerPort));
+            
+            // 2. 触发 detectorOffline 信号
+            QMetaObject::invokeMethod(this, "detectorOffline", 
+                Qt::QueuedConnection, 
+                Q_ARG(quint8, index));
+            
+            // 3. 取消数据处理器关联
+            freeDataProcessor(connection);
+            
+            // 4. 删除连接并从列表中移除
+            connection->deleteLater();
+            it = mConnectionPeers.erase(it);
+            
+            qInfo() << "探测器" << index << "心跳超时，已执行断开连接处理";
+            return; // 找到并处理完成，退出
+        } else {
+            ++it;
+        }
+    }
+    
+    // 如果没有找到对应的连接，仍然触发 offline 信号（可能连接已经断开）
+    qWarning() << "探测器" << index << "心跳超时，但未找到对应的TCP连接";
+    QMetaObject::invokeMethod(this, "detectorOffline", 
+        Qt::QueuedConnection, 
+        Q_ARG(quint8, index));
 }

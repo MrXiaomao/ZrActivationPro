@@ -92,9 +92,10 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         // mDetectorMeasuring[index] = false;
         // mDetectorMeasuring.remove(index);
         //清除联网的探测器ID
-        mOnlineDetectors.removeOne(index);
-
-        qInfo().nospace().nospace() << "Detector#" << index << ": offline";
+        if (mOnlineDetectors.contains(index)){
+            mOnlineDetectors.removeOne(index);
+            qInfo().nospace().nospace() << "Detector#" << index << ": offline";
+        }
     });
 
     //测量开始

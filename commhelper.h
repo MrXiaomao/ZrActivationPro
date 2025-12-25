@@ -115,14 +115,15 @@ public:
     bool closeSwitcherPOEPower(quint8 port = 0);
 
     // 主动关闭POE供电，也就是温度监测被关闭的通道
-    void manualCloseSwitcherPOEPower(quint8 port)
+    void manualCloseSwitcherPOEPower(quint8 index)
     {
         //如果该通道已经关闭，则不重复关闭
-        if (mManualClosedPOEIDs.contains(port)){
+        if (mManualClosedPOEIDs.contains(index)){
             return;
         }
-        mManualClosedPOEIDs.append(port);   
+        mManualClosedPOEIDs.append(index);  
     }
+
     // 主动打开POE供电，也就是温度监测被打开的通道
     void manualOpenSwitcherPOEPower(quint8 port=0)
     {
@@ -139,6 +140,9 @@ public:
     }
 
 private:
+    // 处理探测器断开连接的统一逻辑
+    void handleDetectorDisconnection(quint8 index);
+
     TcpAgentServer *mTcpServer = nullptr;//本地服务器
     QMutex mPeersMutex;
     QVector<QTcpSocket*> mConnectionPeers; //客户端连接表
