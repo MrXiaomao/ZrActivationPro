@@ -179,6 +179,13 @@ CentralWidget::~CentralWidget()
     GlobalSettings settings;
     // 保存触发模式
     settings.setValue("Trigger/Mode", ui->com_triggerModel->currentIndex());
+    
+    // 保存界面设置
+    settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+    settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
+    settings.setValue("Global/ShotDir", ui->lineEdit_filePath->text());
+    settings.setValue("Global/MeasureTime", ui->spinBox_measureTime->value());
+
 
     QSplitter *splitterH1 = this->findChild<QSplitter*>("splitterH1");// QSplitter(Qt::Horizontal,this);
     if (splitterH1){
@@ -214,11 +221,16 @@ void CentralWidget::initUi()
         ui->spectroMeterWidget5->setVisible(false);
         ui->spectroMeterWidget6->setVisible(false);
     }
-
-    // 触发类型
+    
+    //加载界面参数
     {
         GlobalSettings settings;
-        // 恢复触发模式
+        ui->checkBox_autoIncrease->setChecked(settings.value("Global/ShotNumIsAutoIncrease", true).toBool());
+        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
+        ui->lineEdit_filePath->setText(settings.value("Global/ShotDir", "./cache").toString());
+        ui->spinBox_measureTime->setValue(settings.value("Global/MeasureTime", 10).toInt());
+
+        // 触发模式
         int triggerMode = settings.value("Trigger/Mode", 0).toInt();
         ui->com_triggerModel->setCurrentIndex(triggerMode); // 或者从配置文件中读取
         onTriggerModelChanged(triggerMode);
@@ -558,7 +570,7 @@ void CentralWidget::initUi()
         ui->lineEdit_filePath->setText(cacheDir);
 
         // 发次
-        ui->spinBox_shotNum->setValue(settings.value("Global/ShotNum", 100).toUInt());
+        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
         ui->checkBox_autoIncrease->setChecked(settings.value("Global/ShotNumIsAutoIncrease", false).toBool());
     }
 
@@ -1210,31 +1222,31 @@ void CentralWidget::on_action_startMeasure_triggered()
 
     /*设置发次信息*/
     QString shotDir = ui->lineEdit_filePath->text();
-    quint32 shotNum = ui->spinBox_shotNum->value();
+    QString shotNumStr = ui->lineEdit_shotNum->text().trimmed(); //去掉 开头 和 结尾 的空白,不会删除中间的空格
 
     // 保存测量数据
-    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNum);
-    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNum));
+    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr);
+    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr));
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+        settings.setValue("Global/ShotNumFormat", shotNumStr);
         settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
     }
 
     {
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+        settings.setValue("Global/ShotNumFormat", shotNumStr);
+        settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
         settings.setValue("Global/CacheDir", ui->lineEdit_filePath->text());
     }
 
-    commHelper->setShotInformation(shotDir, shotNum);
-
+    commHelper->setShotInformation(shotDir, shotNumStr);
     // 读取倒计时时间（秒）
-    int countdownSeconds = ui->spinBox_3->value();
+    int countdownSeconds = ui->spinBox_measureTime->value();
     if (countdownSeconds > 0) {
         mRemainingCountdown = countdownSeconds;
         mTotalCountdown = countdownSeconds;
@@ -1251,6 +1263,25 @@ void CentralWidget::on_action_startMeasure_triggered()
         commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum);
 }
 
+// 对尾缀_1等数字进行加1操作。一定要有下划线
+QString CentralWidget::increaseShotNumSuffix(QString shotNumStr)
+{
+    QRegularExpression  rx(R"(^(.*?_)(\d+)$)"); // 匹配以数字结尾的字符串
+    auto m = rx.match(shotNumStr);
+    if (m.hasMatch()) {
+        QString prefix = m.captured(1); // "20251121_"
+        QString digits = m.captured(2); // "002"
+        int numberLength = digits.length(); // 数字部分的长度
+        int number = digits.toInt(); // 转换为整数
+        number++; // 自增1
+        QString newNumberStr = QString::number(number).rightJustified(numberLength, '0'); // 保持原有长度，前面补0
+        return prefix + newNumberStr; // 返回新的发次字符串
+    }
+    else {
+        // 如果没有下划线+数字结尾，直接在后面加上1
+        return shotNumStr + "_1";
+    }
+}
 
 void CentralWidget::on_action_stopMeasure_triggered()
 {
@@ -1267,9 +1298,10 @@ void CentralWidget::on_action_stopMeasure_triggered()
     }
 
     if (ui->checkBox_autoIncrease->isChecked()){
-        ui->spinBox_shotNum->setValue(ui->spinBox_shotNum->value() + 1);
+        // lineEdit_shotNum尾缀加1
+        ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+        settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
     }
 
     // 停止波形测量
@@ -1299,6 +1331,13 @@ void CentralWidget::onMeasureCountdownTimeout()
         ui->edit_measureTime->setText(formatTimeString(mTotalCountdown));
         qInfo() << "测量倒计时结束，正在停止测量并关闭所有通道电源...";
         
+        // 自动更新发次号
+        if (ui->checkBox_autoIncrease->isChecked()){
+            ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
+            GlobalSettings settings(CONFIG_FILENAME);
+            settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
+        }
+    
         // 停止所有测量
         commHelper->stopMeasure();
         
@@ -1918,29 +1957,28 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
 
     /*设置发次信息*/
     QString shotDir = ui->lineEdit_filePath->text();
-    quint32 shotNum = ui->spinBox_shotNum->value();
+    QString shotNumStr = ui->lineEdit_shotNum->text();
 
     // 保存测量数据
-    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNum);
-    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNum));
+    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr);
+    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr));
     if (!dir.exists()) {
         dir.mkpath(".");
     }
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+        settings.setValue("Global/ShotNumFormat", shotNumStr);
         settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
     }
 
     {
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNum", ui->spinBox_shotNum->value());
+        settings.setValue("Global/ShotNumFormat", shotNumStr);
         settings.setValue("Global/CacheDir", ui->lineEdit_filePath->text());
     }
 
-    commHelper->setShotInformation(shotDir, shotNum);
-
+    commHelper->setShotInformation(shotDir, shotNumStr);
     // 再发开始测量指令
     auto rows  = ui->tableWidget_detector->selectionModel()->selectedRows();
     if (rows .isEmpty()) {

@@ -176,7 +176,6 @@ void CommHelper::initDataProcessor()
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
                     mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
-                    //mDetectorFileProcessor[processor->index()]->flush();
                 }
             }
 
@@ -454,10 +453,10 @@ void CommHelper::closePower()
  设置发次信息
 */
 #include <QDir>
-void CommHelper::setShotInformation(const QString shotDir, const quint32 shotNum)
+void CommHelper::setShotInformation(const QString shotDir, const QString shotNum)
 {
     this->mShotDir = shotDir;
-    this->mShotNum = QString::number(shotNum);
+    this->mShotNum = shotNum;
 }
 
 
@@ -559,15 +558,6 @@ bool CommHelper::openHistoryWaveFile(const QString &filePath)
                 int rSize = file.read((char *)rawWaveData.data(), rawWaveData.size() * sizeof(quint16));
                 if (rSize == 1024){
                     realCurve[i] = rawWaveData;
-
-                    // if (i == 4 || i == 8 || i == 11){
-                    //     // 实测曲线
-                    //     QMetaObject::invokeMethod(this, [=]() {
-                    //         emit showHistoryCurve(realCurve);
-                    //     }, Qt::DirectConnection);
-
-                    //     realCurve.clear();
-                    // }
                 }
             }
         }
@@ -578,32 +568,10 @@ bool CommHelper::openHistoryWaveFile(const QString &filePath)
                 lines = lines.replace("\r\n", "");
                 QList<QByteArray> listLine = lines.split(',');
                 for( auto line : listLine){
-                    //rawWaveData.push_back(qRound((line.toDouble() - 10996) * 0.9));
                     rawWaveData.push_back(qRound(line.toDouble() * 0.8));
                 }
 
-                // if (rawWaveData.size() == 512){
-                //     realCurve[chIndex++] = rawWaveData;
-                //     // 实测曲线
-                //     QMetaObject::invokeMethod(this, [=]() {
-                //         emit showHistoryCurve(realCurve);
-                //     }, Qt::DirectConnection);
-
-                //     rawWaveData.clear();
-                //     realCurve.clear();
-                // }
             }
-
-            // 尾巴数据（无效数据）
-            // if (rawWaveData.size() > 0){
-            //     realCurve[chIndex++] = rawWaveData;
-            //     QMetaObject::invokeMethod(this, [=]() {
-            //         emit showHistoryCurve(realCurve);
-            //     }, Qt::DirectConnection);
-
-            //     rawWaveData.clear();
-            //     realCurve.clear();
-            // }
         }
 
         file.close();

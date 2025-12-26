@@ -172,6 +172,9 @@ private slots:
     void on_lineEdit_search_textChanged(const QString &text);
 
 private:
+    QString increaseShotNumSuffix(QString shotNumStr);
+
+private:
     Ui::CentralWidget *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
     DetSettingWindow *mDetSettingWindow = nullptr;

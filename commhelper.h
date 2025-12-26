@@ -47,7 +47,7 @@ public:
 
     //退出华为交换机登录
     void disconnectSwitcher();
-    
+
     /*
      打开电源
     */
@@ -69,7 +69,7 @@ public:
     /*
      设置发次信息
     */
-    void setShotInformation(const QString shotDir, const quint32 shotNum);
+    void setShotInformation(const QString shotDir, const QString shotNum);
 
     /*
      解析历史文件
