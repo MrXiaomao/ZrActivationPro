@@ -133,6 +133,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     connect(commHelper, &CommHelper::reportPoePowerStatus, this, [=](quint8 index, bool on){
         int row = index - 1;
         SwitchButton* cell =  qobject_cast<SwitchButton*>(ui->tableWidget_detector->cellWidget(row, 0));
+        qInfo().nospace().nospace() << "Detector#" << index << ": POE Power is " << (on ? "ON" : "OFF");
         cell->setChecked(on);
     });
 
@@ -1090,9 +1091,6 @@ void CentralWidget::on_action_startServer_triggered()
     if (commHelper->startServer()){
         ui->action_startServer->setEnabled(false);
         ui->action_stopServer->setEnabled(true);
-        // ui->action_connect->setEnabled(true);
-        // ui->action_powerOn->setEnabled(true);
-        // ui->action_powerOff->setEnabled(true);
         ui->action_startMeasure->setEnabled(true);
         ui->action_stopMeasure->setEnabled(true);
         ui->pushButton_startMeasure->setEnabled(true);
@@ -1129,9 +1127,6 @@ void CentralWidget::on_action_stopServer_triggered()
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
-    // ui->action_connect->setEnabled(false);
-    // ui->action_powerOn->setEnabled(false);
-    // ui->action_powerOff->setEnabled(false);
     ui->action_startMeasure->setEnabled(false);
     ui->action_stopMeasure->setEnabled(false);
     ui->pushButton_startMeasure->setEnabled(false);
