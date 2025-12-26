@@ -161,6 +161,16 @@ private slots:
     // 测量倒计时结束处理
     void onMeasureCountdownTimeout();
 
+    void on_bt_clearLog_clicked();
+
+    // 日志内容查找功能
+    void on_bt_search_clicked();
+    void on_bt_searchPrevious_clicked();
+    void on_bt_searchNext_clicked();
+    void on_bt_highlightAll_toggled(bool checked);
+    void on_lineEdit_search_returnPressed();
+    void on_lineEdit_search_textChanged(const QString &text);
+
 private:
     Ui::CentralWidget *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
@@ -190,6 +200,21 @@ private:
     QTimer *mMeasureCountdownTimer = nullptr;
     int mRemainingCountdown = 0;  // 剩余倒计时（秒）
     int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长
+
+    // 交换机连接状态管理
+    bool mSwitcherConnected = false;  // 交换机是否已连接
+    QTimer *mConnectButtonDisableTimer = nullptr;  // 连接按钮禁用定时器
+
+    // 更新连接按钮状态（文本、图标、启用/禁用）
+    void updateConnectButtonState(bool connected);
+
+    // 日志内容查找功能相关
+    QString mLastSearchText;  // 上次查找的文本
+    int mCurrentSearchPosition = 0;  // 当前查找位置
+    QList<QTextEdit::ExtraSelection> mExtraSelections;  // 高亮选择列表
+    void performSearch(bool forward = true, bool wrap = true);  // 执行查找
+    void highlightAllMatches(const QString &searchText);  // 高亮所有匹配项
+    void clearHighlights();  // 清除高亮
 
     QPixmap roundPixmap(QSize sz, QColor clrOut = Qt::gray);//单圆
     QPixmap dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut = Qt::gray);//双圆

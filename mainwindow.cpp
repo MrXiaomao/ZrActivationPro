@@ -22,6 +22,17 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     mMeasureCountdownTimer->setInterval(1000); // 每秒触发一次
     connect(mMeasureCountdownTimer, &QTimer::timeout, this, &CentralWidget::onMeasureCountdownTimeout);
     
+    // 初始化连接按钮禁用定时器
+    mConnectButtonDisableTimer = new QTimer(this);
+    mConnectButtonDisableTimer->setSingleShot(true);
+    mConnectButtonDisableTimer->setInterval(10000); // 10秒
+    connect(mConnectButtonDisableTimer, &QTimer::timeout, this, [=](){
+        // 定时器超时后，根据连接状态决定是否启用按钮
+        if (!mSwitcherConnected) {
+            ui->action_connect->setEnabled(true);
+        }
+    });
+    
     initUi();
     initNet();
 
@@ -41,24 +52,31 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     ui->action_autoMeasure->setEnabled(false);
     ui->pushButton_startMeasure->setEnabled(false);
     ui->pushButton_stopMeasure->setEnabled(false);
+    
+    // 初始化连接按钮状态（未连接状态）
+    updateConnectButtonState(false);
+
+    // 初始化查找功能
+    connect(ui->lineEdit_search, &QLineEdit::returnPressed, this, &CentralWidget::on_lineEdit_search_returnPressed);
+    connect(ui->lineEdit_search, &QLineEdit::textChanged, this, &CentralWidget::on_lineEdit_search_textChanged);
 
     // 继电器
     connect(commHelper, &CommHelper::switcherConnected, this, [=](QString ip){
         // QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
         // label_Connected->setStyleSheet("color:#00ff00;");
         // label_Connected->setText(tr("交换机[%1]：已连通").arg(ip));
+        mSwitcherConnected = true;
+        updateConnectButtonState(true);
         ui->action_powerOn->setEnabled(true);
         ui->action_powerOff->setEnabled(true);
         qInfo().noquote() << tr("交换机[%1]：已连通").arg(ip);
     });
     connect(commHelper, &CommHelper::switcherDisconnected, this, [=](QString ip){
-        // QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
-        // label_Connected->setStyleSheet("color:#ff0000;");
-        // label_Connected->setText(tr("交换机[%1]：断网").arg(ip));
-
+        mSwitcherConnected = false;
+        updateConnectButtonState(false);
         ui->action_powerOn->setEnabled(false);
         ui->action_powerOff->setEnabled(false);
-        qCritical().noquote() << tr("交换机[%1]：断网").arg(ip);
+        qCritical().noquote() << tr("交换机[%1]：连接已断开").arg(ip);
     });
 
     // 探测器
@@ -342,6 +360,7 @@ void CentralWidget::initUi()
         label_Idle->setText(message);
     });
 
+    // 设置任务栏信息 - 本地网络服务状态
     QLabel *label_LocalServer = new QLabel(ui->statusbar);
     label_LocalServer->setObjectName("label_LocalServer");
     label_LocalServer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -349,6 +368,7 @@ void CentralWidget::initUi()
     label_LocalServer->setText(tr("本地网络服务：未开启"));
     label_LocalServer->installEventFilter(this);
 
+    // 设置任务栏信息 - 连接状态
     QLabel *label_Connected = new QLabel(ui->statusbar);
     label_Connected->setObjectName("label_Connected");
     label_Connected->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -356,7 +376,14 @@ void CentralWidget::initUi()
     //label_Connected->setText(tr("交换机网络状态：未开启"));
     label_Connected->installEventFilter(this);
 
-    /*设置任务栏信息*/
+    // 设置任务栏查询状态
+    QLabel *label_Query = new QLabel(ui->statusbar);
+    label_Query->setObjectName("label_Query");
+    label_Query->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    label_Query->setFixedWidth(300);
+    label_Query->setText(tr("查询状态：无"));
+
+    // 设置任务栏信息 - 系统时间
     QLabel *label_systemtime = new QLabel(ui->statusbar);
     label_systemtime->setObjectName("label_systemtime");
     label_systemtime->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -367,6 +394,7 @@ void CentralWidget::initUi()
     ui->statusbar->addWidget(label_Connected);
     ui->statusbar->addWidget(new QLabel(ui->statusbar), 1);
     ui->statusbar->addWidget(nullptr, 1);
+    ui->statusbar->addPermanentWidget(label_Query);
     ui->statusbar->addPermanentWidget(label_systemtime);
 
     QTimer* systemClockTimer = new QTimer(this);
@@ -2004,7 +2032,227 @@ void CentralWidget::on_pushButton_stopMeasure_clicked()
 
 void CentralWidget::on_action_connect_triggered()
 {
-    // 打开电源
-    commHelper->connectSwitcher();
+    if (mSwitcherConnected) {
+        // 当前已连接，执行断开操作
+        commHelper->disconnectSwitcher();
+        // 禁用按钮10秒
+        ui->action_connect->setEnabled(false);
+        mConnectButtonDisableTimer->start();
+    } else {
+        // 当前未连接，执行连接操作
+        commHelper->connectSwitcher();
+        // 禁用按钮10秒
+        ui->action_connect->setEnabled(false);
+        mConnectButtonDisableTimer->start();
+    }
+}
+
+void CentralWidget::updateConnectButtonState(bool connected)
+{
+    if (connected) {
+        // 已连接状态：显示"断开交换机"，使用在线图标
+        ui->action_connect->setText(tr("断开交换机"));
+        ui->action_connect->setToolTip(tr("断开交换机"));
+        ui->action_connect->setIcon(QIcon(":/switchOnline.png"));  // 使用在线图标
+        // 连接成功后立即启用按钮（解除禁用）
+        ui->action_connect->setEnabled(true);
+        mConnectButtonDisableTimer->stop();
+    } else {
+        // 未连接状态：显示"连接交换机"，使用离线图标
+        ui->action_connect->setText(tr("连接交换机"));
+        ui->action_connect->setToolTip(tr("连接交换机"));
+        ui->action_connect->setIcon(QIcon(":/switchOffline.png"));  // 使用离线图标
+        // 断开后立即启用按钮（解除禁用）
+        ui->action_connect->setEnabled(true);
+        mConnectButtonDisableTimer->stop();
+    }
+}
+
+// 清除日志
+void CentralWidget::on_bt_clearLog_clicked()
+{
+    ui->textEdit_log->clear();
+    clearHighlights();
+    mLastSearchText.clear();
+    mCurrentSearchPosition = 0;
+}
+
+// 查找功能实现
+void CentralWidget::on_bt_search_clicked()
+{
+    performSearch(true, true);  // 向前查找，支持循环
+}
+
+void CentralWidget::on_bt_searchPrevious_clicked()
+{
+    performSearch(false, true);  // 向后查找，支持循环
+}
+
+void CentralWidget::on_bt_searchNext_clicked()
+{
+    performSearch(true, true);  // 向前查找，支持循环
+}
+
+void CentralWidget::on_bt_highlightAll_toggled(bool checked)
+{
+    QString searchText = ui->lineEdit_search->text();
+    if (checked && !searchText.isEmpty()) {
+        highlightAllMatches(searchText);
+    } else {
+        clearHighlights();
+    }
+}
+
+void CentralWidget::on_lineEdit_search_returnPressed()
+{
+    performSearch(true, true);  // 按回车键执行查找
+}
+
+void CentralWidget::on_lineEdit_search_textChanged(const QString &text)
+{
+    // 如果高亮全部已启用，更新高亮
+    if (ui->bt_highlightAll->isChecked()) {
+        if (!text.isEmpty()) {
+            highlightAllMatches(text);
+        } else {
+            clearHighlights();
+        }
+    } else {
+        clearHighlights();
+    }
+}
+
+void CentralWidget::performSearch(bool forward, bool wrap)
+{
+    QString searchText = ui->lineEdit_search->text();
+    if (searchText.isEmpty()) {
+        return;
+    }
+
+    QTextEdit *textEdit = ui->textEdit_log;
+    QTextDocument *document = textEdit->document();
+    QTextCursor cursor = textEdit->textCursor();
+
+    // 如果搜索文本改变，重置位置
+    if (searchText != mLastSearchText) {
+        mLastSearchText = searchText;
+        if (forward) {
+            cursor.setPosition(0);  // 从开头开始
+        } else {
+            cursor.setPosition(document->characterCount());  // 从末尾开始
+        }
+        textEdit->setTextCursor(cursor);
+    } else {
+        // 如果搜索文本未改变，从当前位置继续查找
+        // 对于向前查找，需要移动到下一个位置；对于向后查找，需要移动到上一个位置
+        if (forward) {
+            // 向前查找：从当前位置的下一个字符开始
+            int pos = cursor.position();
+            if (pos < document->characterCount()) {
+                cursor.setPosition(pos + 1);
+            } else if (wrap) {
+                cursor.setPosition(0);  // 循环到开头
+            }
+        } else {
+            // 向后查找：从当前位置的上一个字符开始
+            int pos = cursor.position();
+            if (pos > 0) {
+                cursor.setPosition(pos - 1);
+            } else if (wrap) {
+                cursor.setPosition(document->characterCount());  // 循环到末尾
+            }
+        }
+    }
+
+    // 设置查找选项
+    QTextDocument::FindFlags flags;
+    if (!forward) {
+        flags |= QTextDocument::FindBackward;
+    }
+
+    // 执行查找
+    QTextCursor found = document->find(searchText, cursor, flags);
+
+    QLabel* label_Query = this->findChild<QLabel*>("label_Query");
+    if (found.isNull()) {
+        // 未找到，如果支持循环，从头/尾继续查找
+        if (wrap) {
+            QTextCursor newCursor(document);
+            if (forward) {
+                newCursor.setPosition(0);
+            } else {
+                newCursor.setPosition(document->characterCount());
+            }
+            found = document->find(searchText, newCursor, flags);
+            
+            if (!found.isNull()) {
+                textEdit->setTextCursor(found);
+                textEdit->ensureCursorVisible();
+                // 显示提示信息
+                // ui->statusbar->showMessage(tr("已循环到%1").arg(forward ? tr("开头") : tr("末尾")), 2000);
+                label_Query->setText(tr("已循环到%1").arg(forward ? tr("开头") : tr("末尾")));
+            } else {
+                // ui->statusbar->showMessage(tr("未找到：%1").arg(searchText), 2000);
+                label_Query->setText(tr("未找到：%1").arg(searchText));
+            }
+        } else {
+            // ui->statusbar->showMessage(tr("未找到：%1").arg(searchText), 2000);
+            label_Query->setText(tr("未找到：%1").arg(searchText));
+        }
+    } else {
+        // 找到匹配项
+        textEdit->setTextCursor(found);
+        textEdit->ensureCursorVisible();
+        mCurrentSearchPosition = found.position();
+
+        label_Query->setText(tr("找到：%1").arg(searchText));
+    }
+}
+
+void CentralWidget::highlightAllMatches(const QString &searchText)
+{
+    if (searchText.isEmpty()) {
+        clearHighlights();
+        return;
+    }
+
+    QTextEdit *textEdit = ui->textEdit_log;
+    QTextDocument *document = textEdit->document();
+    
+    // 清除之前的高亮
+    clearHighlights();
+
+    // 设置高亮格式
+    QTextCharFormat highlightFormat;
+    highlightFormat.setBackground(QBrush(QColor(255, 255, 0, 100)));  // 黄色半透明背景
+    if (mIsDarkTheme) {
+        highlightFormat.setForeground(QBrush(QColor(255, 255, 0)));  // 黄色文字
+    }
+
+    // 从文档开头开始查找所有匹配项
+    QTextCursor cursor(document);
+    cursor.setPosition(0);
+
+    mExtraSelections.clear();
+    while (true) {
+        cursor = document->find(searchText, cursor, QTextDocument::FindFlags());
+        if (cursor.isNull()) {
+            break;
+        }
+
+        QTextEdit::ExtraSelection extra;
+        extra.cursor = cursor;
+        extra.format = highlightFormat;
+        mExtraSelections.append(extra);
+    }
+
+    // 应用高亮
+    textEdit->setExtraSelections(mExtraSelections);
+}
+
+void CentralWidget::clearHighlights()
+{
+    mExtraSelections.clear();
+    ui->textEdit_log->setExtraSelections(mExtraSelections);
 }
 

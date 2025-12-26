@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-12-23 11:10:46
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-12-26 10:13:48
+ * @LastEditTime: 2025-12-26 10:44:36
  * @Description: 请填写简介
  */
 #ifndef QHUAWEISWITCHERHELPER_H
@@ -39,7 +39,13 @@ public:
      连接并查询电源状态
     */
     void queryPowerStatus();
-    
+
+    /*
+    * 主动退出登录/断开 Telnet 连接。
+    * 逻辑：system-view 下先 quit 回到 <HUAWEI>，再 quit 退出会话，最后关闭 socket。
+    */
+    Q_SLOT void logout();
+
     /*********************************************************
      交换机指令
     ***********************************************************/
@@ -91,6 +97,11 @@ private:
     void stopHeartbeatCheck();
     void performHeartbeatCheck();
     void reconnectSwitcher();
+
+    // 退出登录相关
+    bool mIsLoggingOut = false;
+    quint8 mLogoutStep = 0; // 0=未退出, 1=已发第一条 quit, 2=已发第二条 quit
+
 };
 
 #endif // QHUAWEISWITCHERHELPER_H

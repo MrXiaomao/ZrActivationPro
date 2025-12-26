@@ -20,6 +20,44 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
         QByteArray rx_current(data, size);
         mRespondString.append(rx_current);
         //qDebug() << mRespondString;
+
+        // ------------------------------
+        // 退出登录流程（优先处理，避免被其它状态机分支打断）
+        // ------------------------------
+        if (mIsLoggingOut) {
+            const bool inUserView = mRespondString.contains("<HUAWEI>");
+            const bool inSystemView = mRespondString.contains("[HUAWEI]");
+
+            // Step 1: 在 system-view 下发了 quit，期望回到 <HUAWEI>
+            if (mLogoutStep == 1) {
+                if (inUserView) {
+                    mRespondString.clear();
+                    QString cmd = "quit\r"; // 退出会话
+                    mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+                    mLogoutStep = 2;
+                    return;
+                }
+                if (inSystemView)
+                    return;
+            }
+
+            // Step 2: 发完第二个 quit，通常对端会断开连接
+            if (mLogoutStep == 2) {
+                QTimer::singleShot(100, this, [=](){
+                    if (mTelnet)
+                        mTelnet->disconnectFromHost();
+                });
+
+                mIsLoggingOut = false;
+                mLogoutStep = 0;
+                mSwitcherIsLoginOk = false;
+                mSwitcherInSystemView = false;
+                mRespondString.clear();
+                emit switcherDisconnected(mIp);
+                return;
+            }
+        }
+
         if(mRespondString.endsWith("---- More ----")){
             QString data = "\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
@@ -241,7 +279,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
     connect(mTelnet, &QTelnet::stateChanged, this, [=](QAbstractSocket::SocketState socketState){
         if (socketState == QAbstractSocket::UnconnectedState) {
             stopHeartbeatCheck();
-            qInfo() << "交换机" << mIp << "连接断开";
+            qDebug() << "交换机" << mIp << "连接断开[QTelnet::stateChanged]";
             mSwitcherIsLoginOk = false;
             mSwitcherInSystemView = false;
         } else if (socketState == QAbstractSocket::ConnectedState && mSwitcherInSystemView) {
@@ -501,6 +539,50 @@ void QHuaWeiSwitcherHelper::reconnectSwitcher()
             QTimer::singleShot(30000, this, [=](){
                 mIsReconnecting = false;
             });
+        }
+    });
+}
+
+void QHuaWeiSwitcherHelper::logout()
+{
+    // 未连接则直接置状态并发出断开信号
+    if (!mTelnet || !mTelnet->isConnected()) {
+        mSwitcherIsLoginOk = false;
+        mSwitcherInSystemView = false;
+        mIsLoggingOut = false;
+        mLogoutStep = 0;
+        mRespondString.clear();
+        emit switcherDisconnected(mIp);
+        return;
+    }
+
+    // 若已经在退出流程中，则不重复触发
+    if (mIsLoggingOut)
+        return;
+
+    // 停止其它业务指令，避免退出过程中还在发 poe/query 等命令
+    mSwitcherIsBusy = true;
+    mCurrentCommand.clear();
+    mRespondString.clear();
+
+    mIsLoggingOut = true;
+    mLogoutStep = 1;
+
+    // 先 quit（从 [HUAWEI] 回到 <HUAWEI>，或直接触发退出）
+    QString cmd = "quit\r";
+    mTelnet->sendData(cmd.toStdString().c_str(), cmd.size());
+
+    // 兜底：如果对端不回显/不主动断开，3 秒后强制关闭 socket
+    QTimer::singleShot(3000, this, [=](){
+        if (mIsLoggingOut && mTelnet) {
+            mTelnet->disconnectFromHost();
+            mIsLoggingOut = false;
+            mLogoutStep = 0;
+            mSwitcherIsLoginOk = false;
+            mSwitcherInSystemView = false;
+            mSwitcherIsBusy = false;
+            mRespondString.clear();
+            emit switcherDisconnected(mIp);
         }
     });
 }

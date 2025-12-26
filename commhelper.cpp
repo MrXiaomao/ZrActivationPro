@@ -422,6 +422,13 @@ void CommHelper::connectSwitcher()
     }
 }
 
+void CommHelper::disconnectSwitcher()
+{
+    for (auto switcherHelper : mHuaWeiSwitcherHelper)
+    {
+        switcherHelper->logout();
+    }
+}
 /*
  打开电源
 */
