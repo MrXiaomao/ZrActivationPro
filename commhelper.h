@@ -167,6 +167,20 @@ private:
     //记录手动关闭POE供电的探测器ID
     QVector<quint8> mManualClosedPOEIDs;
 
+    // 文件flush状态跟踪结构
+    struct FileFlushInfo {
+        QElapsedTimer lastFlushTimer;  // 上次flush的时间计时器
+        qint64 bytesSinceLastFlush;    // 自上次flush以来写入的字节数
+        FileFlushInfo() : bytesSinceLastFlush(0) {
+            lastFlushTimer.start();
+        }
+    };
+    QMap<quint8, FileFlushInfo> mFileFlushInfo; // 每个探测器的文件flush信息
+    QMutex mMutexFileFlush; // 保护mFileFlushInfo的互斥锁
+
+    // 检查和执行文件flush的辅助函数
+    void checkAndFlushFile(quint8 index, qint64 bytesWritten);
+
     /*
      初始化网络
     */

@@ -89,9 +89,7 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     for (int row = 0; row < ui->tableWidget->rowCount(); ++row) {
         auto *cb = new QCheckBox(ui->tableWidget);
         cb->setProperty("row", row); // 方便反查
-        cb->setChecked(true); // 初始化全勾选
         ui->tableWidget->setCellWidget(row, 0, cb);
-
         updateSelectAllState();
 
         connect(cb, &QCheckBox::stateChanged, this, [=](int){
@@ -103,6 +101,7 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
 
             updateSelectAllState();   // 见下方函数
         });
+        cb->setChecked(true); // 初始化全勾选
     }
 
     //从HDF5加载配置信息
@@ -259,7 +258,6 @@ void DetSettingWindow::loadAt(quint8 detId)
 
     //网络设置
     //IP地址
-
 
     //能谱设置
     //能谱刷新时间（毫秒）

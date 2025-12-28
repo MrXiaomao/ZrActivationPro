@@ -171,11 +171,19 @@ void CommHelper::initDataProcessor()
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
 
+                    // 初始化flush信息
+                    {
+                        QMutexLocker flushLocker(&mMutexFileFlush);
+                        mFileFlushInfo[processor->index()] = FileFlushInfo();
+                    }
+
                     qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
-                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                    qint64 bytesWritten = mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                    // 检查是否需要flush（每10秒或每1MB）
+                    checkAndFlushFile(processor->index(), bytesWritten);
                 }
             }
 
@@ -203,14 +211,21 @@ void CommHelper::initDataProcessor()
                 if (!mDetectorFileProcessor.contains(processor->index())){
                     QString filePath = QString("%1/%2/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
-                    mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
+                    mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly | QIODevice::Append); //覆盖式写入
+
+                    // 初始化flush信息
+                    {
+                        QMutexLocker flushLocker(&mMutexFileFlush);
+                        mFileFlushInfo[processor->index()] = FileFlushInfo();
+                    }
 
                     qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
-                    mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
-                    //mDetectorFileProcessor[processor->index()]->flush();
+                    qint64 bytesWritten = mDetectorFileProcessor[processor->index()]->write((const char *)data.constData(), data.size());
+                    // 检查是否需要flush（每10秒或每1MB）
+                    checkAndFlushFile(processor->index(), bytesWritten);
                 }
             }
 
@@ -479,6 +494,11 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
                     mDetectorFileProcessor.remove(index);
                 }
             }
+            // 清理flush信息
+            {
+                QMutexLocker flushLocker(&mMutexFileFlush);
+                mFileFlushInfo.remove(index);
+            }
 
             DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
             if (!detectorDataProcessor->isFreeSocket()){
@@ -495,11 +515,65 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
                 mDetectorFileProcessor.remove(index);
             }
         }
+        // 清理flush信息
+        {
+            QMutexLocker flushLocker(&mMutexFileFlush);
+            mFileFlushInfo.remove(index);
+        }
 
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         if (!detectorDataProcessor->isFreeSocket()){
             detectorDataProcessor->startMeasure(mode);
             emit measureStart(index);
+        }
+    }
+}
+
+/*
+ 检查和执行文件flush
+ 每10秒或每1MB数据执行一次flush
+ 注意：此函数应在mMutexTriggerTimer锁的保护下调用，确保文件存在且已打开
+*/
+void CommHelper::checkAndFlushFile(quint8 index, qint64 bytesWritten)
+{
+    const qint64 FLUSH_SIZE_THRESHOLD = 1024 * 1024; // 1MB
+    const qint64 FLUSH_TIME_THRESHOLD_MS = 10000; // 10秒
+    
+    // 快速检查：如果写入的数据很小，且还没有初始化flush信息，可能不需要检查
+    // 但这需要在锁内检查，所以我们还是需要加锁
+    
+    // 使用独立的锁来保护flush信息，尽量缩短锁的持有时间
+    {
+        QMutexLocker flushLocker(&mMutexFileFlush);
+        
+        // 初始化或更新flush信息（文件创建时已初始化，这里只是确保存在）
+        if (!mFileFlushInfo.contains(index)) {
+            mFileFlushInfo[index] = FileFlushInfo();
+        }
+        
+        FileFlushInfo& flushInfo = mFileFlushInfo[index];
+        flushInfo.bytesSinceLastFlush += bytesWritten;
+        
+        // 检查是否达到阈值
+        bool needFlush = (flushInfo.bytesSinceLastFlush >= FLUSH_SIZE_THRESHOLD) ||
+                         (flushInfo.lastFlushTimer.elapsed() >= FLUSH_TIME_THRESHOLD_MS);
+        
+        if (!needFlush) {
+            // 不需要flush，直接返回（锁在作用域结束时自动释放）
+            return;
+        }
+        
+        // 需要flush，重置计数器（锁仍持有）
+        flushInfo.bytesSinceLastFlush = 0;
+        flushInfo.lastFlushTimer.restart();
+    } // flushLocker在这里释放锁
+    
+    // 在锁外执行flush操作，避免锁持有时间过长
+    // 注意：mDetectorFileProcessor的访问由调用者的mMutexTriggerTimer锁保护
+    if (mDetectorFileProcessor.contains(index)) {
+        QFile* file = mDetectorFileProcessor[index];
+        if (file && file->isOpen()) {
+            file->flush();
         }
     }
 }
@@ -518,11 +592,31 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
 
                 emit measureStop(index);
 
-                //关闭文件
+                //延迟关闭文件，确保尾包数据能够正常存储
                 if (mDetectorFileProcessor.contains(index)){
-                    mDetectorFileProcessor[index]->close();
-                    mDetectorFileProcessor[index]->deleteLater();
-                    mDetectorFileProcessor.remove(index);
+                    QFile* file = mDetectorFileProcessor[index];
+                    quint8 detIndex = index; // 保存当前index值，用于lambda捕获
+                    if (file && file->isOpen()){
+                        //先刷新缓冲区，确保已写入的数据被保存
+                        file->flush();
+                    }
+                    //延迟500ms关闭文件，等待尾包数据写入完成
+                    QTimer::singleShot(500, this, [this, detIndex](){
+                        if (mDetectorFileProcessor.contains(detIndex)){
+                            QFile* fileToClose = mDetectorFileProcessor[detIndex];
+                            if (fileToClose && fileToClose->isOpen()){
+                                fileToClose->flush(); //再次刷新，确保尾包数据写入
+                                fileToClose->close();
+                            }
+                            fileToClose->deleteLater();
+                            mDetectorFileProcessor.remove(detIndex);
+                        }
+                        // 清理flush信息
+                        {
+                            QMutexLocker flushLocker(&mMutexFileFlush);
+                            mFileFlushInfo.remove(detIndex);
+                        }
+                    });
                 }
             }
         }
@@ -533,11 +627,31 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
 
         emit measureStop(index);
 
-        //关闭文件
+        //延迟关闭文件，确保尾包数据能够正常存储
         if (mDetectorFileProcessor.contains(index)){
-            mDetectorFileProcessor[index]->close();
-            mDetectorFileProcessor[index]->deleteLater();
-            mDetectorFileProcessor.remove(index);
+            QFile* file = mDetectorFileProcessor[index];
+            quint8 detIndex = index; // 保存当前index值，用于lambda捕获
+            if (file && file->isOpen()){
+                //先刷新缓冲区，确保已写入的数据被保存
+                file->flush();
+            }
+            //延迟500ms关闭文件，等待尾包数据写入完成
+            QTimer::singleShot(500, this, [this, detIndex](){
+                if (mDetectorFileProcessor.contains(detIndex)){
+                    QFile* fileToClose = mDetectorFileProcessor[detIndex];
+                    if (fileToClose && fileToClose->isOpen()){
+                        fileToClose->flush(); //再次刷新，确保尾包数据写入
+                        fileToClose->close();
+                    }
+                    fileToClose->deleteLater();
+                    mDetectorFileProcessor.remove(detIndex);
+                }
+                // 清理flush信息
+                {
+                    QMutexLocker flushLocker(&mMutexFileFlush);
+                    mFileFlushInfo.remove(detIndex);
+                }
+            });
         }
     }
 }
