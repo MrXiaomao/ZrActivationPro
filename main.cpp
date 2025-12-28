@@ -164,6 +164,7 @@ int main(int argc, char *argv[])
         qApp->installTranslator(&qtbaseTranslator);
 
     qRegisterMetaType<QtMsgType>("QtMsgType");
+    qRegisterMetaType<FullSpectrum>("FullSpectrum");
     system_default_message_handler = qInstallMessageHandler(AppMessageHandler);
 
     QString darkTheme = "true";

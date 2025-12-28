@@ -26,12 +26,15 @@ class QTimer;
 
 // 探测器数据结构
 struct DetectorData {
-    // double countRate;                    // 当前计数率
-    QVector<double> countRateHistory;    // 计数率历史
-    quint32 spectrum[8192];    // 累积能谱 (固定长度8192)
+    // double countRate;                 // 当前计数率
+    QVector<double> countRateHistory;    // 计数率历史，cps，每秒钟更新一次
+    quint32 spectrum[8192];              // 累积能谱 (固定长度8192)
+    quint32 lastSpectrumID;              // 上次测量累积时间的能谱序号
+    quint32 lastAccumulateCount;         // 上次测量累积时间的计数率,暂时不考虑丢包带来的计数率修复
     // QDateTime lastUpdate;
 
-    DetectorData(){
+    DetectorData() : lastSpectrumID(0), lastAccumulateCount(0) {
+        countRateHistory.clear();
         for(int i=0; i<8192; i++) spectrum[i] = 0;// 初始化能谱为全0
     }
 };

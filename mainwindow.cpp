@@ -225,6 +225,7 @@ void CentralWidget::initUi()
     //加载界面参数
     {
         GlobalSettings settings;
+        bool flag = settings.value("Global/ShotNumIsAutoIncrease", true).toBool();
         ui->checkBox_autoIncrease->setChecked(settings.value("Global/ShotNumIsAutoIncrease", true).toBool());
         ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
         ui->lineEdit_filePath->setText(settings.value("Global/ShotDir", "./cache").toString());
@@ -571,7 +572,6 @@ void CentralWidget::initUi()
 
         // 发次
         ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
-        ui->checkBox_autoIncrease->setChecked(settings.value("Global/ShotNumIsAutoIncrease", false).toBool());
     }
 
     QAction *action3 = ui->lineEdit_SaveAsPath->addAction(QIcon(":/open.png"), QLineEdit::TrailingPosition);
@@ -667,7 +667,7 @@ void CentralWidget::initUi()
 
     for (int i=1; i<=6; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        initCustomPlot(i, spectroMeter_top, tr("时间/s"), tr("计数"), tr("计数曲线"), 1);
+        initCustomPlot(i, spectroMeter_top, tr("时间/s"), tr("计数率/cps"), tr("计数曲线"), 1);
         QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
         initCustomPlot(i, spectroMeter_bottom, tr("道址"), tr("计数"), tr("累积能谱"), 1);
     }
@@ -707,6 +707,40 @@ void CentralWidget::initUi()
         mTemperatureTimeoutDetectors.append(index);
     }, Qt::QueuedConnection);
 
+    // 接收完整的能谱数据
+    connect(commHelper, &CommHelper::reportFullSpectrum, this, [=](quint8 index, const FullSpectrum& fullSpectrum){ 
+        if (index < 1 || index > 24) {
+            qWarning() << "Invalid detector ID:" << index;
+            return;
+        }
+
+        DetectorData &data = m_detectorData[index];
+
+        // 累积能谱
+        quint32 currentCount = 0;
+        for (int i = 0; i < 8192; ++i) {
+            currentCount += fullSpectrum.spectrum[i];
+            data.spectrum[i] += fullSpectrum.spectrum[i];
+        }
+
+        //记录累积计数率
+        data.lastAccumulateCount += currentCount;
+
+        // 更新界面显示
+        updateSpectrumDisplay(index, data.spectrum);
+        
+        //最快每秒更新一次计数率,这里不考虑丢包带来的计数率修复
+        quint32 accuTime = (fullSpectrum.sequence - data.lastSpectrumID) * fullSpectrum.measureTime;
+        if(accuTime >= 1000) {
+            double countRate = data.lastAccumulateCount * 1.0 / accuTime;
+            data.lastSpectrumID = fullSpectrum.sequence;
+            data.lastAccumulateCount = 0;
+            data.countRateHistory.append(countRate);            
+            // 更新计数率显示
+            updateCountRateDisplay(index, countRate);
+        }
+    });
+
     connect(commHelper, &CommHelper::reportSpectrumCurveData, this, [=](quint8 index, QVector<quint32>& data){
         Q_UNUSED(index);
         // 将 QVector<quint32> 转换为 int 数组
@@ -722,7 +756,7 @@ void CentralWidget::initUi()
         }
 
         // 更新探测器数据
-        updateDetectorData(index, spectrumData);
+        // updateDetectorData(index, spectrumData);
     });
 
     connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
@@ -1636,7 +1670,7 @@ void CentralWidget::on_pushButton_saveAs_clicked()
 }
 
 // 更新探测器数据
-void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) {
+/*void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) {
     if (detectorId < 1 || detectorId > 24) {
         qWarning() << "Invalid detector ID:" << detectorId;
         return;
@@ -1659,7 +1693,7 @@ void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) 
 
     // 更新计数率显示（如果有对应的图表）
     updateCountRateDisplay(detectorId, countRate);
-}
+}*/
 
 // 重置能谱
 void CentralWidget::resetDetectorSpectrum(int detectorId) {
@@ -1671,6 +1705,11 @@ void CentralWidget::resetDetectorSpectrum(int detectorId) {
     for (int i = 0; i < 8192; ++i)
         it->spectrum[i] = 0;
 
+    // 清空上次测量累积时间的能谱序号
+    it->lastSpectrumID = 0;
+    // 清空上次测量累积时间的计数率
+    it->lastAccumulateCount = 0;
+    
     // 清空计数率历史并释放内存
     QVector<double>().swap(it->countRateHistory);
     // 如果是 QList<double>，同样写法：QList<double>().swap(it->countRateHistory);

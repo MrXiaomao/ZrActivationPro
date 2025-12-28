@@ -73,6 +73,7 @@ signals:
     Q_SIGNAL void reportSpectrumCurveData(quint8, QVector<quint32> data);
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
+    Q_SIGNAL void reportFullSpectrum(quint8 index, const FullSpectrum& fullSpectrum); // 发送完整的能谱数据
 
 private:
     quint8 mIndex;//探测器索引

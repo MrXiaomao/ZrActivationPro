@@ -64,15 +64,44 @@ struct SubSpectrumPacket {
 #pragma pack(push, 1)  // 确保字节对齐
 struct FullSpectrum {
     quint32 sequence;      // 能谱序号
-    quint32 measureTime;   // 测量时间,单位ms
+    quint32 measureTime;   // 能量测量时间间隔,单位ms
     quint32 deathTime;      // 死时间,单位*10ns
     quint32 spectrum[8192]; // 8192道完整数据
-    QDateTime completeTime; // 完成时间,记录一个完整能谱数据接收完的北京时间
     quint32 receivedMask = 0;   // 32个子包位图
+    QDateTime completeTime; // 完成时间,记录一个完整能谱数据接收完的北京时间
     bool isComplete;       // 是否完整
     // QSet<quint16> receivedPackets; // 已收到的包编号
+    
+    // 默认构造函数
+    FullSpectrum() : sequence(0), measureTime(0), deathTime(0), receivedMask(0), isComplete(false) {
+        memset(spectrum, 0, sizeof(spectrum));
+    }
+    
+    // 拷贝构造函数
+    FullSpectrum(const FullSpectrum& other) 
+        : sequence(other.sequence), measureTime(other.measureTime), deathTime(other.deathTime),
+          receivedMask(other.receivedMask), completeTime(other.completeTime), isComplete(other.isComplete) {
+        memcpy(spectrum, other.spectrum, sizeof(spectrum));
+    }
+    
+    // 赋值运算符
+    FullSpectrum& operator=(const FullSpectrum& other) {
+        if (this != &other) {
+            sequence = other.sequence;
+            measureTime = other.measureTime;
+            deathTime = other.deathTime;
+            receivedMask = other.receivedMask;
+            completeTime = other.completeTime;
+            isComplete = other.isComplete;
+            memcpy(spectrum, other.spectrum, sizeof(spectrum));
+        }
+        return *this;
+    }
 };
 #pragma pack(pop)
+
+// 注册 FullSpectrum 为 Qt 元类型
+Q_DECLARE_METATYPE(FullSpectrum)
 
 #define GLOBAL_CONFIG_FILENAME "./Config/GSettings.ini"
 #define CONFIG_FILENAME "./Config/Settings.ini"

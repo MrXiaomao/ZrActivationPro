@@ -196,6 +196,11 @@ void CommHelper::initDataProcessor()
                     emit reportSpectrumCurveData(index, spectrum);
                 });
 
+        connect(detectorDataProcessor, &DataProcessor::reportFullSpectrum,
+                this, [=](quint8 index, const FullSpectrum& fullSpectrum){
+                    emit reportFullSpectrum(index, fullSpectrum);
+                });
+
         connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
