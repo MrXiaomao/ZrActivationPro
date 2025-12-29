@@ -206,6 +206,43 @@ CentralWidget::~CentralWidget()
 
 void CentralWidget::initUi()
 {
+    // 谱仪最大化按钮
+    auto titleClicked = ([=](){
+        QToolButton* btn = qobject_cast<QToolButton*>(sender());
+        QString name = btn->objectName();
+        int index = name.right(1).toInt();
+        QWidget* spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(index));
+        if (spectroMeterWidget->property("isZoomIn").toBool())
+        {
+            spectroMeterWidget->setProperty("isZoomIn", false);
+            btn->setIcon(QIcon(":/zoom_in.png"));
+            for (int i=1; i<=6; ++i)
+            {
+                spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
+                spectroMeterWidget->show();
+            }
+        }
+        else
+        {
+            spectroMeterWidget->setProperty("isZoomIn", true);
+            btn->setIcon(QIcon(":/zoom_out.png"));
+            for (int i=1; i<=6; ++i)
+            {
+                spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
+                if (i==index)
+                    spectroMeterWidget->show();
+                else
+                    spectroMeterWidget->hide();
+            }
+        }
+    });
+    connect(ui->toolButton_title_1, &QToolButton::clicked, this, titleClicked);
+    connect(ui->toolButton_title_2, &QToolButton::clicked, this, titleClicked);
+    connect(ui->toolButton_title_3, &QToolButton::clicked, this, titleClicked);
+    connect(ui->toolButton_title_4, &QToolButton::clicked, this, titleClicked);
+    connect(ui->toolButton_title_5, &QToolButton::clicked, this, titleClicked);
+    connect(ui->toolButton_title_6, &QToolButton::clicked, this, titleClicked);
+
     ui->leftStackedWidget->hide();
 
     // 隐藏页面【历史数据、数据分析、数据管理】
@@ -240,6 +277,7 @@ void CentralWidget::initUi()
     connect(ui->com_triggerModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &CentralWidget::onTriggerModelChanged);
 
+    // 创建上线客户端页面
     mClientPeersWindow = new ClientPeersWindow();
     // mClientPeersWindow->setAttribute(Qt::WA_TranslucentBackground);
     mClientPeersWindow->setWindowFlags(Qt::Widget | Qt::WindowStaysOnTopHint);
@@ -430,6 +468,36 @@ void CentralWidget::initUi()
     });
     systemClockTimer->start(900);
 
+    {
+        ui->spectroMeterPageInfoWidget->setLayout(new QVBoxLayout(ui->spectroMeterPageInfoWidget));
+        QSplitter *splitterV = new QSplitter(Qt::Vertical,this);
+        splitterV->setHandleWidth(2);
+
+        QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
+        splitterH1->setHandleWidth(1);
+        splitterH1->addWidget(ui->spectroMeterWidget1);
+        splitterH1->addWidget(ui->spectroMeterWidget2);
+        splitterH1->addWidget(ui->spectroMeterWidget3);
+        splitterH1->setSizes(QList<int>() << 100000 << 100000 << 100000);
+        splitterH1->setCollapsible(0,false);
+        splitterH1->setCollapsible(1,false);
+        splitterH1->setCollapsible(2,false);
+        splitterV->addWidget(splitterH1);
+
+        QSplitter *splitterH2 = new QSplitter(Qt::Horizontal,this);
+        splitterH2->setHandleWidth(1);
+        splitterH2->addWidget(ui->spectroMeterWidget4);
+        splitterH2->addWidget(ui->spectroMeterWidget5);
+        splitterH2->addWidget(ui->spectroMeterWidget6);
+        splitterH2->setSizes(QList<int>() << 100000 << 100000 << 100000);
+        splitterH2->setCollapsible(0,false);
+        splitterH2->setCollapsible(1,false);
+        splitterH2->setCollapsible(2,false);
+        splitterV->addWidget(splitterH2);
+
+        ui->spectroMeterPageInfoWidget->layout()->addWidget(splitterV);
+    }
+
     QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
     splitterH1->setObjectName("splitterH1");
     splitterH1->setHandleWidth(5);
@@ -509,15 +577,15 @@ void CentralWidget::initUi()
 
     ui->tableWidget_detector->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableWidget_detector->horizontalHeader()->setFixedHeight(25);
-    ui->tableWidget_detector->setRowHeight(0, 30);
-    for (int i=1; i<=3; ++i)
-        ui->tableWidget_detector->setRowHeight(i, 30);
-    ui->tableWidget_detector->setFixedHeight(750);
+    for (int i=0; i<24; ++i)
+         ui->tableWidget_detector->setRowHeight(i, 25);
+    ui->tableWidget_detector->setFixedHeight(625);
 
     for (int row=0; row<ui->tableWidget_detector->rowCount(); ++row){
         for (int column=0; column<=3; ++column){
             if (column == 0){
                 SwitchButton* cell = new SwitchButton();
+                cell->setContentsMargins(5, 2, 5, 0);
                 cell->setAutoChecked(false);
                 ui->tableWidget_detector->setCellWidget(row, column, cell);
                 connect(cell, &SwitchButton::clicked, this, [=](){
@@ -667,15 +735,15 @@ void CentralWidget::initUi()
 
     for (int i=1; i<=6; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        initCustomPlot(i, spectroMeter_top, tr("时间/s"), tr("计数率/cps"), tr("计数曲线"), 1);
+        initCustomPlot(i, spectroMeter_top, tr(""), tr("时间/s 计数率/cps"), tr("计数曲线"), 1);
         QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-        initCustomPlot(i, spectroMeter_bottom, tr("道址"), tr("计数"), tr("累积能谱"), 1);
+        initCustomPlot(i, spectroMeter_bottom, tr(""), tr("道址 计数"), tr("累积能谱"), 1);
     }
 
     QCustomPlot *spectroMeter_left = this->findChild<QCustomPlot*>(QString("spectroMeter_left"));
-    initCustomPlot(100, spectroMeter_left, tr("时间/ns"), tr("ADC采样值"), tr("实时波形"), 1);
+    initCustomPlot(100, spectroMeter_left, tr(""), tr("时间/ns ADC采样值"), tr("实时波形"), 1);
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
-    initCustomPlot(101, spectroMeter_right, tr("道址"), tr("计数"), tr("累积能谱"), 1);
+    initCustomPlot(101, spectroMeter_right, tr(""), tr("道址 计数"), tr("累积能谱"), 1);
 
     //更新温度状态
     connect(commHelper, &CommHelper::reportDetectorTemperature, this, [=](quint8 index, float temperature){
@@ -870,13 +938,16 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     customPlot->setProperty("index", index);
     
     // 创建标题文本元素
-    QCPTextElement *title = new QCPTextElement(customPlot, str_title, QFont("Microsoft YaHei", 12, QFont::Bold));
-    // 关键：把默认外边距/内边距压到最小
-    title->setMargins(QMargins(0, 0, 0, 0));
-
-    // 添加到图表布局（位于最上方）
-    customPlot->plotLayout()->insertRow(0);
-    customPlot->plotLayout()->addElement(0, 0, title);
+    QCPItemText *textLabel = new QCPItemText(customPlot);
+    textLabel->setObjectName("title");
+    textLabel->setPositionAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    textLabel->position->setType(QCPItemPosition::ptAxisRectRatio);
+    textLabel->position->setCoords(0.5, 0); // place position at center/top of axis rect
+    textLabel->setText(str_title);
+    if (mIsDarkTheme)
+        textLabel->setColor(Qt::white);
+    else
+        textLabel->setColor(Qt::black);
 
     // 设置背景网格线是否显示
     //customPlot->xAxis->grid()->setVisible(true);
@@ -915,8 +986,13 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     customPlot->xAxis2->ticker()->setTickCount(graphCount == 1 ? 10 : 5);
 
     //设置轴标签名称
-    customPlot->xAxis->setLabel(str_title + axisXLabel);
+    customPlot->xAxis->setLabel(axisXLabel);
     customPlot->yAxis->setLabel(axisYLabel);
+
+    customPlot->xAxis2->setTicks(false);
+    customPlot->xAxis2->setSubTicks(false);
+    customPlot->yAxis2->setTicks(false);
+    customPlot->yAxis2->setSubTicks(false);
 
     // 添加散点图
     QColor colors[] = {Qt::green, Qt::blue, Qt::red, Qt::cyan};
@@ -1547,6 +1623,12 @@ void CentralWidget::applyColorTheme()
             workLogLabel->setStyleSheet(style);
         }
 
+        QCPItemText *textLabel = customPlot->findChild<QCPItemText*>("title");
+        if (mIsDarkTheme)
+            textLabel->setColor(Qt::white);
+        else
+            textLabel->setColor(Qt::black);
+
         // 窗体背景色
         customPlot->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Dark) : Qt::white));
         // 四边安装轴并显示
@@ -1577,6 +1659,11 @@ void CentralWidget::applyColorTheme()
         customPlot->xAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
         customPlot->yAxis->setTickLabelColor(palette.color(QPalette::WindowText));
         customPlot->yAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
+
+        customPlot->xAxis2->setTicks(false);
+        customPlot->xAxis2->setSubTicks(false);
+        customPlot->yAxis2->setTicks(false);
+        customPlot->yAxis2->setSubTicks(false);
 
         customPlot->replot();
     }

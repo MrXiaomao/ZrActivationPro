@@ -8,6 +8,7 @@
 
 #include "QGoodWindow"
 #include "QGoodCentralWidget"
+#include "QGoodWindowHelper"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

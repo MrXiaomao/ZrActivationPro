@@ -2,7 +2,6 @@
 #include "qpainter.h"
 #include "qevent.h"
 #include "qtimer.h"
-#include "qdebug.h"
 #include "qpainterpath.h"
 
 SwitchButton::SwitchButton(QWidget *parent): QWidget(parent)
@@ -29,15 +28,16 @@ SwitchButton::SwitchButton(QWidget *parent): QWidget(parent)
     space = 2;
     rectRadius = 5;
 
-    step = width() / 50;
-    startX = 0;
-    endX = 0;
+    step = contentsRect().width() / 50;
+    startX = contentsRect().left();
+    endX = contentsRect().left();
 
     timer = new QTimer(this);
     timer->setInterval(5);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateValue()));
 
     setFont(QFont("Microsoft Yahei", 10));
+
 }
 
 SwitchButton::~SwitchButton()
@@ -56,19 +56,19 @@ void SwitchButton::mousePressEvent(QMouseEvent *)
     emit toggled(checked);
 
     //每次移动的步长为宽度的 50分之一
-    step = qMax(1, width() / 50);
+    step = qMax(1, contentsRect().width() / 50);
 
     //状态切换改变后自动计算终点坐标
     if (checked) {
         if (buttonStyle == ButtonStyle_Rect) {
-            endX = width() - width() / 2;
+            endX = contentsRect().left() + contentsRect().width() - contentsRect().width() / 2;
         } else if (buttonStyle == ButtonStyle_CircleIn) {
-            endX = width() - height();
+            endX = contentsRect().left() + contentsRect().width() - contentsRect().height();
         } else if (buttonStyle == ButtonStyle_CircleOut) {
-            endX = width() - height() + space;
+            endX = contentsRect().left() + contentsRect().width() - contentsRect().height() + space;
         }
     } else {
-        endX = 0;
+        endX = contentsRect().left();
     }
 
     //timer->start();
@@ -79,19 +79,19 @@ void SwitchButton::mousePressEvent(QMouseEvent *)
 void SwitchButton::resizeEvent(QResizeEvent *)
 {
     //每次移动的步长为宽度的 50分之一
-    step = width() / 50;
+    step = contentsRect().width() / 50;
 
     //尺寸大小改变后自动设置起点坐标为终点
     if (checked) {
         if (buttonStyle == ButtonStyle_Rect) {
-            startX = width() - width() / 2;
+            startX = contentsRect().left() + contentsRect().width() - contentsRect().width() / 2;
         } else if (buttonStyle == ButtonStyle_CircleIn) {
-            startX = width() - height();
+            startX = contentsRect().left() + contentsRect().width() - contentsRect().height();
         } else if (buttonStyle == ButtonStyle_CircleOut) {
-            startX = width() - height() + space;
+            startX = contentsRect().left() + contentsRect().width() - contentsRect().height() + space;
         }
     } else {
-        startX = 0;
+        startX = contentsRect().left();
     }
 
     update();
@@ -128,24 +128,12 @@ void SwitchButton::drawBg(QPainter *painter)
     }
 
     if (buttonStyle == ButtonStyle_Rect) {
-        painter->drawRoundedRect(rect(), rectRadius, rectRadius);
+        painter->drawRoundedRect(contentsRect(), rectRadius, rectRadius);
     } else if (buttonStyle == ButtonStyle_CircleIn) {
-        QRect rect(0, 0, width(), height());
-        //半径为高度的一半
-        int radius = rect.height() / 2;
-        //圆的宽度为高度
-        int circleWidth = rect.height();
-
-        QPainterPath path;
-        path.moveTo(radius, rect.left());
-        path.arcTo(QRectF(rect.left(), rect.top(), circleWidth, circleWidth), 90, 180);
-        path.lineTo(rect.width() - radius, rect.height());
-        path.arcTo(QRectF(rect.width() - rect.height(), rect.top(), circleWidth, circleWidth), 270, 180);
-        path.lineTo(radius, rect.top());
-
-        painter->drawPath(path);
+        int radius = contentsRect().height() / 2;
+        painter->drawRoundedRect(contentsRect(), radius, radius);
     } else if (buttonStyle == ButtonStyle_CircleOut) {
-        QRect rect(space, space, width() - space * 2, height() - space * 2);
+        QRect rect(contentsRect().left()+space, contentsRect().top()+space, contentsRect().width() - space * 2, contentsRect().height() - space * 2);
         painter->drawRoundedRect(rect, rectRadius, rectRadius);
     }
 
@@ -164,19 +152,19 @@ void SwitchButton::drawSlider(QPainter *painter)
     }
 
     if (buttonStyle == ButtonStyle_Rect) {
-        int sliderWidth = width() / 2 - space * 2;
-        int sliderHeight = height() - space * 2;
-        QRect sliderRect(startX + space, space, sliderWidth , sliderHeight);
+        int sliderWidth = contentsRect().width() / 2 - space * 2;
+        int sliderHeight = contentsRect().height() - space * 2;
+        QRect sliderRect(startX + space, contentsRect().top() + space, sliderWidth , sliderHeight);
         painter->drawRoundedRect(sliderRect, rectRadius, rectRadius);
     } else if (buttonStyle == ButtonStyle_CircleIn) {
-        QRect rect(0, 0, width(), height());
-        int sliderWidth = rect.height() - space * 2;
-        QRect sliderRect(startX + space, space, sliderWidth, sliderWidth);
+        QRect rect = contentsRect();
+        int sliderWidth = contentsRect().height() - space * 2;
+        QRect sliderRect(startX + space, contentsRect().top() + space, sliderWidth, sliderWidth);
         painter->drawEllipse(sliderRect);
     } else if (buttonStyle == ButtonStyle_CircleOut) {
-        QRect rect(0, 0, width() - space, height() - space);
+        QRect rect(contentsRect().left(), contentsRect().top(), contentsRect().width() - space, contentsRect().height() - space);
         int sliderWidth = rect.height();
-        QRect sliderRect(startX, space / 2, sliderWidth, sliderWidth);
+        QRect sliderRect(startX, contentsRect().top() + space / 2, sliderWidth, sliderWidth);
         painter->drawEllipse(sliderRect);
     }
 
@@ -187,20 +175,20 @@ void SwitchButton::drawText(QPainter *painter)
 {
     painter->save();
 
-    int sliderWidth = height() - space * 2;
+    int sliderWidth = contentsRect().height() - space * 2;
     if (!checked) {
         painter->setPen(textColorOff);
-        painter->drawText(startX + sliderWidth, 0, width() - space*2 - sliderWidth, height(), Qt::AlignCenter, textOff);
+        painter->drawText(startX + sliderWidth, contentsRect().top(), contentsRect().width() - space*2 - sliderWidth, contentsRect().height(), Qt::AlignCenter, textOff);
 
     } else {
         painter->setPen(textColorOn);
-        painter->drawText(space, 0, width() - space*2 - sliderWidth, height(), Qt::AlignCenter, textOn);
+        painter->drawText(contentsRect().left() + space, contentsRect().top(), contentsRect().width() - space*2 - sliderWidth, contentsRect().height(), Qt::AlignCenter, textOn);
     }
 
     painter->restore();
 }
 
-void SwitchButton::drawImage(QPainter *painter)
+void SwitchButton::drawImage(QPainter * painter)
 {
     painter->save();
 
@@ -217,8 +205,8 @@ void SwitchButton::drawImage(QPainter *painter)
     int targetHeight = pix.height();
     pix = pix.scaled(targetWidth, targetHeight, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    int pixX = rect().center().x() - targetWidth / 2;
-    int pixY = rect().center().y() - targetHeight / 2;
+    int pixX = contentsRect().center().x() - targetWidth / 2;
+    int pixY = contentsRect().center().y() - targetHeight / 2;
     QPoint point(pixX, pixY);
     painter->drawPixmap(point, pix);
 
@@ -263,19 +251,19 @@ void SwitchButton::setChecked(bool checked)
             emit toggled(checked);
 
         //每次移动的步长为宽度的 50分之一
-        step = qMax(1, width() / 50);
+        step = qMax(1, contentsRect().width() / 50);
 
         //状态切换改变后自动计算终点坐标
         if (checked) {
             if (buttonStyle == ButtonStyle_Rect) {
-                endX = width() - width() / 2;
+                endX = contentsRect().width() - contentsRect().width() / 2;
             } else if (buttonStyle == ButtonStyle_CircleIn) {
-                endX = width() - height();
+                endX = contentsRect().width() - contentsRect().height();
             } else if (buttonStyle == ButtonStyle_CircleOut) {
-                endX = width() - height() + space;
+                endX = contentsRect().width() - contentsRect().height() + space;
             }
         } else {
-            endX = 0;
+            endX = contentsRect().left();
         }
 
         startX = endX;

@@ -58,8 +58,10 @@ static QTranslator qtbaseTranslator;
 static QTranslator appTranslator;
 int main(int argc, char *argv[])
 {
-    QApplication::setAttribute(Qt::AA_DisableHighDpiScaling); // 禁用高DPI缩放支持
-    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps); // 使用高DPI位图
+    QGoodWindow::setup();
+    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+    QApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
+    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 
     QApplication a(argc, argv);
@@ -76,13 +78,25 @@ int main(int argc, char *argv[])
         QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings,false);
     }
 
-    QString fontFamily = settings.value("Global/Options/fontFamily", "微软雅黑").toString();
-    quint32 fontPointSize = settings.value("Global/Options/fontPointSize", 12).toInt();
-    QFont font = qApp->font();
-    font.setStyleStrategy(QFont::PreferAntialias);
-    font.setHintingPreference(QFont::PreferFullHinting);
-    // font.setFamily(fontFamily);
-    // font.setPointSize(fontPointSize);
+    QFont font = QApplication::font();
+#if defined(Q_OS_WIN) && defined(Q_CC_MSVC)
+    int fontId = QFontDatabase::addApplicationFont(QApplication::applicationDirPath() + "/inziu-iosevkaCC-SC-regular.ttf");
+#else
+    int fontId = QFontDatabase::addApplicationFont(QStringLiteral(":/font/font/inziu-iosevkaCC-SC-regular.ttf"));
+#endif
+    QStringList fontFamilies = QFontDatabase::applicationFontFamilies(fontId);
+    if (fontFamilies.size() > 0) {
+        font.setFamily(fontFamilies[0]);//启用内置字体
+    }
+
+    int pointSize = font.pointSize();
+    qreal dpi = QGuiApplication::primaryScreen()->devicePixelRatio();
+    if (dpi >= 2.0)
+        pointSize += 3;
+    else if (dpi > 1.0)
+        pointSize += 2;
+    font.setPointSize(pointSize);
+    font.setFixedPitch(true);
     qApp->setFont(font);
     qApp->setStyle(new DarkStyle());
     qApp->style()->setObjectName("fusion");
@@ -94,30 +108,6 @@ int main(int argc, char *argv[])
     QSplashScreen splash;
     splash.setPixmap(QPixmap(":/splash.png"));
     splash.show();
-
-#ifdef ENABLE_MATLAB
-    splash.showMessage(QObject::tr("资源初始化..."), Qt::AlignLeft | Qt::AlignBottom, Qt::white);
-    if (mclInitializeApplication(NULL, 0)) {
-        if(UnfolddingAlgorithm_GravelInitialize())
-        {
-            gMatlabInited = true;
-        }
-        else
-        {
-            gMatlabInited = false;
-        }
-    }
-
-    if (!gMatlabInited){
-        int reply = QMessageBox::question(nullptr, QObject::tr("询问"), QObject::tr("Matlab程序DLL初始化失败，是否继续？"),
-                                          QMessageBox::Yes|QMessageBox::No, QMessageBox::No);
-        if(reply != QMessageBox::Yes) {
-            return -1;
-        }
-
-        qInfo().noquote() << QObject::tr("*** matlab程序DLL初始化失败");
-    }
-#endif //ENABLE_MATLAB
 
     splash.showMessage(QObject::tr("加载语言库..."), Qt::AlignLeft | Qt::AlignBottom, Qt::white);
 

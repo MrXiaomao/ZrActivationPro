@@ -23,6 +23,7 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     // ui->tableWidget->setModel(&model);
 
     QComboBoxDelegate *delegate = new QComboBoxDelegate(this);
+    delegate->insertItem(QString("0.0.0.0:8000"));
     ui->tableWidget->setItemDelegateForColumn(1, delegate); // 将委托应用到特定列
     connect(this, &DetSettingWindow::connectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
         delegate->insertItem(QString("%1:%2").arg(peerAddress).arg(peerPort));

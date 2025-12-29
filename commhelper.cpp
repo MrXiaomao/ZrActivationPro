@@ -150,8 +150,10 @@ void CommHelper::initDataProcessor()
             closeSwitcherPOEPower(detID);
             //定时30min后重新打开供电
             QTimer::singleShot(stopDelay*60*1000, this, [=](){
-                openSwitcherPOEPower(detID);
-                qInfo().noquote() << "探测器" << detID << "重启供电";
+                if (openSwitcherPOEPower(detID))
+                    qInfo().noquote() << "探测器" << detID << "重启供电";
+                else
+                    qInfo().noquote() << "探测器" << detID << "重启供电失败";
             });
         });
 
