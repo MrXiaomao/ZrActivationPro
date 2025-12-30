@@ -543,8 +543,8 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
 */
 void CommHelper::checkAndFlushFile(quint8 index, qint64 bytesWritten)
 {
-    const qint64 FLUSH_SIZE_THRESHOLD = 1024 * 1024; // 1MB
-    const qint64 FLUSH_TIME_THRESHOLD_MS = 10000; // 10秒
+    const qint64 FLUSH_SIZE_THRESHOLD = 5*1024 * 1024; // Bites
+    const qint64 FLUSH_TIME_THRESHOLD_MS = 60*1000; // 毫秒
     
     // 快速检查：如果写入的数据很小，且还没有初始化flush信息，可能不需要检查
     // 但这需要在锁内检查，所以我们还是需要加锁

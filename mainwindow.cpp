@@ -4,6 +4,7 @@
 #include "globalsettings.h"
 #include "switchbutton.h"
 #include <QTimer>
+#include "energycalibration.h"
 
 CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
@@ -691,30 +692,6 @@ void CentralWidget::initUi()
         ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
     }
 
-    QAction *action3 = ui->lineEdit_SaveAsPath->addAction(QIcon(":/open.png"), QLineEdit::TrailingPosition);
-    QToolButton* button3 = qobject_cast<QToolButton*>(action3->associatedWidgets().last());
-    button3->setCursor(QCursor(Qt::PointingHandCursor));
-    connect(button3, &QToolButton::pressed, this, [=](){
-        QString saveAsDir = QFileDialog::getExistingDirectory(this);
-        if (!saveAsDir.isEmpty()){
-
-            GlobalSettings settings(CONFIG_FILENAME);
-            settings.setValue("Global/SaveAsPath", saveAsDir);
-
-            ui->lineEdit_SaveAsPath->setText(saveAsDir);
-        }
-    });
-
-    // 分析结果
-    {
-        GlobalSettings settings(CONFIG_FILENAME);
-        QString saveAsDir = settings.value("Global/SaveAsPath").toString();
-        if (saveAsDir.isEmpty())
-            saveAsDir = QApplication::applicationDirPath() + "/cache/";
-        ui->lineEdit_SaveAsPath->setText(saveAsDir);
-        ui->lineEdit_SaveAsFileName->setText(settings.value("Global/SaveAsFileName", "test1").toString());
-    }
-
     connect(detectorStatusButton,&QPushButton::clicked,this,[=](){
         if(ui->leftStackedWidget->isHidden()) {
             ui->leftStackedWidget->setCurrentWidget(ui->detectorStatusWidget);
@@ -845,11 +822,11 @@ void CentralWidget::initUi()
 
         // 更新界面显示
         updateSpectrumDisplay(index, data.spectrum);
-        
+        qDebug()<<"Det index="<<index<<", sequenceID="<<fullSpectrum.sequence;
         //最快每秒更新一次计数率,这里不考虑丢包带来的计数率修复
-        quint32 accuTime = (fullSpectrum.sequence - data.lastSpectrumID) * fullSpectrum.measureTime;
+        quint32 accuTime = (fullSpectrum.sequence - data.lastSpectrumID) * fullSpectrum.measureTime;//单位ms
         if(accuTime >= 1000) {
-            double countRate = data.lastAccumulateCount * 1.0 / accuTime;
+            double countRate = 1000.0*data.lastAccumulateCount * 1.0 / accuTime; //cps
             data.lastSpectrumID = fullSpectrum.sequence;
             data.lastAccumulateCount = 0;
             data.countRateHistory.append(countRate);            
@@ -1789,22 +1766,6 @@ bool CentralWidget::openXRDFile(const QString &filename, QVector<QPair<double, d
     return true;
 }
 
-void CentralWidget::on_pushButton_saveAs_clicked()
-{
-    QString strSavePath = QString("%1/%2").arg(ui->lineEdit_SaveAsPath->text(), ui->lineEdit_SaveAsFileName->text());
-    if (commHelper->saveAs(strSavePath))
-    {
-        GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/SaveAsFileName", ui->lineEdit_SaveAsFileName->text());
-        settings.setValue("Global/SaveAsPath", ui->lineEdit_SaveAsPath->text());
-        QMessageBox::information(this, tr("提示"), tr("保存成功！"));
-    }
-    else
-    {
-        QMessageBox::information(this, tr("提示"), tr("保存失败！"));
-    }
-}
-
 // 更新探测器数据
 /*void CentralWidget::updateDetectorData(int detectorId, const int newSpectrum[]) {
     if (detectorId < 1 || detectorId > 24) {
@@ -1921,7 +1882,7 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     // int currentTime = data.countRateHistory.size();
     // 添加新的数据点
     int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
-    qDebug().noquote()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
+    // qDebug().noquote()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
     customPlot->graph(0)->addData(elapsedSeconds, countRate);
 
     // 显示最近300秒
@@ -2254,6 +2215,7 @@ QString CentralWidget::formatTimeString(int totalSeconds)
     }
 }
 
+//（自定义通道）停止测量，停止测量已选中的通道
 void CentralWidget::on_pushButton_stopMeasure_clicked()
 {
     for (const auto &index : m_selectedChannels)
@@ -2493,5 +2455,16 @@ void CentralWidget::clearHighlights()
 {
     mExtraSelections.clear();
     ui->textEdit_log->setExtraSelections(mExtraSelections);
+}
+
+// 能量刻度
+void CentralWidget::on_action_energycalibration_triggered()
+{
+    //模态窗口
+    EnergyCalibration *w = new EnergyCalibration(this);
+    w->setAttribute(Qt::WA_DeleteOnClose, true); // 关闭时自动删除
+    w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog); // 只显示关闭按钮
+    w->setWindowModality(Qt::WindowModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
+    w->show();
 }
 

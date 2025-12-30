@@ -16,6 +16,7 @@ SOURCES += \
     commhelper.cpp \
     dataprocessor.cpp \
     detsettingwindow.cpp \
+    energycalibration.cpp \
     globalsettings.cpp \
     localsettingwindow.cpp \
     main.cpp \
@@ -33,6 +34,7 @@ HEADERS += \
     commandadapter.h \
     dataprocessor.h \
     detsettingwindow.h \
+    energycalibration.h \
     localsettingwindow.h \
     parsedata.h \
     qcomboboxdelegate.h \
@@ -47,6 +49,7 @@ HEADERS += \
 FORMS += \
     clientpeerswindow.ui \
     detsettingwindow.ui \
+    energycalibration.ui \
     localsettingwindow.ui \
     mainwindow.ui
 

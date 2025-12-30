@@ -59,7 +59,7 @@ public:
     bool openXRDFile(const QString &filePath, QVector<QPair<double, double>>& data);
 
     // 新增的探测器数据管理方法
-    void updateDetectorData(int detectorId, const int newSpectrum[]);
+    // void updateDetectorData(int detectorId, const int newSpectrum[]);
     void resetDetectorSpectrum(int detectorId);
     DetectorData getDetectorData(int detectorId) const;
     bool isDetectorOnline(int detectorId) const;
@@ -155,8 +155,6 @@ private slots:
 
     void on_pushButton_startMeasureDistance_clicked();
 
-    void on_pushButton_saveAs_clicked();
-
     void on_action_localService_triggered();
 
     void on_pushButton_startMeasure_clicked();
@@ -177,6 +175,8 @@ private slots:
     void on_bt_highlightAll_toggled(bool checked);
     void on_lineEdit_search_returnPressed();
     void on_lineEdit_search_textChanged(const QString &text);
+
+    void on_action_energycalibration_triggered();
 
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
