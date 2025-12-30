@@ -267,15 +267,17 @@ void CentralWidget::initUi()
     //加载界面参数
     {
         GlobalSettings settings(CONFIG_FILENAME);
-        bool flag = settings.value("mainWindow/ShotNumIsAutoIncrease", true).toBool();
-        ui->checkBox_autoIncrease->setChecked(settings.value("mainWindow/ShotNumIsAutoIncrease", true).toBool());
-        ui->lineEdit_shotNum->setText(settings.value("mainWindow/ShotNumStr", "000").toString());
-        ui->lineEdit_filePath->setText(settings.value("mainWindow/ShotDir", "./cache").toString());
-        ui->spinBox_measureTime->setValue(settings.value("mainWindow/MeasureTime", 10).toInt());
+        settings.beginGroup("mainWindow");
+        bool flag = settings.value("ShotNumIsAutoIncrease", true).toBool();
+        ui->checkBox_autoIncrease->setChecked(settings.value("ShotNumIsAutoIncrease", true).toBool());
+        ui->lineEdit_shotNum->setText(settings.value("ShotNumStr", "000").toString());
+        ui->lineEdit_filePath->setText(settings.value("ShotDir", "./cache").toString());
+        ui->spinBox_measureTime->setValue(settings.value("MeasureTime", 10).toInt());
         // 触发模式
-        int triggerMode = settings.value("mainWindow/TriggerMode", 0).toInt();
+        int triggerMode = settings.value("TriggerMode", 0).toInt();
         ui->com_triggerModel->setCurrentIndex(triggerMode); // 或者从配置文件中读取
         onTriggerModelChanged(triggerMode);
+        settings.endGroup();
     }
 
     connect(ui->com_triggerModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -675,18 +677,6 @@ void CentralWidget::initUi()
             ui->lineEdit_filePath->setText(cacheDir);
         }
     });
-
-    // 数据保存路径
-    {
-        GlobalSettings settings(CONFIG_FILENAME);
-        QString cacheDir = settings.value("Global/CacheDir").toString();
-        if (cacheDir.isEmpty())
-            cacheDir = QApplication::applicationDirPath() + "/cache/";
-        ui->lineEdit_filePath->setText(cacheDir);
-
-        // 发次
-        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumStr", "000").toString());
-    }
 
     connect(detectorStatusButton,&QPushButton::clicked,this,[=](){
         if(ui->leftStackedWidget->isHidden()) {
@@ -1363,7 +1353,7 @@ void CentralWidget::on_action_startMeasure_triggered()
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentIndex());
+        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
         settings.setValue("mainWindow/ShotNumStr", shotNumStr);
         settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
     }
@@ -1373,7 +1363,7 @@ void CentralWidget::on_action_startMeasure_triggered()
         settings.setValue("mainWindow/ShotNumStr", shotNumStr);
         settings.setValue("mainWindow/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
         settings.setValue("mainWindow/CacheDir", ui->lineEdit_filePath->text());
-        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentIndex());
+        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
         settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
     }
 
@@ -2127,7 +2117,7 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentText());
+        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentText());
         settings.setValue("mainWindow/ShotNumStr", shotNumStr);
         settings.setValue("mainWindow/MeasureTimeSeconds(s)", ui->spinBox_measureTime->value());
     }

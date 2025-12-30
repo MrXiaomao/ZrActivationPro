@@ -31,6 +31,43 @@ void GlobalSettings::setValue(const QString &key, const QVariant &value)
         sync();
 }
 
+void GlobalSettings::setDoubleVector(const QString& key, const QVector<double>& vec)
+{
+    QStringList sl;
+    sl.reserve(vec.size());
+
+    // 'g', 17：尽量保证 double 往返不丢精度
+    for (double v : vec)
+        sl << QString::number(v, 'g', 17);
+
+    setValue(key, sl);
+    // 如果你们希望立刻落盘，可选sync()：
+    if(realtime)
+        sync();
+}
+
+// 从配置读取 double 向量
+// eg：QVector<double> loaded = settings.doubleVector("Global/Keys");
+QVector<double> GlobalSettings::GetDoubleVector(const QString& key,
+                                            const QVector<double>& def) const
+{
+    const QVariant v = value(key);
+    if (!v.isValid())
+        return def;
+
+    // Qt/ini 里通常会以 QStringList 形式读回
+    const QStringList sl = v.toStringList();
+    if (sl.isEmpty())
+        return QVector<double>{}; // 或 def，看你语义
+
+    QVector<double> vec;
+    vec.reserve(sl.size());
+    for (const QString& s : sl)
+        vec << s.toDouble();
+
+    return vec;
+}
+
 void GlobalSettings::setRealtimeSave(bool realtime)
 {
     this->realtime = realtime;

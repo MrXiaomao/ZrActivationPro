@@ -68,7 +68,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>inforamtion</string>
+         <string>Results</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
@@ -198,7 +198,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_clear">
+         <widget class="QPushButton" name="btn_clearTable">
           <property name="text">
            <string>清空</string>
           </property>

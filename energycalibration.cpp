@@ -2,12 +2,13 @@
  * @Author: MrPan
  * @Date: 2025-12-29 22:08:10
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-12-30 16:55:42
+ * @LastEditTime: 2025-12-30 21:02:15
  * @Description: 用于能量刻度，可进行线性拟合、二次函数拟合，能量刻度点的添加、删除、拟合等功能
  */
 #include "energycalibration.h"
 #include "ui_energycalibration.h"
 #include "qcustomplot.h"
+#include "globalsettings.h"
 
 EnergyCalibration::EnergyCalibration(QWidget *parent) :
     QWidget(parent),
@@ -20,17 +21,56 @@ EnergyCalibration::EnergyCalibration(QWidget *parent) :
 
     initCustomPlot();
 
-    // 保存界面参数
-    QSettings mSettings("./config/Calibration.ini", QSettings::IniFormat);
-    int count = mSettings.value("Table/count", 0).toInt();
-    for (int i= 0; i<count; ++i){
-        int row = ui->tableWidget->rowCount();
-        ui->tableWidget->insertRow(row);
-        ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString("%1").arg(mSettings.value(QString("Table/channel%1").arg(i+1)).toString())));
-        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString("%1").arg(mSettings.value(QString("Table/energy%1").arg(i+1)).toString())));
-    }
+    // 读取历史数据到界面
+    GlobalSettings settings(CONFIG_FILENAME);
+    //先判断是否存在EnCalibration组
+    if (settings.contains("EnCalibration/pointsX") == true){
+        settings.beginGroup("EnCalibration");
 
-    ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        //取出拟合数据点
+        QVector<double> points_X = settings.GetDoubleVector("pointsX");
+        QVector<double> points_Y = settings.GetDoubleVector("pointsY");
+
+        int count = points_X.size();
+        for (int i=0; i<count; ++i){
+            int row = ui->tableWidget->rowCount();
+            ui->tableWidget->insertRow(row);
+            ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString("%1").arg(points_X[i])));
+            ui->tableWidget->setItem(row, 1, new QTableWidgetItem(QString("%1").arg(points_Y[i])));
+        }
+
+        //拟合参数赋值
+        fitType = settings.value("type", 0).toInt();
+        if (fitType == 1){
+            //控件赋值
+            ui->btnFit1->setChecked(true);
+            ui->btnFit2->setChecked(false);
+            //拟合参数赋值
+            C[0] = settings.value("c0", 0.0).toDouble();
+            C[1] = settings.value("c1", 0.0).toDouble();
+
+            saveStatus = true;
+            datafit = true;
+            //绘制散点与拟合曲线
+            drawScatterAndFitCurve(points_X, points_Y, fitType);
+        } else if (fitType == 2){
+            //控件赋值
+            ui->btnFit1->setChecked(false);
+            ui->btnFit2->setChecked(true);
+            //拟合参数赋值
+            C[0] = settings.value("c0", 0.0).toDouble();
+            C[1] = settings.value("c1", 0.0).toDouble();
+            C[2] = settings.value("c2", 0.0).toDouble();
+
+            saveStatus = true;
+            datafit = true;
+            //绘制散点与拟合曲线
+            drawScatterAndFitCurve(points_X, points_Y, fitType);
+        }
+        
+        ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        settings.endGroup();
+    }
 }
 
 EnergyCalibration::~EnergyCalibration()
@@ -215,7 +255,7 @@ void EnergyCalibration::on_pushButton_fit_clicked()
 }
 
 /**
- * @brief 定义待拟合函数 f=ax+b
+ * @brief 定义待拟合函数 f=kx+b
  * @param c 拟合参数c
  * @param x 自变量x
  * @param func 函数值
@@ -423,6 +463,7 @@ void EnergyCalibration::calculate(int no)
             C[0] = fit_c[0];
             C[1] = fit_c[1];
             datafit = true;
+            saveStatus = false;
             fitType = 1;
 
             if (C[1] > 0)
@@ -459,6 +500,7 @@ void EnergyCalibration::calculate(int no)
             C[1] = fit_c[1];
             C[2] = fit_c[2];
             datafit = true;
+            saveStatus = false;
             fitType = 2;
 
             fixedTextTtem->setText(QString("y = %1 * x² + %2 * x + %3\nR² = %4").arg(C[0]).arg(C[1]).arg(C[2]).arg(R2));
@@ -551,6 +593,18 @@ void EnergyCalibration::on_btn_clearTable_clicked()
     ui->tableWidget->setRowCount(0);
 }
 
+//绘制散点和拟合曲线
+void EnergyCalibration::drawScatterAndFitCurve(QVector<double> points_X, QVector<double> points_Y, int fitType)
+{
+    // Implementation of drawing scatter and fit curve
+    points.clear();
+    int count = points_X.size();
+    for (int i = 0; i < count; ++i) {
+        points.push_back(QPointF(points_X[i], points_Y[i]));
+    }
+    calculate(fitType);
+}
+
 //保存参数
 void EnergyCalibration::on_bt_SaveFit_clicked()
 {
@@ -560,16 +614,45 @@ void EnergyCalibration::on_bt_SaveFit_clicked()
         return;
     }
     saveStatus = true;
+    GlobalSettings settings(CONFIG_FILENAME);
+    
+    // 先清空"EnCalibration"组
+    settings.beginGroup("EnCalibration");
+    settings.remove("");  // 删除组内的所有键
+    settings.endGroup();
+    
+    // 重新开始组并保存新数据
+    settings.beginGroup("EnCalibration");
+
+    //保存刻度的数据点
+    QVector<double> points_X, points_Y;
+    for (int i = 0; i < points.size(); i++)
+    {
+        double x = points[i].x(), y = points[i].y();
+        points_X.push_back(x);
+        points_Y.push_back(y);
+    }
+
+    settings.setDoubleVector("pointsX", points_X);
+    settings.setDoubleVector("pointsY", points_Y);
+
     if(fitType == 1)
     {
-        mUserSettings->setValue("EnCalibrration_k", C[1]);
-        mUserSettings->setValue("EnCalibrration_b", C[0]);
+        settings.setValue("type", 1);
+        settings.setValue("c0", C[0]);
+        settings.setValue("c1", C[1]);
     }
     else
     {
-        mUserSettings->setValue("EnCalibrration_a", C[0]);
-        mUserSettings->setValue("EnCalibrration_b", C[1]);
-        mUserSettings->setValue("EnCalibrration_c", C[2]);
+        settings.setValue("type", 2);
+        settings.setValue("c0", C[0]);
+        settings.setValue("c1", C[1]);
+        settings.setValue("c2", C[2]);
     }
+    
+    settings.endGroup();
+
+    // 提示保存成功
+    QMessageBox::information(this, "提示", "能量刻度参数保存成功");
 }
 

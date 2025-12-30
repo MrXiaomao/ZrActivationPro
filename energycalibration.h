@@ -31,7 +31,7 @@ private slots:
 
     void on_pushButton_fit_clicked();
 
-    void on_pushButton_clear_clicked();
+    void on_btn_clearTable_clicked();
 
     void on_bt_SaveFit_clicked();
 
@@ -45,6 +45,9 @@ private:
     bool lsqcurvefit2(QVector<QPointF> points, double* fit_c, double* R2, lsfitreport* rep = nullptr);
     void calculate(int);
 
+    //绘制散点与拟合曲线
+    void drawScatterAndFitCurve(QVector<double> points_X, QVector<double> points_Y, int fitType);
+    
     Ui::EnergyCalibration *ui;
     QCustomPlot* customPlot;
     QCPItemText *fixedTextTtem; //图例
@@ -53,6 +56,7 @@ private:
     bool datafit; // 是否拟合成功
     QVector<QPointF> points;
     qreal C[5]; //拟合函数参数
+    int fitType; //拟合函数类型,1:线性拟合,2:二次函数拟合
 };
 
 #endif // ENERGYCALIBRATION_H

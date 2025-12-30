@@ -614,7 +614,10 @@ public:
 #endif
     void setRealtimeSave(bool realtime);
     bool isRealtimeSave() const { return realtime;}
-
+    
+    void setDoubleVector(const QString& key, const QVector<double>& vec);
+    QVector<double> GetDoubleVector(const QString& key,
+                                 const QVector<double>& def = {}) const;
 private:
     bool realtime = false;
 };
