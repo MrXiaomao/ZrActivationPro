@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     QApplication::setApplicationVersion(APP_VERSION);
     QApplication::setStyle(QStyleFactory::create("fusion"));//WindowsVista fusion windows
 
-    GlobalSettings settings;
+    GlobalSettings settingsGlobal;
     if(settings.value("Global/Options/enableNativeUI",false).toBool()) {
         QApplication::setAttribute(Qt::AA_DontUseNativeDialogs,false);
         QApplication::setAttribute(Qt::AA_DontUseNativeMenuBar,false);

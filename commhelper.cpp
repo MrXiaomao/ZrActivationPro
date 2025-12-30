@@ -416,7 +416,7 @@ bool CommHelper::closeSwitcherPOEPower(quint8 index)
 */
 bool CommHelper::startServer()
 {    
-    GlobalSettings settings;
+    GlobalSettings settings(CONFIG_FILENAME);
     return this->mTcpServer->listen(QHostAddress(settings.value("Local/ServerIp", "0.0.0.0").toString()), settings.value("Local/ServerPort", 6000).toUInt());
 }
 /*

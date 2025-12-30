@@ -1,3 +1,10 @@
+/*
+ * @Author: MrPan
+ * @Date: 2025-11-13 11:36:00
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2025-12-30 17:14:20
+ * @Description: 配置文件窗口，用来配置硬件参数、网络参数等
+ */
 #include "localsettingwindow.h"
 #include "ui_localsettingwindow.h"
 #include <QHostInfo>
@@ -31,7 +38,7 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
     ui->comboBox_ip->addItem("127.0.0.1");
     ui->comboBox_ip->addItem("0.0.0.0");
 
-    GlobalSettings settings;
+    GlobalSettings settings(CONFIG_FILENAME);
     ui->comboBox_ip->setCurrentText(settings.value("Local/ServerIp", "0.0.0.0").toString());
     ui->spinBox_port->setValue(settings.value("Local/ServerPort", 6000).toUInt());
     ui->lineEdit_switcherIp->setText(settings.value("Switcher/Telnet/Ip", "192.168.1.253").toString());
@@ -44,9 +51,11 @@ LocalSettingWindow::~LocalSettingWindow()
 
 void LocalSettingWindow::on_pushButton_ok_clicked()
 {
-    GlobalSettings settings;
+    GlobalSettings settings(CONFIG_FILENAME);
+    //本地服务配置
     settings.setValue("Local/ServerIp", ui->comboBox_ip->currentText());
     settings.setValue("Local/ServerPort", ui->spinBox_port->text());
+    //交换机Telnet配置
     settings.setValue("Switcher/Telnet/Ip", ui->lineEdit_switcherIp->text());
     settings.setValue("Switcher/Telnet/Port", 23);
 

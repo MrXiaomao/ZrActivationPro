@@ -103,8 +103,8 @@ struct FullSpectrum {
 // 注册 FullSpectrum 为 Qt 元类型
 Q_DECLARE_METATYPE(FullSpectrum)
 
-#define GLOBAL_CONFIG_FILENAME "./Config/GSettings.ini"
-#define CONFIG_FILENAME "./Config/Settings.ini"
+#define GLOBAL_CONFIG_FILENAME "./Config/GSettings.ini" //全局配置文件，不可编辑的配置文件
+#define CONFIG_FILENAME "./Config/Settings.ini" //用户配置文件,用户可编辑的配置文件
 class JsonSettings : public QObject{
     Q_OBJECT
 public:

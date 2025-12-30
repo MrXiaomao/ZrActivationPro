@@ -177,31 +177,28 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
 CentralWidget::~CentralWidget()
 {
-    GlobalSettings settings;
-    // 保存触发模式
-    settings.setValue("Trigger/Mode", ui->com_triggerModel->currentIndex());
-    
+    GlobalSettings settings(CONFIG_FILENAME);
     // 保存界面设置
-    settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
-    settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
-    settings.setValue("Global/ShotDir", ui->lineEdit_filePath->text());
-    settings.setValue("Global/MeasureTime", ui->spinBox_measureTime->value());
+    settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
+    settings.setValue("mainWindow/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+    settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
+    settings.setValue("mainWindow/ShotDir", ui->lineEdit_filePath->text());
+    settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
 
-
+    GlobalSettings settingsGlobal;
     QSplitter *splitterH1 = this->findChild<QSplitter*>("splitterH1");// QSplitter(Qt::Horizontal,this);
     if (splitterH1){
-        settings.setValue("Global/splitterH1/State", splitterH1->saveState());
-        settings.setValue("Global/splitterH1/Geometry", splitterH1->saveGeometry());
+        settingsGlobal.setValue("Global/splitterH1/State", splitterH1->saveState());
+        settingsGlobal.setValue("Global/splitterH1/Geometry", splitterH1->saveGeometry());
     }
 
     QSplitter *splitterV2 = this->findChild<QSplitter*>("splitterV2");
     if (splitterV2){
-        settings.setValue("Global/splitterV2/State", splitterV2->saveState());
-        settings.setValue("Global/splitterV2/Geometry", splitterV2->saveGeometry());
+        settingsGlobal.setValue("Global/splitterV2/State", splitterV2->saveState());
+        settingsGlobal.setValue("Global/splitterV2/Geometry", splitterV2->saveGeometry());
     }
 
-    settings.setValue("Global/MainWindows/State", this->saveState());
-
+    settingsGlobal.setValue("Global/MainWindows/State", this->saveState());
     delete ui;
 }
 
@@ -269,15 +266,14 @@ void CentralWidget::initUi()
     
     //加载界面参数
     {
-        GlobalSettings settings;
-        bool flag = settings.value("Global/ShotNumIsAutoIncrease", true).toBool();
-        ui->checkBox_autoIncrease->setChecked(settings.value("Global/ShotNumIsAutoIncrease", true).toBool());
-        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
-        ui->lineEdit_filePath->setText(settings.value("Global/ShotDir", "./cache").toString());
-        ui->spinBox_measureTime->setValue(settings.value("Global/MeasureTime", 10).toInt());
-
+        GlobalSettings settings(CONFIG_FILENAME);
+        bool flag = settings.value("mainWindow/ShotNumIsAutoIncrease", true).toBool();
+        ui->checkBox_autoIncrease->setChecked(settings.value("mainWindow/ShotNumIsAutoIncrease", true).toBool());
+        ui->lineEdit_shotNum->setText(settings.value("mainWindow/ShotNumStr", "000").toString());
+        ui->lineEdit_filePath->setText(settings.value("mainWindow/ShotDir", "./cache").toString());
+        ui->spinBox_measureTime->setValue(settings.value("mainWindow/MeasureTime", 10).toInt());
         // 触发模式
-        int triggerMode = settings.value("Trigger/Mode", 0).toInt();
+        int triggerMode = settings.value("mainWindow/TriggerMode", 0).toInt();
         ui->com_triggerModel->setCurrentIndex(triggerMode); // 或者从配置文件中读取
         onTriggerModelChanged(triggerMode);
     }
@@ -603,13 +599,13 @@ void CentralWidget::initUi()
             if(ui->rightVboxWidget->isHidden()) {
                 ui->rightVboxWidget->show();
 
-                GlobalSettings settings;
-                settings.setValue("Global/ShowRightSide", "true");
+                GlobalSettings settingsGlobal;
+                settingsGlobal.setValue("Global/ShowRightSide", "true");
             } else {
                 ui->rightVboxWidget->hide();
 
-                GlobalSettings settings;
-                settings.setValue("Global/ShowRightSide", "false");
+                GlobalSettings settingsGlobal;
+                settingsGlobal.setValue("Global/ShowRightSide", "false");
             }
         });
 
@@ -689,7 +685,7 @@ void CentralWidget::initUi()
         ui->lineEdit_filePath->setText(cacheDir);
 
         // 发次
-        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumFormat", "000").toString());
+        ui->lineEdit_shotNum->setText(settings.value("Global/ShotNumStr", "000").toString());
     }
 
     connect(detectorStatusButton,&QPushButton::clicked,this,[=](){
@@ -699,21 +695,21 @@ void CentralWidget::initUi()
 
             detectorStatusButton->setChecked(true);
 
-            GlobalSettings settings;
-            settings.setValue("Global/DefaultPage", "detectorStatus");
+            GlobalSettings settingsGlobal;
+            settingsGlobal.setValue("Global/DefaultPage", "detectorStatus");
         } else {
             if(ui->leftStackedWidget->currentWidget() == ui->detectorStatusWidget) {
                 ui->leftStackedWidget->hide();
                 detectorStatusButton->setChecked(false);
 
-                GlobalSettings settings;
-                settings.setValue("Global/DefaultPage", "");
+                GlobalSettings settingsGlobal;
+                settingsGlobal.setValue("Global/DefaultPage", "");
             } else {
                 ui->leftStackedWidget->setCurrentWidget(ui->detectorStatusWidget);
                 detectorStatusButton->setChecked(true);
 
-                GlobalSettings settings;
-                settings.setValue("Global/DefaultPage", "detectorStatus");
+                GlobalSettings settingsGlobal;
+                settingsGlobal.setValue("Global/DefaultPage", "detectorStatus");
             }
         }
     });
@@ -722,39 +718,37 @@ void CentralWidget::initUi()
         ui->leftStackedWidget->hide();
         detectorStatusButton->setChecked(false);
 
-        GlobalSettings settings;
-        settings.setValue("Global/DefaultPage", "");
+        GlobalSettings settingsGlobal;
+        settingsGlobal.setValue("Global/DefaultPage", "");
     });
 
     //恢复页面布局
     {
-        GlobalSettings settings;
-        QString defaultPage = settings.value("Global/DefaultPage").toString();
+        GlobalSettings settingsGlobal;
+        QString defaultPage = settingsGlobal.value("Global/DefaultPage").toString();
         if (defaultPage == "detectorStatus")
             detectorStatusButton->clicked();
 
-        if (settings.contains("Global/MainWindows-State")){
-            this->restoreState(settings.value("Global/MainWindows-State").toByteArray());
+        if (settingsGlobal.contains("Global/MainWindows-State")){
+            this->restoreState(settingsGlobal.value("Global/MainWindows-State").toByteArray());
         }
 
-        if (settings.value("Global/ShowRightSide").toString() == "false")
+        if (settingsGlobal.value("Global/ShowRightSide").toString() == "false")
             ui->rightVboxWidget->hide();
 
-        if (settings.contains("Global/splitterH1/State")){
+        if (settingsGlobal.contains("Global/splitterH1/State")){
             QSplitter *splitterH1 = this->findChild<QSplitter*>("splitterH1");
             if (splitterH1)
             {
-                splitterH1->restoreState(settings.value("Global/splitterH1/State").toByteArray());
-                //splitterH1->restoreGeometry(settings.value("Global/splitterH1/Geometry").toByteArray());
+                splitterH1->restoreState(settingsGlobal.value("Global/splitterH1/State").toByteArray());
             }
         }
 
-        if (settings.contains("Global/splitter/State")){
+        if (settingsGlobal.contains("Global/splitter/State")){
             QSplitter *splitterV2 = this->findChild<QSplitter*>("splitterV2");
             if (splitterV2)
             {
-                splitterV2->restoreState(settings.value("Global/splitterV2/State").toByteArray());
-                //splitterV2->restoreGeometry(settings.value("Global/splitterV2/Geometry").toByteArray());
+                splitterV2->restoreState(settingsGlobal.value("Global/splitterV2/State").toByteArray());
             }
         }
     }
@@ -1246,14 +1240,14 @@ void CentralWidget::on_action_open_triggered()
 {
     // 打开历史测量数据文件...
     GlobalSettings settings;
-    QString lastPath = settings.value("Global/LastFilePath", QDir::homePath()).toString();
+    QString lastPath = settings.value("mainWindow/LastFilePath", QDir::homePath()).toString();
     QString filter = "二进制文件 (*.dat);;文本文件 (*.csv);;所有文件 (*.dat *.csv)";
     QString filePath = QFileDialog::getOpenFileName(this, tr("打开测量数据文件"), lastPath, filter);
 
     if (filePath.isEmpty() || !QFileInfo::exists(filePath))
         return;
 
-    settings.setValue("Global/LastFilePath", filePath);
+    settings.setValue("mainWindow/LastFilePath", filePath);
     if (!commHelper->openHistoryWaveFile(filePath))
     {
         QMessageBox::information(this, tr("提示"), tr("文件格式错误，加载失败！"));
@@ -1337,7 +1331,7 @@ void CentralWidget::onTriggerModelChanged(int index)
 
     // 实时保存触发模式
     GlobalSettings settings;
-    settings.setValue("Trigger/Mode", index);
+    settings.setValue("mainWindow/TriggerMode", index);
 }
 
 void CentralWidget::on_action_startMeasure_triggered()
@@ -1369,15 +1363,18 @@ void CentralWidget::on_action_startMeasure_triggered()
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("Global/ShotNumFormat", shotNumStr);
-        settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentIndex());
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
     }
 
     {
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNumFormat", shotNumStr);
-        settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
-        settings.setValue("Global/CacheDir", ui->lineEdit_filePath->text());
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+        settings.setValue("mainWindow/CacheDir", ui->lineEdit_filePath->text());
+        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentIndex());
+        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
     }
 
     commHelper->setShotInformation(shotDir, shotNumStr);
@@ -1437,7 +1434,7 @@ void CentralWidget::on_action_stopMeasure_triggered()
         // lineEdit_shotNum尾缀加1
         ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
+        settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
     }
 
     // 停止波形测量
@@ -1471,7 +1468,7 @@ void CentralWidget::onMeasureCountdownTimeout()
         if (ui->checkBox_autoIncrease->isChecked()){
             ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
             GlobalSettings settings(CONFIG_FILENAME);
-            settings.setValue("Global/ShotNumFormat", ui->lineEdit_shotNum->text());
+            settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
         }
     
         // 停止所有测量
@@ -1549,8 +1546,8 @@ void CentralWidget::on_action_lightTheme_triggered()
     mIsDarkTheme = false;
     qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
     if(mThemeColorEnable) QGoodWindow::setAppCustomTheme(mIsDarkTheme,mThemeColor);
-    GlobalSettings settings;
-    settings.setValue("Global/Startup/darkTheme","false");
+    GlobalSettings settingsGlobal;
+    settingsGlobal.setValue("Global/Startup/darkTheme","false");
     applyColorTheme();
 }
 
@@ -1561,27 +1558,27 @@ void CentralWidget::on_action_darkTheme_triggered()
     mIsDarkTheme = true;
     qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
     if(mThemeColorEnable) QGoodWindow::setAppCustomTheme(mIsDarkTheme,mThemeColor);
-    GlobalSettings settings;
-    settings.setValue("Global/Startup/darkTheme","true");
+    GlobalSettings settingsGlobal;
+    settingsGlobal.setValue("Global/Startup/darkTheme","true");
     applyColorTheme();
 }
 
 
 void CentralWidget::on_action_colorTheme_triggered()
 {
-    GlobalSettings settings;
+    GlobalSettings settingsGlobal;
     QColor color = QColorDialog::getColor(mThemeColor, this, tr("选择颜色"));
     if (color.isValid()) {
         mThemeColor = color;
         mThemeColorEnable = true;
         qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
         QGoodWindow::setAppCustomTheme(mIsDarkTheme,mThemeColor);
-        settings.setValue("Global/Startup/themeColor",mThemeColor);
+        settingsGlobal.setValue("Global/Startup/themeColor",mThemeColor);
     } else {
         mThemeColorEnable = false;
         qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
     }
-    settings.setValue("Global/Startup/themeColorEnable",mThemeColorEnable);
+    settingsGlobal.setValue("Global/Startup/themeColorEnable",mThemeColorEnable);
     applyColorTheme();
 }
 
@@ -1697,7 +1694,7 @@ void CentralWidget::applyColorTheme()
 
 void CentralWidget::restoreSettings()
 {
-    GlobalSettings settings;
+    GlobalSettings settings(CONFIG_FILENAME);
     if(mainWindow) {
         mainWindow->restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());
         mainWindow->restoreState(settings.value("MainWindow/State").toByteArray());
@@ -2130,14 +2127,15 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
 
     {
         GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("Global/ShotNumFormat", shotNumStr);
-        settings.setValue("Global/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+        settings.setValue("mainWindow/TriggerMode", ui->comboBox_triggerMode->currentText());
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/MeasureTimeSeconds(s)", ui->spinBox_measureTime->value());
     }
 
     {
         GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("Global/ShotNumFormat", shotNumStr);
-        settings.setValue("Global/CacheDir", ui->lineEdit_filePath->text());
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/CacheDir", ui->lineEdit_filePath->text());
     }
 
     commHelper->setShotInformation(shotDir, shotNumStr);

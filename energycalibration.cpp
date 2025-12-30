@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-12-29 22:08:10
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-12-30 15:30:29
+ * @LastEditTime: 2025-12-30 16:55:42
  * @Description: 用于能量刻度，可进行线性拟合、二次函数拟合，能量刻度点的添加、删除、拟合等功能
  */
 #include "energycalibration.h"
@@ -13,7 +13,8 @@ EnergyCalibration::EnergyCalibration(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::EnergyCalibration),
     saveStatus(false),
-    datafit(false)
+    datafit(false),
+    fitType(0)
 {
     ui->setupUi(this);
 
@@ -422,6 +423,7 @@ void EnergyCalibration::calculate(int no)
             C[0] = fit_c[0];
             C[1] = fit_c[1];
             datafit = true;
+            fitType = 1;
 
             if (C[1] > 0)
                 fixedTextTtem->setText(QString("y = %1 * x + %2 \nR² = %3").arg(C[0]).arg(C[1]).arg(R2));
@@ -457,6 +459,7 @@ void EnergyCalibration::calculate(int no)
             C[1] = fit_c[1];
             C[2] = fit_c[2];
             datafit = true;
+            fitType = 2;
 
             fixedTextTtem->setText(QString("y = %1 * x² + %2 * x + %3\nR² = %4").arg(C[0]).arg(C[1]).arg(C[2]).arg(R2));
             
@@ -542,7 +545,7 @@ void EnergyCalibration::calculate(int no)
     customPlot->replot();
 }
 
-void EnergyCalibration::on_pushButton_clear_clicked()
+void EnergyCalibration::on_btn_clearTable_clicked()
 {
     ui->tableWidget->clearContents();
     ui->tableWidget->setRowCount(0);
@@ -551,17 +554,22 @@ void EnergyCalibration::on_pushButton_clear_clicked()
 //保存参数
 void EnergyCalibration::on_bt_SaveFit_clicked()
 {
-    /*JsonSettings* mUserSettings = GlobalSettings::instance()->mUserSettings;
-    if (!mUserSettings->isOpen())
+    if(saveStatus)
+    {
+        QMessageBox::information(this, "提示", "已保存过拟合结果，请勿重复保存");
         return;
-
-    mUserSettings->prepare();
-    mUserSettings->beginGroup();
-    mUserSettings->setValue("EnCalibrration_k", C[1]);
-    mUserSettings->setValue("EnCalibrration_b", C[0]);
-    mUserSettings->endGroup();
-    mUserSettings->flush();
-    mUserSettings->finish();
-    */
+    }
+    saveStatus = true;
+    if(fitType == 1)
+    {
+        mUserSettings->setValue("EnCalibrration_k", C[1]);
+        mUserSettings->setValue("EnCalibrration_b", C[0]);
+    }
+    else
+    {
+        mUserSettings->setValue("EnCalibrration_a", C[0]);
+        mUserSettings->setValue("EnCalibrration_b", C[1]);
+        mUserSettings->setValue("EnCalibrration_c", C[2]);
+    }
 }
 
