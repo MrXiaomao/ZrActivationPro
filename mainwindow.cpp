@@ -214,6 +214,9 @@ void CentralWidget::initUi()
         QWidget* spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(index));
         if (spectroMeterWidget->property("isZoomIn").toBool())
         {
+            QSplitter *splitterV = this->findChild<QSplitter*>("splitterV");
+            splitterV->setHandleWidth(1);
+            this->setProperty("isZoomIn", false);
             spectroMeterWidget->setProperty("isZoomIn", false);
             btn->setIcon(QIcon(":/zoom_in.png"));
             for (int i=1; i<=6; ++i)
@@ -224,6 +227,8 @@ void CentralWidget::initUi()
         }
         else
         {
+            this->setProperty("isZoomIn", true);
+            this->setProperty("currentMeterIndex", index);
             spectroMeterWidget->setProperty("isZoomIn", true);
             btn->setIcon(QIcon(":/zoom_out.png"));
             for (int i=1; i<=6; ++i)
@@ -234,6 +239,8 @@ void CentralWidget::initUi()
                 else
                     spectroMeterWidget->hide();
             }
+            QSplitter *splitterV = this->findChild<QSplitter*>("splitterV");
+            splitterV->setHandleWidth(0);
         }
     });
     connect(ui->toolButton_title_1, &QToolButton::clicked, this, titleClicked);
@@ -312,59 +319,98 @@ void CentralWidget::initUi()
     ui->centralHboxTabWidget->setCornerWidget(tabWidgetButtonGroup);
 
     connect(pageupButton, &QToolButton::clicked, this, [=](){
-        if (1 == this->mCurrentPageIndex)
-            return;
-
-        this->mCurrentPageIndex--;
-        for (int i=1; i<=6; ++i){
-            QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
-            if (label_spectroMeter)
-                label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
-        }
-
-        //清空图像数据
+        if (this->property("isZoomIn").toBool())
         {
-            QMutexLocker locket(&mMutexSwitchPage);
-            for (int i=1; i<=6; ++i){
-                QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-                QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-                spectroMeter_top->graph(0)->data().clear();
-                spectroMeter_bottom->graph(0)->data().clear();
+            int currentMeterIndex = this->property("currentMeterIndex").toInt();
+            if (1 == this->mCurrentPageIndex && currentMeterIndex == 1)
+                return;
+
+            if (currentMeterIndex == 1)
+            {
+                currentMeterIndex = 6;
+                this->mCurrentPageIndex--;
+
+                turnPage(this->mCurrentPageIndex);
+            }
+            else
+            {
+                currentMeterIndex--;
+            }
+
+            this->setProperty("currentMeterIndex", currentMeterIndex);
+            for (int i=1; i<=6; ++i)
+            {
+                QWidget *spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
+                if (i==currentMeterIndex){
+                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
+                    btn->setIcon(QIcon(":/zoom_out.png"));
+                    spectroMeterWidget->setProperty("isZoomIn", true);
+                    spectroMeterWidget->show();
+                }
+                else{
+                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
+                    btn->setIcon(QIcon(":/zoom_in.png"));
+                    spectroMeterWidget->setProperty("isZoomIn", false);
+                    spectroMeterWidget->hide();
+                }
             }
         }
+        else
+        {
+            if (1 == this->mCurrentPageIndex)
+                return;
 
-        //展示当前页面的六个能谱图
-        showSpectrumDisplay(mCurrentPageIndex);
-        //展示当前页面的六个计数率图
-        showCountRateDisplay(mCurrentPageIndex);
+            this->mCurrentPageIndex--;
+            turnPage(this->mCurrentPageIndex);
+        }
     });
 
     connect(pagedownButton, &QToolButton::clicked, this, [=](){
-        if (4 == this->mCurrentPageIndex)
-            return;
-
-        this->mCurrentPageIndex++;
-        for (int i=1; i<=6; ++i){
-            QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
-            if (label_spectroMeter)
-                label_spectroMeter->setText(tr("谱仪#%1").arg((mCurrentPageIndex-1)*6 + i));
-        }
-
-
+        if (this->property("isZoomIn").toBool())
         {
-            QMutexLocker locket(&mMutexSwitchPage);
-            for (int i=1; i<=6; ++i){
-                QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-                QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-                spectroMeter_top->graph(0)->data().clear();
-                spectroMeter_bottom->graph(0)->data().clear();
-            }
-        }
+            int currentMeterIndex = this->property("currentMeterIndex").toInt();
+            if (4 == this->mCurrentPageIndex && currentMeterIndex == 6)
+                return;
 
-        //展示当前页面的六个能谱图
-        showSpectrumDisplay(mCurrentPageIndex);
-        //展示当前页面的六个计数率图
-        showCountRateDisplay(mCurrentPageIndex);
+            if (currentMeterIndex == 6)
+            {
+                currentMeterIndex = 1;
+                this->mCurrentPageIndex++;
+
+                turnPage(this->mCurrentPageIndex);
+            }
+            else
+            {
+                currentMeterIndex++;
+            }
+
+            this->setProperty("currentMeterIndex", currentMeterIndex);
+            for (int i=1; i<=6; ++i)
+            {
+                QWidget *spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
+                if (i==currentMeterIndex){
+                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
+                    btn->setIcon(QIcon(":/zoom_out.png"));
+                    spectroMeterWidget->setProperty("isZoomIn", true);
+                    spectroMeterWidget->show();
+                }
+                else{
+                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
+                    btn->setIcon(QIcon(":/zoom_in.png"));
+                    spectroMeterWidget->setProperty("isZoomIn", false);
+                    spectroMeterWidget->hide();
+                }
+            }
+
+        }
+        else
+        {
+            if (4 == this->mCurrentPageIndex)
+                return;
+
+            this->mCurrentPageIndex++;
+            turnPage(this->mCurrentPageIndex);
+        }
     });
 
     connect(ui->centralHboxTabWidget,&QTabWidget::tabCloseRequested,this,[=](int index){
@@ -471,9 +517,11 @@ void CentralWidget::initUi()
     {
         ui->spectroMeterPageInfoWidget->setLayout(new QVBoxLayout(ui->spectroMeterPageInfoWidget));
         QSplitter *splitterV = new QSplitter(Qt::Vertical,this);
+        splitterV->setObjectName("splitterV");
         splitterV->setHandleWidth(2);
 
         QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
+        splitterH1->setObjectName("splitterH1");
         splitterH1->setHandleWidth(1);
         splitterH1->addWidget(ui->spectroMeterWidget1);
         splitterH1->addWidget(ui->spectroMeterWidget2);
@@ -485,6 +533,7 @@ void CentralWidget::initUi()
         splitterV->addWidget(splitterH1);
 
         QSplitter *splitterH2 = new QSplitter(Qt::Horizontal,this);
+        splitterH2->setObjectName("splitterH2");
         splitterH2->setHandleWidth(1);
         splitterH2->addWidget(ui->spectroMeterWidget4);
         splitterH2->addWidget(ui->spectroMeterWidget5);
@@ -1889,6 +1938,32 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     customPlot->yAxis->setRange(y_min - pad, y_max + pad);
 
     customPlot->replot(QCustomPlot::rpQueuedReplot);
+}
+
+// 翻页
+void CentralWidget::turnPage(int pageIndex)
+{
+    for (int i=1; i<=6; ++i){
+        QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
+        if (label_spectroMeter)
+            label_spectroMeter->setText(tr("谱仪#%1").arg((pageIndex-1)*6 + i));
+    }
+
+
+    {
+        QMutexLocker locket(&mMutexSwitchPage);
+        for (int i=1; i<=6; ++i){
+            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+            spectroMeter_top->graph(0)->data().clear();
+            spectroMeter_bottom->graph(0)->data().clear();
+        }
+    }
+
+    //展示当前页面的六个能谱图
+    showSpectrumDisplay(pageIndex);
+    //展示当前页面的六个计数率图
+    showCountRateDisplay(pageIndex);
 }
 
 // 展示当前页面的六个能谱图

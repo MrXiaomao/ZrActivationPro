@@ -71,6 +71,9 @@ public:
     // 添加计数率显示更新函数
     void updateCountRateDisplay(int detectorId, double countRate);
 
+    // 翻页
+    void turnPage(int pageIndex);
+
     //展示当前页面的六个能谱图
     void showSpectrumDisplay(int currentPageIndex);
 
