@@ -31,6 +31,23 @@ void GlobalSettings::setValue(const QString &key, const QVariant &value)
         sync();
 }
 
+void GlobalSettings::setIntVector(const QString& key, const QVector<int>& vec)
+{
+    QStringList sl;
+    sl.reserve(vec.size());
+    for (int v : vec)
+        sl << QString::number(v);
+    setValue(key, sl);
+}
+
+QVector<int> GlobalSettings::GetIntVector(const QString& key,
+                                            const QVector<int>& def) const
+{
+    const QVariant v = value(key);
+    if (!v.isValid())
+        return def;
+}
+
 void GlobalSettings::setDoubleVector(const QString& key, const QVector<double>& vec)
 {
     QStringList sl;

@@ -514,7 +514,7 @@ void CentralWidget::initUi()
     systemClockTimer->start(900);
 
     {
-        ui->spectroMeterPageInfoWidget->setLayout(new QVBoxLayout(ui->spectroMeterPageInfoWidget));
+        ui->widget__plot->setLayout(new QVBoxLayout(ui->widget__plot));
         QSplitter *splitterV = new QSplitter(Qt::Vertical,this);
         splitterV->setObjectName("splitterV");
         splitterV->setHandleWidth(2);
@@ -543,7 +543,7 @@ void CentralWidget::initUi()
         splitterH2->setCollapsible(2,false);
         splitterV->addWidget(splitterH2);
 
-        ui->spectroMeterPageInfoWidget->layout()->addWidget(splitterV);
+        ui->widget__plot->layout()->addWidget(splitterV);
     }
 
     QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
@@ -2449,10 +2449,11 @@ void CentralWidget::clearHighlights()
 void CentralWidget::on_action_energycalibration_triggered()
 {
     //模态窗口
-    EnergyCalibration *w = new EnergyCalibration(this);
+    // EnergyCalibration *w = new EnergyCalibration(this);
+    EnergyCalibration *w = new EnergyCalibration(nullptr);
     w->setAttribute(Qt::WA_DeleteOnClose, true); // 关闭时自动删除
     w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog); // 只显示关闭按钮
-    w->setWindowModality(Qt::WindowModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
+    w->setWindowModality(Qt::ApplicationModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
     w->show();
 }
 

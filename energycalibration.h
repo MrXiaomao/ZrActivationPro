@@ -13,6 +13,8 @@ class EnergyCalibration;
 
 class QCustomPlot;
 class QCPItemText;
+class QRadioButton;
+class QButtonGroup;
 class EnergyCalibration : public QWidget
 {
     Q_OBJECT
@@ -34,10 +36,13 @@ private slots:
     void on_btn_clearTable_clicked();
 
     void on_bt_SaveFit_clicked();
+    
+    void on_detRadioButton_toggled(bool checked);
 
 private:
     void initCustomPlot();
-
+    void initUI();
+    
 private:
     static void function_cx_1_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr);
     static void function_cx_2_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr);
@@ -57,6 +62,8 @@ private:
     QVector<QPointF> points;
     qreal C[5]; //拟合函数参数
     int fitType; //拟合函数类型,1:线性拟合,2:二次函数拟合
+    QVector<QRadioButton*> detRadioButtons; // 存储所有探测器单选按钮指针
+    QButtonGroup* detButtonGroup; // 管理单选按钮组，确保互斥
 };
 
 #endif // ENERGYCALIBRATION_H

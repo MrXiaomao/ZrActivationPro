@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1431</width>
-    <height>968</height>
+    <height>966</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -530,37 +530,16 @@
            <number>0</number>
           </property>
           <widget class="QWidget" name="spectroMeterPageInfoWidget">
-           <layout class="QGridLayout" name="gridLayout_2">
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <property name="spacing">
-             <number>2</number>
-            </property>
-            <item row="0" column="0">
-             <widget class="QWidget" name="spectroMeterWidget1" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QWidget" name="widget__plot" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_11">
-               <property name="spacing">
-                <number>1</number>
-               </property>
+              <layout class="QGridLayout" name="gridLayout_2">
                <property name="leftMargin">
                 <number>0</number>
                </property>
@@ -573,655 +552,714 @@
                <property name="bottomMargin">
                 <number>0</number>
                </property>
-               <item>
-                <widget class="QWidget" name="widget_13" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
+               <item row="0" column="0">
+                <widget class="QWidget" name="spectroMeterWidget1" native="true">
                  <property name="styleSheet">
-                  <string notr="true">.QWidget{
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_11">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_13" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
 	background-color: rgb(170, 170, 170);
 	border-color:rgb(231, 237, 246);
 	border-top-left-radius: 0px;
 	border-top-right-radius: 0px;
 }</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_17">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter1">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
                     </property>
-                    <property name="text">
-                     <string>谱仪#1</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_17">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter1">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#1</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_1">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QToolButton" name="toolButton_title_1">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
+                   <widget class="QCustomPlot" name="spectroMeter1_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter1_bottom" native="true"/>
                   </item>
                  </layout>
                 </widget>
                </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter1_top" native="true"/>
+               <item row="0" column="1">
+                <widget class="QWidget" name="spectroMeterWidget2" native="true">
+                 <property name="styleSheet">
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_12">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_14" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
+	background-color: rgb(170, 170, 170);
+	border-color:rgb(231, 237, 246);
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_4">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter2">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#2</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_2">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter2_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter2_bottom" native="true"/>
+                  </item>
+                 </layout>
+                </widget>
                </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter1_bottom" native="true"/>
+               <item row="0" column="2">
+                <widget class="QWidget" name="spectroMeterWidget3" native="true">
+                 <property name="styleSheet">
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_13">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_15" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
+	background-color: rgb(170, 170, 170);
+	border-color:rgb(231, 237, 246);
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_19">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter3">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#3</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_3">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter3_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter3_bottom" native="true"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QWidget" name="spectroMeterWidget4" native="true">
+                 <property name="styleSheet">
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_14">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_16" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
+	background-color: rgb(170, 170, 170);
+	border-color:rgb(231, 237, 246);
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_20">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter4">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#4</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_4">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>0</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter4_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter4_bottom" native="true"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QWidget" name="spectroMeterWidget5" native="true">
+                 <property name="styleSheet">
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_15">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_17" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
+	background-color: rgb(170, 170, 170);
+	border-color:rgb(231, 237, 246);
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_21">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter5">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#5</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_5">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter5_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter5_bottom" native="true"/>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QWidget" name="spectroMeterWidget6" native="true">
+                 <property name="styleSheet">
+                  <string notr="true">QWidget#widget_12{
+	background-color: rgb(244, 247, 252);
+	border: 1px solid rgb(170,170,170);
+	border-top-left-radius: 20px;
+	border-top-right-radius: 20px;
+}
+</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_16">
+                  <property name="spacing">
+                   <number>1</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QWidget" name="widget_18" native="true">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">.QWidget{
+	background-color: rgb(170, 170, 170);
+	border-color:rgb(231, 237, 246);
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
+}</string>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_22">
+                     <property name="topMargin">
+                      <number>4</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <widget class="QLabel" name="label_spectroMeter6">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>谱仪#6</string>
+                       </property>
+                       <property name="alignment">
+                        <set>Qt::AlignCenter</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_title_6">
+                       <property name="minimumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16</width>
+                         <height>16</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string/>
+                       </property>
+                       <property name="icon">
+                        <iconset resource="../3rdParty/resource/resource.qrc">
+                         <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter6_top" native="true"/>
+                  </item>
+                  <item>
+                   <widget class="QCustomPlot" name="spectroMeter6_bottom" native="true"/>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QWidget" name="spectroMeterWidget2" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
+            <item>
+             <widget class="QWidget" name="widget_others" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_12">
-               <property name="spacing">
-                <number>1</number>
-               </property>
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widget_14" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">.QWidget{
-	background-color: rgb(170, 170, 170);
-	border-color:rgb(231, 237, 246);
-	border-top-left-radius: 0px;
-	border-top-right-radius: 0px;
-}</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_4">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter2">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>谱仪#2</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_title_2">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter2_top" native="true"/>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter2_bottom" native="true"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QWidget" name="spectroMeterWidget3" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>100</height>
+               </size>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_13">
-               <property name="spacing">
-                <number>1</number>
+              <widget class="QCheckBox" name="checkBox_calibration">
+               <property name="geometry">
+                <rect>
+                 <x>20</x>
+                 <y>10</y>
+                 <width>80</width>
+                 <height>19</height>
+                </rect>
                </property>
-               <property name="leftMargin">
-                <number>0</number>
+               <property name="text">
+                <string>能量刻度</string>
                </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widget_15" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">.QWidget{
-	background-color: rgb(170, 170, 170);
-	border-color:rgb(231, 237, 246);
-	border-top-left-radius: 0px;
-	border-top-right-radius: 0px;
-}</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_19">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter3">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>谱仪#3</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_title_3">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter3_top" native="true"/>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter3_bottom" native="true"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QWidget" name="spectroMeterWidget4" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_14">
-               <property name="spacing">
-                <number>1</number>
-               </property>
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widget_16" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">.QWidget{
-	background-color: rgb(170, 170, 170);
-	border-color:rgb(231, 237, 246);
-	border-top-left-radius: 0px;
-	border-top-right-radius: 0px;
-}</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_20">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter4">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>谱仪#4</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_title_4">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>0</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16777215</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter4_top" native="true"/>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter4_bottom" native="true"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QWidget" name="spectroMeterWidget5" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_15">
-               <property name="spacing">
-                <number>1</number>
-               </property>
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widget_17" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">.QWidget{
-	background-color: rgb(170, 170, 170);
-	border-color:rgb(231, 237, 246);
-	border-top-left-radius: 0px;
-	border-top-right-radius: 0px;
-}</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_21">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter5">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>谱仪#5</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_title_5">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter5_top" native="true"/>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter5_bottom" native="true"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QWidget" name="spectroMeterWidget6" native="true">
-              <property name="styleSheet">
-               <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_16">
-               <property name="spacing">
-                <number>1</number>
-               </property>
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widget_18" native="true">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>24</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">.QWidget{
-	background-color: rgb(170, 170, 170);
-	border-color:rgb(231, 237, 246);
-	border-top-left-radius: 0px;
-	border-top-right-radius: 0px;
-}</string>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_22">
-                  <property name="topMargin">
-                   <number>4</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>4</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_spectroMeter6">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="text">
-                     <string>谱仪#6</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QToolButton" name="toolButton_title_6">
-                    <property name="minimumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16</width>
-                      <height>16</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                    <property name="icon">
-                     <iconset resource="../3rdParty/resource/resource.qrc">
-                      <normaloff>:/zoom_in.png</normaloff>:/zoom_in.png</iconset>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter6_top" native="true"/>
-               </item>
-               <item>
-                <widget class="QCustomPlot" name="spectroMeter6_bottom" native="true"/>
-               </item>
-              </layout>
+              </widget>
              </widget>
             </item>
            </layout>

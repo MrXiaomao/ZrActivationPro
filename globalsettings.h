@@ -615,7 +615,10 @@ public:
     void setRealtimeSave(bool realtime);
     bool isRealtimeSave() const { return realtime;}
     
+    void setIntVector(const QString& key, const QVector<int>& vec);
     void setDoubleVector(const QString& key, const QVector<double>& vec);
+    QVector<int> GetIntVector(const QString& key,
+                                 const QVector<int>& def = {}) const;
     QVector<double> GetDoubleVector(const QString& key,
                                  const QVector<double>& def = {}) const;
 private:
