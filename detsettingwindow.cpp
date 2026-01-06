@@ -3,6 +3,7 @@
 #include "qcomboboxdelegate.h"
 #include "globalsettings.h"
 #include <QStandardItemModel>
+#include <QMessageBox>
 
 DetSettingWindow::DetSettingWindow(QWidget *parent)
     : QWidget(parent)
@@ -152,24 +153,36 @@ void DetSettingWindow::updateSelectAllState()
 
 void DetSettingWindow::on_pushButton_save_clicked()
 {
+    QString savedDetectors;
     //对选中的部分保存参数
     for (int row = 0; row < ui->tableWidget->rowCount(); ++row) {
         if (auto *cb = qobject_cast<QCheckBox*>(ui->tableWidget->cellWidget(row, 0))) {
             if (cb->isChecked()) {
                 saveAt(row + 1);
+                savedDetectors += QString("#%1, ").arg(row + 1);
             }
         }
     }
-    // saveAt(ui->tableWidget->currentRow() + 1);
+
+    //弹出提示，提示哪些通道号的设置已保存成功
+    QMessageBox::information(this, tr("保存参数设置"), tr("已保存成功！\n已保存的谱仪编号：%1").arg(savedDetectors));
+
+    // 更改探测器的数据处理器与IP的绑定关系，以便新IP生效
+    QMetaObject::invokeMethod(this, "settingfinished", Qt::QueuedConnection);
 }
 
 
 void DetSettingWindow::on_pushButton_cancel_clicked()
 {
-    QMetaObject::invokeMethod(this, "settingfinished", Qt::QueuedConnection);
     this->close();
 }
 
+void DetSettingWindow::setSaveEnabled(bool enabled)
+{
+    ui->pushButton_save->setEnabled(enabled);
+}
+
+// 通过setSaveEnabled控制保存按钮的可用性，防止测量过程中修改参数
 void DetSettingWindow::saveAt(quint8 detId)
 {
     //从HDF5加载配置信息

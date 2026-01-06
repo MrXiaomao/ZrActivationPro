@@ -56,10 +56,8 @@ public:
     void restoreSettings();
     void initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, QString title, int graphCount = 1);
     void applyColorTheme();
-    bool openXRDFile(const QString &filePath, QVector<QPair<double, double>>& data);
 
     // 新增的探测器数据管理方法
-    // void updateDetectorData(int detectorId, const int newSpectrum[]);
     void resetDetectorSpectrum(int detectorId);
     DetectorData getDetectorData(int detectorId) const;
     bool isDetectorOnline(int detectorId) const;
@@ -121,52 +119,53 @@ signals:
     void detectorDataUpdated(int detectorId, double countRate, const int spectrum[]);
 
 private slots:
+    // 配置参数设置
     void on_action_cfgParam_triggered();
-
+    // 退出程序
     void on_action_exit_triggered();
-
+    //打开文件
     void on_action_open_triggered();
-
+    // 触发模式
     void onTriggerModelChanged(int index);
-
+    // 全通道开始测量
     void on_action_startMeasure_triggered();
-
+    // 全通道停止测量
     void on_action_stopMeasure_triggered();
-
-    void on_action_powerOn_triggered();
-
-    void on_action_powerOff_triggered();
-
-    void on_action_startServer_triggered();
-
-    void on_action_stopServer_triggered();
-
-    void on_action_about_triggered();
-
-    void on_action_aboutQt_triggered();
-
-    void on_action_lightTheme_triggered();
-
-    void on_action_darkTheme_triggered();
-
-    void on_action_colorTheme_triggered();
-
-    void on_pushButton_stopMeasureDistance_clicked();
-
-    void on_pushButton_startMeasureDistance_clicked();
-
-    void on_action_localService_triggered();
-
+    // 自定义通道开始测量
     void on_pushButton_startMeasure_clicked();
-
+    // 自定义通道停止测量
     void on_pushButton_stopMeasure_clicked();
-
-    void on_action_connect_triggered();
+    // 打开所有通道POE电源
+    void on_action_powerOn_triggered();
+    // 关闭所有通道POE电源
+    void on_action_powerOff_triggered();
+    // 开启服务，打开本地TCP server
+    void on_action_startServer_triggered();
+    // 关闭服务，关闭本地TCP server
+    void on_action_stopServer_triggered();
+    // 关于栏
+    void on_action_about_triggered();
+    // 关于Qt
+    void on_action_aboutQt_triggered();
+    // 明亮主题色
+    void on_action_lightTheme_triggered();
+    // 暗黑主题色
+    void on_action_darkTheme_triggered();
+    // 颜色主题设置
+    void on_action_colorTheme_triggered();
+    // 查看本地网络服务
+    void on_action_localService_triggered();
+    
+    // 交换机连接与断开
+    void on_action_connectSwitch_triggered();
 
     // 测量倒计时结束处理
     void onMeasureCountdownTimeout();
-
+    // 清理日志
     void on_bt_clearLog_clicked();
+
+    // 更新所有能谱图像的属性,detectorId为0时更新所有能谱图像的属性
+    void updateSpectrumPlotSettings(int detectorId=0);
 
     // 日志内容查找功能
     void on_bt_search_clicked();
@@ -178,6 +177,15 @@ private slots:
 
     void on_action_energycalibration_triggered();
 
+    // 能谱图像属性 切换谱仪编号
+    void on_spin_specDetID_valueChanged(int arg1);
+    // 能谱图像属性 是否能量刻度勾选
+    void on_cb_calibration_checkStateChanged(const Qt::CheckState &arg1);
+    // 能谱图像属性 自动X轴范围
+    void on_check_AutoRangeX_checkStateChanged(const Qt::CheckState &arg1);
+    // 能谱图像属性 自动Y轴范围
+    void on_check_AutoRangeY_checkStateChanged(const Qt::CheckState &arg1);
+
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
 
@@ -186,7 +194,7 @@ private:
     ClientPeersWindow *mClientPeersWindow = nullptr;
     DetSettingWindow *mDetSettingWindow = nullptr;
     bool mIsMeasuring = false;
-    quint8 mCurrentPageIndex = 1;
+    quint8 mCurrentPageIndex = 1; // 当前显示的页面索引，1-4
     QMutex mMutexSwitchPage;
 
     QVector<quint8> m_selectedChannels; // 记录所选的通道号，停止测量时使用(自定义通道测量)
@@ -217,6 +225,21 @@ private:
 
     // 更新连接按钮状态（文本、图标、启用/禁用）
     void updateConnectButtonState(bool connected);
+
+    // 固定的24个通道能谱图像属性设置：是否刻度，X/Y坐标轴范围自动与否，坐标轴范围
+    struct SpectrumPlotSettings {
+        //多道道数
+        int multiChannel = 8192;
+        bool EnScale = false; // 是否勾选能量刻度
+        bool autoScaleX = true;
+        bool autoScaleY = true;
+        double xMin = 0.0;
+        double xMax = 8192.0;
+        double yMin = 0.0;
+        double yMax = 100.0;
+    };
+    
+    QVector<SpectrumPlotSettings> m_spectrumPlotSettings = QVector<SpectrumPlotSettings>(24);
 
     // 日志内容查找功能相关
     QString mLastSearchText;  // 上次查找的文本

@@ -193,11 +193,6 @@ void CommHelper::initDataProcessor()
             detectorDataProcessor->inputSpectrumData(processor->index(), data);
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportSpectrumCurveData,
-                this, [=](quint8 index, QVector<quint32> spectrum){
-                    emit reportSpectrumCurveData(index, spectrum);
-                });
-
         connect(detectorDataProcessor, &DataProcessor::reportFullSpectrum,
                 this, [=](quint8 index, const FullSpectrum& fullSpectrum){
                     emit reportFullSpectrum(index, fullSpectrum);
