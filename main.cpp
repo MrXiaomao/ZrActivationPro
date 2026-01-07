@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
     // QFontIcon::addFont(":/icons/icons/fontawesome-webfont-v6.6.0-brands-400.ttf");
     // QFontIcon::instance()->setColor(isDarkTheme?Qt::white:Qt::black);
 
+    QTextCodec::setCodecForLocale(QTextCodec::codecForMib(106));/* Utf8 */
     MainWindow w(isDarkTheme);
     mw = w.centralWidget();
 

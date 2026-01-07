@@ -37,6 +37,8 @@ CommHelper::~CommHelper()
     mDetectorDataProcessor.clear();
 }
 
+#include <winsock2.h>   // WSAIoctl函数定义
+#include <mstcpip.h>    // 包含 TCP_KEEPALIVE 结构体定义
 void CommHelper::initSocket()
 {
     this->mTcpServer = new TcpAgentServer();
@@ -44,6 +46,32 @@ void CommHelper::initSocket()
         QMutexLocker locker(&mPeersMutex);
         QTcpSocket* connection = new QTcpSocket(this);
         connection->setSocketDescriptor(socketDescriptor);
+
+        connection->setSocketOption(QAbstractSocket::KeepAliveOption, QVariant(true)); // 启用保活
+        // 构造保活参数结构体
+        tcp_keepalive keepAlive = {0};
+        keepAlive.onoff = TRUE;               // 启用保活
+        keepAlive.keepalivetime = 500;      // 空闲1秒后开始探测（单位：ms）
+        keepAlive.keepaliveinterval = 100;   // 探测间隔1秒（单位：ms）
+
+        // 调用 WSAIoctl 设置参数
+        DWORD bytesReturned = 0;
+        int result = WSAIoctl(
+            connection->socketDescriptor(),  // QT socket 底层句柄
+            SIO_KEEPALIVE_VALS,                // 控制码：设置保活参数
+            &keepAlive,                        // 输入：保活参数结构体
+            sizeof(keepAlive),                 // 输入大小
+            NULL,                              // 输出缓冲区（无需）
+            0,                                 // 输出大小
+            &bytesReturned,                    // 实际输出字节数
+            NULL,                              // 重叠结构（同步调用时为 NULL）
+            NULL                               // 完成例程（同步调用时为 NULL）
+            );
+
+        if (result == SOCKET_ERROR) {
+            qDebug() << "设置保活参数失败，错误码：" << WSAGetLastError();
+        }
+
         this->mConnectionPeers.push_back(connection);
 
         //网络异常（与下面disconnected信号会重复）

@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -21,6 +21,7 @@ SOURCES += \
     localsettingwindow.cpp \
     main.cpp \
     mainwindow.cpp \
+    neutronyieldcalibration.cpp \
     parsedata.cpp \
     qcomboboxdelegate.cpp \
     qhuaweiswitcherhelper.cpp \
@@ -36,6 +37,7 @@ HEADERS += \
     detsettingwindow.h \
     energycalibration.h \
     localsettingwindow.h \
+    neutronyieldcalibration.h \
     parsedata.h \
     qcomboboxdelegate.h \
     qhuaweiswitcherhelper.h \
@@ -51,7 +53,8 @@ FORMS += \
     detsettingwindow.ui \
     energycalibration.ui \
     localsettingwindow.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    neutronyieldcalibration.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -148,3 +151,5 @@ include($$PWD/../3rdParty/alglib-cpp/alglib.pri)
 # CONFIG += precompile_header
 # 指定要使用的预编译头文件
 # PRECOMPILED_HEADER += stable.h
+
+LIBS += -lws2_32
