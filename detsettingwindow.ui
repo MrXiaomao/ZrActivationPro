@@ -303,42 +303,22 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>1.26</string>
+                  <string>0.5</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>0.08</string>
+                  <string>1.0</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>0.16</string>
+                  <string>1.5</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>0.32</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>0.63</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>2.52</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>5.01</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>10.0</string>
+                  <string>2.0</string>
                  </property>
                 </item>
                </widget>

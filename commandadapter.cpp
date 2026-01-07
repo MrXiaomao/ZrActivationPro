@@ -387,27 +387,19 @@ void CommandAdapter::sendGain(bool isRead, double gain){
         askCurrentCmd[3] = 0x0F;
 
     //根据增益值设置对应的指令值
-    quint8 gainHex = 0x07; //默认值5.01
-    if (qFuzzyCompare(gain, 0.08)) //浮点数相等的判断
+    quint8 gainHex = 0x01; //默认值1.0
+    if (qFuzzyCompare(gain, 0.5)) //浮点数相等的判断
         gainHex = 0x01;
-    else if (qFuzzyCompare(gain, 0.16))
+    else if (qFuzzyCompare(gain, 1.0))
         gainHex = 0x02;
-    else if (qFuzzyCompare(gain, 0.32))
+    else if (qFuzzyCompare(gain, 1.5))
         gainHex = 0x03;
-    else if (qFuzzyCompare(gain, 0.63))
+    else if (qFuzzyCompare(gain, 2.0))
         gainHex = 0x04;
-    else if (qFuzzyCompare(gain, 1.26))
-        gainHex = 0x05;
-    else if (qFuzzyCompare(gain, 2.52))
-        gainHex = 0x06;
-    else if (qFuzzyCompare(gain, 5.01))
-        gainHex = 0x07; //默认值5.01
-    else if (qFuzzyCompare(gain, 10.0))
-        gainHex = 0x08;
 
     askCurrentCmd[9] = (gainHex & 0xFF);
-    //gain打印为为十六进制
-    pushCmd({QString("增益配置：%1").arg(gainHex, 2, 8, QLatin1Char('0')), askCurrentCmd});
+    
+    pushCmd({QString("增益配置：%1").arg(QString::number(gain)), askCurrentCmd});
 }
 
 //死时间配置(*10ns)
