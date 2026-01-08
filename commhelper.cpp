@@ -458,6 +458,11 @@ void CommHelper::stopServer()
     this->mTcpServer->close();
 }
 
+bool CommHelper::isOpen()
+{
+    return this->mTcpServer->isListening();
+}
+
 void CommHelper::connectSwitcher()
 {
     for (auto switcherHelper : mHuaWeiSwitcherHelper)

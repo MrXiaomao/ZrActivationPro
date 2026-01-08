@@ -30,6 +30,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     connect(mConnectButtonDisableTimer, &QTimer::timeout, this, [=](){
         // 定时器超时后，根据连接状态决定是否启用按钮
         if (!mSwitcherConnected) {
+            qInfo().noquote() << tr("交换机连接失败");
             ui->action_connectSwitch->setEnabled(true);
         }
     });
@@ -44,13 +45,12 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
     ui->action_startServer->setEnabled(true);
     ui->action_stopServer->setEnabled(false);
-    ui->action_connectSwitch->setEnabled(true);
-    ui->action_powerOn->setEnabled(true);
-    ui->action_powerOff->setEnabled(true);
+    ui->action_connectSwitch->setEnabled(false);
+    ui->action_powerOn->setEnabled(false);
+    ui->action_powerOff->setEnabled(false);
     ui->action_disconnect->setEnabled(false);
     ui->action_startMeasure->setEnabled(false);
     ui->action_stopMeasure->setEnabled(false);
-    ui->action_autoMeasure->setEnabled(false);
     ui->pushButton_startMeasure->setEnabled(false);
     ui->pushButton_stopMeasure->setEnabled(false);
     
@@ -71,6 +71,21 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
         ui->action_powerOn->setEnabled(true);
         ui->action_powerOff->setEnabled(true);
         qInfo().noquote() << tr("交换机[%1]：已连通").arg(ip);
+
+        /// 再给设备上电
+        if (mEnableAutoMeasure)
+        {
+            commHelper->openPower();
+
+            /// 上电半分钟后开始测量
+            ui->action_stopMeasure->setEnabled(false);
+            QTimer::singleShot(30000, this, [=](){
+                ui->action_stopMeasure->setEnabled(true);
+
+                /// 开始测量
+                startMeasure();
+            });
+        }
     });
     connect(commHelper, &CommHelper::switcherDisconnected, this, [=](QString ip){
         mSwitcherConnected = false;
@@ -201,6 +216,19 @@ CentralWidget::~CentralWidget()
 
 void CentralWidget::initUi()
 {
+    // 自动测量时钟
+    QTimer* autoMeasureTimer = new QTimer(this);
+    autoMeasureTimer->setObjectName("autoMeasureTimer");
+    connect(autoMeasureTimer, &QTimer::timeout, this, [=](){
+        ui->lineEdit_autoStatus->setText(tr("测量已停止"));
+        qInfo().noquote() << tr("测量时间到，自动测量已停止");
+
+        stopMeasure();
+        ui->tabWidget_autoPage->setEnabled(true);
+        ui->tabWidget_manualPage->setEnabled(true);
+        autoMeasureTimer->stop();
+    });
+
     // 谱仪最大化按钮
     auto titleClicked = ([=](){
         QToolButton* btn = qobject_cast<QToolButton*>(sender());
@@ -263,6 +291,12 @@ void CentralWidget::initUi()
     
     //加载界面参数
     {
+        connect(ui->lineEdit_shotNum, &QLineEdit::textChanged, ui->lineEdit_shotNum_2, &QLineEdit::setText);
+        connect(ui->lineEdit_shotNum_2, &QLineEdit::textChanged, ui->lineEdit_shotNum, &QLineEdit::setText);
+        connect(ui->checkBox_autoIncrease, &QCheckBox::stateChanged, ui->checkBox_autoIncrease_2, &QCheckBox::setChecked);
+        connect(ui->checkBox_autoIncrease_2, &QCheckBox::stateChanged, ui->checkBox_autoIncrease, &QCheckBox::setChecked);
+
+
         GlobalSettings settings(CONFIG_FILENAME);
         settings.beginGroup("mainWindow");
         bool flag = settings.value("ShotNumIsAutoIncrease", true).toBool();
@@ -1223,6 +1257,7 @@ void CentralWidget::on_action_startServer_triggered()
         ui->action_stopServer->setEnabled(true);
         ui->action_startMeasure->setEnabled(true);
         ui->action_stopMeasure->setEnabled(true);
+        ui->action_connectSwitch->setEnabled(true);
         ui->pushButton_startMeasure->setEnabled(true);
         ui->pushButton_stopMeasure->setEnabled(true);
         ui->action_autoMeasure->setEnabled(true);
@@ -1297,68 +1332,24 @@ void CentralWidget::onTriggerModelChanged(int index)
 // 开始测量 全部通道测量
 void CentralWidget::on_action_startMeasure_triggered()
 {
-    QVector<double> keys, values;
-    for (int i=1; i<=6; ++i){
-        QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        for (int j=0; j<spectroMeter_top->graphCount(); ++j)
-            spectroMeter_top->graph(j)->data()->clear();
+    ui->action_startMeasure->setEnabled(false);
+    ui->action_autoMeasure->setEnabled(false);
+    mEnableAutoMeasure = false;
 
-        QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-        for (int j=0; j<spectroMeter_bottom->graphCount(); ++j)
-            spectroMeter_bottom->graph(j)->data()->clear();
+    // 开始测量
+    startMeasure();
+}
 
-        spectroMeter_top->replot();
-        spectroMeter_bottom->replot();
-    }
 
-    /*设置发次信息*/
-    QString shotDir = ui->lineEdit_filePath->text();
-    QString shotNumStr = ui->lineEdit_shotNum->text().trimmed(); //去掉 开头 和 结尾 的空白,不会删除中间的空格
+void CentralWidget::on_action_autoMeasure_triggered()
+{
+    ui->action_startMeasure->setEnabled(false);
+    ui->action_autoMeasure->setEnabled(false);
 
-    // 保存测量数据
-    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr);
-    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr));
-    if (!dir.exists()) {
-        dir.mkpath(".");
-    }
+    mEnableAutoMeasure = true;
 
-    {
-        GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
-        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
-        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
-        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
-    }
-
-    {
-        GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
-        settings.setValue("mainWindow/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
-        settings.setValue("mainWindow/CacheDir", ui->lineEdit_filePath->text());
-        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
-        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
-    }
-
-    commHelper->setShotInformation(shotDir, shotNumStr);
-    // 读取倒计时时间（秒）
-    int countdownSeconds = ui->spinBox_measureTime->value();
-    if (countdownSeconds > 0) {
-        mRemainingCountdown = countdownSeconds;
-        mTotalCountdown = countdownSeconds;
-        mMeasureCountdownTimer->start();
-        // 初始化测量时长显示为 00:00:00
-        ui->edit_measureTime->setText("00:00:00");
-        qInfo().noquote() << QString("开始测量，倒计时：%1 秒").arg(countdownSeconds);
-    }
-
-    // 再发开始测量指令
-    if (ui->action_waveformMode->isChecked())
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform);
-    else if (ui->action_spectrumMode->isChecked())
-        commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum);
-      
-    // 测量中禁用参数配置
-    mDetSettingWindow->setEnabled(false);
-    ui->cb_calibration->setEnabled(false);
+    // 开始测量
+    startMeasure();
 }
 
 //单通道测量，单独测量某个通道
@@ -1479,35 +1470,23 @@ void CentralWidget::on_pushButton_stopMeasure_clicked()
 
 void CentralWidget::on_action_stopMeasure_triggered()
 {
-    // 停止倒计时定时器
-    if (mMeasureCountdownTimer && mMeasureCountdownTimer->isActive()) {
-        mMeasureCountdownTimer->stop();
-        // 显示最终测量时长
-        int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
-        ui->edit_measureTime->setText(formatTimeString(elapsedSeconds));
-        qInfo() << "测量倒计时已停止";
-    } else {
-        // 如果没有倒计时，清空显示
-        ui->edit_measureTime->setText("00:00:00");
+    if (mEnableAutoMeasure)
+    {
+        ui->lineEdit_autoStatus->setText(tr("测量已停止"));
+        qInfo().noquote() << tr("人工停止自动测量");
+    }
+    else
+    {
+        qInfo().noquote() << tr("停止手动测量");
     }
 
-    if (ui->checkBox_autoIncrease->isChecked()){
-        // lineEdit_shotNum尾缀加1
-        ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
-        GlobalSettings settings(CONFIG_FILENAME);
-        settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
-    }
+    ui->action_startMeasure->setEnabled(true);
+    ui->action_autoMeasure->setEnabled(true);
 
-    // 停止波形测量
-    commHelper->stopMeasure();
-    //清空温度超时报警的探测器ID
-    mTemperatureTimeoutDetectors.clear();
-    //清空探测器正在测量记录
-    mDetectorMeasuring.clear();
+    // 停止测量
+    stopMeasure();
 
-    // 非测量中可用参数配置
-    mDetSettingWindow->setEnabled(true);  
-    ui->cb_calibration->setEnabled(true);
+    mEnableAutoMeasure = false;
 }
 
 void CentralWidget::onMeasureCountdownTimeout()
@@ -1768,16 +1747,16 @@ void CentralWidget::applyColorTheme()
 
 void CentralWidget::restoreSettings()
 {
-    GlobalSettings settings(CONFIG_FILENAME);
+    GlobalSettings settingsGlobal;
     if(mainWindow) {
-        mainWindow->restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());
-        mainWindow->restoreState(settings.value("MainWindow/State").toByteArray());
+        mainWindow->restoreGeometry(settingsGlobal.value("MainWindow/Geometry").toByteArray());
+        mainWindow->restoreState(settingsGlobal.value("MainWindow/State").toByteArray());
     } else {
-        restoreGeometry(settings.value("MainWindow/Geometry").toByteArray());
-        restoreState(settings.value("MainWindow/State").toByteArray());
+        restoreGeometry(settingsGlobal.value("MainWindow/Geometry").toByteArray());
+        restoreState(settingsGlobal.value("MainWindow/State").toByteArray());
     }
-    mThemeColor = settings.value("Global/Startup/themeColor",QColor(30,30,30)).value<QColor>();
-    mThemeColorEnable = settings.value("Global/Startup/themeColorEnable",true).toBool();
+    mThemeColor = settingsGlobal.value("Global/Startup/themeColor",QColor(30,30,30)).value<QColor>();
+    mThemeColorEnable = settingsGlobal.value("Global/Startup/themeColorEnable",true).toBool();
     if(mThemeColorEnable) {
         QTimer::singleShot(0, this, [&](){
             qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
@@ -2151,7 +2130,7 @@ void CentralWidget::updateConnectButtonState(bool connected)
         ui->action_connectSwitch->setToolTip(tr("连接交换机"));
         ui->action_connectSwitch->setIcon(QIcon(":/switchOffline.png"));  // 使用离线图标
         // 断开后立即启用按钮（解除禁用）
-        ui->action_connectSwitch->setEnabled(true);
+        ui->action_connectSwitch->setEnabled(commHelper->isOpen());
         mConnectButtonDisableTimer->stop();
     }
 }
@@ -2504,5 +2483,145 @@ void CentralWidget::on_check_AutoRangeY_checkStateChanged(const Qt::CheckState &
     ui->leSpecYLeft->setText(QString::number(m_spectrumPlotSettings[detectorId-1].yMin));
     //更新leSpecYRight控件数值
     ui->leSpecYRight->setText(QString::number(m_spectrumPlotSettings[detectorId-1].yMax));
+}
+
+#include "neutronyieldcalibration.h"
+void CentralWidget::on_action_yieldCalibration_triggered()
+{
+    //模态窗口
+    // NeutronYieldCalibration *w = new NeutronYieldCalibration(this);
+    NeutronYieldCalibration *w = new NeutronYieldCalibration(nullptr);
+    w->setAttribute(Qt::WA_DeleteOnClose, true); // 关闭时自动删除
+    w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog); // 只显示关闭按钮
+    w->setWindowModality(Qt::ApplicationModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
+    w->show();
+}
+
+void CentralWidget::startMeasure()
+{
+    if (mEnableAutoMeasure)
+    {
+        ui->lineEdit_autoStatus->setText(tr("测量中..."));
+        qInfo().noquote() << tr("开启自动测量");
+    }
+    else
+    {
+        qInfo().noquote() << tr("开启手动测量");
+    }
+
+    QVector<double> keys, values;
+    for (int i=1; i<=6; ++i){
+        QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
+        for (int j=0; j<spectroMeter_top->graphCount(); ++j)
+            spectroMeter_top->graph(j)->data()->clear();
+
+        QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
+        for (int j=0; j<spectroMeter_bottom->graphCount(); ++j)
+            spectroMeter_bottom->graph(j)->data()->clear();
+
+        spectroMeter_top->replot();
+        spectroMeter_bottom->replot();
+    }
+
+    /*设置发次信息*/
+    QString shotDir = ui->lineEdit_filePath->text();
+    QString shotNumStr = ui->lineEdit_shotNum->text().trimmed(); //去掉 开头 和 结尾 的空白,不会删除中间的空格
+
+    // 保存测量数据
+    QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr);
+    QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr));
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+
+    {
+        GlobalSettings settings(QString("%1/Settings.ini").arg(savePath));
+        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
+    }
+
+    {
+        GlobalSettings settings(CONFIG_FILENAME);
+        settings.setValue("mainWindow/ShotNumStr", shotNumStr);
+        settings.setValue("mainWindow/ShotNumIsAutoIncrease", ui->checkBox_autoIncrease->isChecked());
+        settings.setValue("mainWindow/CacheDir", ui->lineEdit_filePath->text());
+        settings.setValue("mainWindow/TriggerMode", ui->com_triggerModel->currentIndex());
+        settings.setValue("mainWindow/MeasureTime", ui->spinBox_measureTime->value());
+    }
+
+    commHelper->setShotInformation(shotDir, shotNumStr);
+
+    if (mEnableAutoMeasure)
+    {
+        QTimer* autoMeasureTimer = this->findChild<QTimer*>("autoMeasureTimer");
+        autoMeasureTimer->setInterval(ui->spinBox_measureTime_2->value() * 1000);
+        autoMeasureTimer->start();
+
+        /// 先连接交换机
+        if (!mSwitcherConnected)
+            commHelper->connectSwitcher();
+
+        /// 再给设备上电
+    }
+    else
+    {
+        // 读取倒计时时间（秒）
+        int countdownSeconds = ui->spinBox_measureTime->value();
+        if (countdownSeconds > 0) {
+            mRemainingCountdown = countdownSeconds;
+            mTotalCountdown = countdownSeconds;
+            mMeasureCountdownTimer->start();
+            // 初始化测量时长显示为 00:00:00
+            ui->edit_measureTime->setText("00:00:00");
+            qInfo().noquote() << QString("开始测量，倒计时：%1 秒").arg(countdownSeconds);
+        }
+
+        // 再发开始测量指令
+        if (ui->action_waveformMode->isChecked())
+            commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform);
+        else if (ui->action_spectrumMode->isChecked())
+            commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum);
+    }
+
+    // 测量中禁用参数配置
+    mDetSettingWindow->setEnabled(false);
+    ui->cb_calibration->setEnabled(false);
+}
+
+void CentralWidget::stopMeasure()
+{
+    // 停止倒计时定时器
+    if (mMeasureCountdownTimer && mMeasureCountdownTimer->isActive()) {
+        mMeasureCountdownTimer->stop();
+        // 显示最终测量时长
+        int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
+        ui->edit_measureTime->setText(formatTimeString(elapsedSeconds));
+        qInfo() << "测量倒计时已停止";
+    } else {
+        // 如果没有倒计时，清空显示
+        ui->edit_measureTime->setText("00:00:00");
+    }
+
+    if (ui->checkBox_autoIncrease->isChecked()){
+        // lineEdit_shotNum尾缀加1
+        ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
+        GlobalSettings settings(CONFIG_FILENAME);
+        settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
+    }
+
+    // 停止波形测量
+    commHelper->stopMeasure();
+    //清空温度超时报警的探测器ID
+    mTemperatureTimeoutDetectors.clear();
+    //清空探测器正在测量记录
+    mDetectorMeasuring.clear();
+
+    // 非测量中可用参数配置
+    mDetSettingWindow->setEnabled(true);
+    ui->cb_calibration->setEnabled(true);
+
+    ui->tabWidget_manualPage->setEnabled(true);
+    ui->tabWidget_autoPage->setEnabled(true);
 }
 

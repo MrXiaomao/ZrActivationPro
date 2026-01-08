@@ -186,6 +186,10 @@ private slots:
     // 能谱图像属性 自动Y轴范围
     void on_check_AutoRangeY_checkStateChanged(const Qt::CheckState &arg1);
 
+    void on_action_yieldCalibration_triggered();
+
+    void on_action_autoMeasure_triggered();
+
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
 
@@ -217,7 +221,7 @@ private:
     // 测量倒计时定时器
     QTimer *mMeasureCountdownTimer = nullptr;
     int mRemainingCountdown = 0;  // 剩余倒计时（秒）
-    int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长
+    int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长    
 
     // 交换机连接状态管理
     bool mSwitcherConnected = false;  // 交换机是否已连接
@@ -251,6 +255,10 @@ private:
 
     QPixmap roundPixmap(QSize sz, QColor clrOut = Qt::gray);//单圆
     QPixmap dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut = Qt::gray);//双圆
+
+    bool mEnableAutoMeasure = false; // 开始自动测量模式
+    void startMeasure();
+    void stopMeasure();
 };
 
 class MainWindow : public QGoodWindow

@@ -34,6 +34,10 @@ public:
     */
     void stopServer();
 
+    /*
+     * 服务是否开启
+     */
+    bool isOpen();
     /**
      * 根据谱仪编号找到对应的交换机
      */

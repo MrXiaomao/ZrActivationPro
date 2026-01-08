@@ -33,8 +33,8 @@ QtMessageHandler system_default_message_handler = NULL;// 用来保存系统默�
 void AppMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString &msg)
 {
     QMutexLocker locker(&mutexMsg);
-    if (type == QtWarningMsg)
-        return;
+    if (type == QtWarningMsg && context.file == nullptr && context.function == nullptr)
+        return;// 主要用于过滤系统的警告信息
 
     if (mw && type != QtDebugMsg){
         //emit mw->sigWriteLog(msg, type);
