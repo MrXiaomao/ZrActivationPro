@@ -225,12 +225,9 @@ void CentralWidget::initUi()
     QTimer* autoMeasureTimer = new QTimer(this);
     autoMeasureTimer->setObjectName("autoMeasureTimer");
     connect(autoMeasureTimer, &QTimer::timeout, this, [=](){
-        ui->lineEdit_autoStatus->setText(tr("测量已停止"));
         qInfo().noquote() << tr("测量时间到，自动测量已停止");
 
         stopMeasure();
-        ui->tabWidget_autoPage->setEnabled(true);
-        ui->tabWidget_manualPage->setEnabled(true);
         autoMeasureTimer->stop();
     });
 
@@ -278,12 +275,6 @@ void CentralWidget::initUi()
     
     //加载界面参数
     {
-        connect(ui->lineEdit_shotNum, &QLineEdit::textChanged, ui->lineEdit_shotNum_2, &QLineEdit::setText);
-        connect(ui->lineEdit_shotNum_2, &QLineEdit::textChanged, ui->lineEdit_shotNum, &QLineEdit::setText);
-        connect(ui->checkBox_autoIncrease, &QCheckBox::stateChanged, ui->checkBox_autoIncrease_2, &QCheckBox::setChecked);
-        connect(ui->checkBox_autoIncrease_2, &QCheckBox::stateChanged, ui->checkBox_autoIncrease, &QCheckBox::setChecked);
-
-
         GlobalSettings settings(CONFIG_FILENAME);
         settings.beginGroup("mainWindow");
         bool flag = settings.value("ShotNumIsAutoIncrease", true).toBool();
@@ -642,7 +633,7 @@ void CentralWidget::initUi()
         std::uniform_int_distribution<int> distB(0, 255);   // 蓝色通道低值
         return QColor(distR(engine), distG(engine), distB(engine));
     };
-    for (int i=0; i<24; ++i)
+    for (int i=0; i<12; ++i)
         mGraphisColor.push_back(getRandomColor());
 
     for (int i=1; i<=2; ++i){
@@ -673,7 +664,7 @@ void CentralWidget::initUi()
             QCheckBox* checkBox = new QCheckBox(index==1 ? ui->widget_left : ui->widget_right);
             checkBox->setText(QLatin1String("")+QString::number(index));
             checkBox->setObjectName(QLatin1String("CH ")+QString::number(index));
-            checkBox->setIcon(QIcon(roundPixmap(QSize(16, 16), mGraphisColor.at(index-1) /*colors[i]*/)));
+            checkBox->setIcon(QIcon(roundPixmap(QSize(16, 16), mGraphisColor.at((index-1) % 12))));
             checkBox->setProperty("index", index);
             checkBox->setChecked(true);
             connect(checkBox, &QCheckBox::stateChanged, this, [=](int state){
@@ -942,7 +933,7 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
         QCPGraph * graph = customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
         //graph->setName("");
         graph->setAntialiased(false);
-        graph->setPen(mGraphisColor.at(i));
+        graph->setPen(mGraphisColor.at(i % 12));
         //graph->selectionDecorator()->setPen(QPen(getRandomColor()));
         graph->setLineStyle(QCPGraph::lsLine);
         graph->setSelectable(QCP::SelectionType::stNone);
@@ -1349,7 +1340,6 @@ void CentralWidget::on_action_stopMeasure_triggered()
 {
     if (mEnableAutoMeasure)
     {
-        ui->lineEdit_autoStatus->setText(tr("测量已停止"));
         qInfo().noquote() << tr("人工停止自动测量");
     }
     else
@@ -2246,7 +2236,6 @@ void CentralWidget::startMeasure()
 {
     if (mEnableAutoMeasure)
     {
-        ui->lineEdit_autoStatus->setText(tr("测量中..."));
         qInfo().noquote() << tr("开启自动测量");
     }
     else
@@ -2300,7 +2289,7 @@ void CentralWidget::startMeasure()
     if (mEnableAutoMeasure)
     {
         QTimer* autoMeasureTimer = this->findChild<QTimer*>("autoMeasureTimer");
-        autoMeasureTimer->setInterval(ui->spinBox_measureTime_2->value() * 1000);
+        autoMeasureTimer->setInterval(ui->spinBox_measureTime->value() * 1000);
         autoMeasureTimer->start();
 
         /// 先连接交换机
@@ -2365,18 +2354,16 @@ void CentralWidget::stopMeasure()
     // 非测量中可用参数配置
     mDetSettingWindow->setEnabled(true);
     ui->cb_calibration->setEnabled(true);
-
-    ui->tabWidget_manualPage->setEnabled(true);
-    ui->tabWidget_autoPage->setEnabled(true);
 }
 
 QCustomPlot* CentralWidget::getCustomPlot(int detectorId, bool isSpectrum)
 {
     if (isSpectrum)
-        return this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(detectorId <= 12 ? 1 : 2));
-    else
         return this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottoom").arg(detectorId <= 12 ? 1 : 2));
+    else
+        return this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(detectorId <= 12 ? 1 : 2));
 }
+
 QCPGraph* CentralWidget::getGraph(int detectorId, bool isSpectrum)
 {
     QCustomPlot *customPlot = getCustomPlot(detectorId, isSpectrum);
