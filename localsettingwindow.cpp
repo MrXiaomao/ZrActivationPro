@@ -1,4 +1,4 @@
-/*
+﻿/*
  * @Author: MrPan
  * @Date: 2025-11-13 11:36:00
  * @LastEditors: Maoxiaoqing
@@ -41,7 +41,7 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
     GlobalSettings settings(CONFIG_FILENAME);
     ui->comboBox_ip->setCurrentText(settings.value("Local/ServerIp", "0.0.0.0").toString());
     ui->spinBox_port->setValue(settings.value("Local/ServerPort", 6000).toUInt());
-    ui->lineEdit_switcherIp->setText(settings.value("Switcher/Telnet/Ip", "192.168.1.253").toString());
+    ui->lineEdit_switcherIp->setText(settings.value("Switcher/1/ip", "172.18.41.94").toString());
 }
 
 LocalSettingWindow::~LocalSettingWindow()
@@ -56,8 +56,7 @@ void LocalSettingWindow::on_pushButton_ok_clicked()
     settings.setValue("Local/ServerIp", ui->comboBox_ip->currentText());
     settings.setValue("Local/ServerPort", ui->spinBox_port->text());
     //交换机Telnet配置
-    settings.setValue("Switcher/Telnet/Ip", ui->lineEdit_switcherIp->text());
-    settings.setValue("Switcher/Telnet/Port", 23);
+    settings.setValue("Switcher/1/ip", ui->lineEdit_switcherIp->text());
 
     this->close();
 }

@@ -88,6 +88,7 @@ public:
     Q_SIGNAL void connectPeerConnection(QString,quint16);//客户端上线
     Q_SIGNAL void disconnectPeerConnection(QString,quint16);//客户端上线
 
+    Q_SIGNAL void switcherLogged(QString);//交换机已登录
     Q_SIGNAL void switcherConnected(QString);//交换机连接
     Q_SIGNAL void switcherDisconnected(QString);//交换机断开
 

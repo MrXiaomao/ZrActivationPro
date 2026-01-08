@@ -62,6 +62,7 @@ public:
     Q_SLOT bool closeSwitcherPOEPower(quint8 port = 0);
     Q_SLOT void closeNextSwitcherPOEPower();
 
+    Q_SIGNAL void switcherLogged(QString);//交换机登陆
     Q_SIGNAL void switcherConnected(QString);//交换机连接
     Q_SIGNAL void switcherDisconnected(QString);//交换机断开
     Q_SIGNAL void reportPoePowerStatus(quint8, bool); //POE电源开关
@@ -98,10 +99,12 @@ private:
     void performHeartbeatCheck();
     void reconnectSwitcher();
 
+    // 重启心跳监测，避免指令冲突
+    void restartHeartbeatCheck();
+
     // 退出登录相关
     bool mIsLoggingOut = false;
     quint8 mLogoutStep = 0; // 0=未退出, 1=已发第一条 quit, 2=已发第二条 quit
-
 };
 
 #endif // QHUAWEISWITCHERHELPER_H

@@ -58,11 +58,37 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             }
         }
 
+        /**
+         * 处理特殊情况，初始密码未修改的情况下
+         * Warning: The initial password poses security risks.
+         * The password needs to be changed. Change now? [Y/N]:
+         */
+        if(mRespondString.endsWith("The password needs to be changed. Change now? [Y/N]: ")){
+            mRespondString.clear();
+
+            QString data = "N\r";
+            mTelnet->sendData(data.toStdString().c_str(), data.size());
+        }
+        /**
+         * 处理特殊情况，初始密码未修改的情况下
+         * Please enter old password:
+         */
+        if(mRespondString.endsWith("Please enter old password: ")){
+            mRespondString.clear();
+
+            QString data = "root@12345\r";
+            mTelnet->sendData(data.toStdString().c_str(), data.size());
+        }
+
         if(mRespondString.endsWith("---- More ----")){
+            mRespondString.clear();
+
             QString data = "\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
         else if(mRespondString.endsWith("[Y/N]:")){
+            mRespondString.clear();
+
             QString data = "Y\r";
             mTelnet->sendData(data.toStdString().c_str(), data.size());
         }
@@ -96,7 +122,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
                 qInfo() << "交换机" << mIp << "重连成功";
             }
 
-            emit switcherConnected(mIp);
+            emit switcherLogged(mIp);
             
             // 登录成功后启动心跳检测
             startHeartbeatCheck();
@@ -304,24 +330,24 @@ bool QHuaWeiSwitcherHelper::contains(quint8 index)
     return false;
 }
 
-//根据POE端口号找谱仪编号
-qint8 QHuaWeiSwitcherHelper::indexOfPort(quint8 port)
+//根据谱仪编号找POE端口号
+qint8 QHuaWeiSwitcherHelper::portOfIndex(quint8 index)
 {
-    if (mMapAssociatedDetector.contains(port))
-        return mMapAssociatedDetector[port];
+    if (mMapAssociatedDetector.contains(index))
+        return mMapAssociatedDetector[index];
     else
         return -1;
 }
 
-//根据谱仪编号找POE端口号
-qint8 QHuaWeiSwitcherHelper::portOfIndex(quint8 index)
+//根据POE端口号找谱仪编号
+qint8 QHuaWeiSwitcherHelper::indexOfPort(quint8 port)
 {
-    if (index == 0x00)
+    if (port == 0x00)
         return 0x00;
     else
     {
-        quint8 port = mMapAssociatedDetector.key(index, 0);
-        return port ;
+        quint8 index = mMapAssociatedDetector.key(port, 0);
+        return index;
     }
 
     return -1;
@@ -355,7 +381,7 @@ void QHuaWeiSwitcherHelper::queryPowerStatus()
     mTelnet->disconnectFromHost();
     mTelnet->setType(QTelnet::TCP);
     if (mTelnet->connectToHost(mIp, 23)){
-
+        emit switcherConnected(mIp);
     }
     else
     {
@@ -369,17 +395,18 @@ void QHuaWeiSwitcherHelper::queryPowerStatus()
 /*
  打开交换机POE口输出电源
 */
-bool QHuaWeiSwitcherHelper::openSwitcherPOEPower(quint8 index/* = 0*/)
+bool QHuaWeiSwitcherHelper::openSwitcherPOEPower(quint8 port/* = 0*/)
 {
     if (nullptr == mTelnet || !mTelnet->isConnected() || !mSwitcherInSystemView)
         return false;
 
-    mBatchOn = index == 00 ? true : false;
-    mSingleOn = index == 00 ? false : true;
+    mBatchOn = port == 00 ? true : false;
+    mSingleOn = port == 00 ? false : true;
     mBatchOff = false;
     mSingleOff = false;
 
-    mCurrentQueryPort = index==0 ? 1 : index;
+    restartHeartbeatCheck();
+    mCurrentQueryPort = port==0 ? 1 : port;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
 
@@ -391,6 +418,7 @@ void QHuaWeiSwitcherHelper::openNextSwitcherPOEPower()
     if (mCurrentQueryPort >= DET_NUM)
         return;
 
+    restartHeartbeatCheck();
     mCurrentQueryPort++;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
@@ -401,6 +429,7 @@ void QHuaWeiSwitcherHelper::queryNextSwitcherPOEPower()
     if (mCurrentQueryPort >= DET_NUM)
         return;
 
+    restartHeartbeatCheck();
     mCurrentQueryPort++;
     mCurrentCommand = QString("display poe power-state interface GigabitEthernet0/0/%1").arg(mCurrentQueryPort) + "\r";
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
@@ -419,6 +448,7 @@ bool QHuaWeiSwitcherHelper::closeSwitcherPOEPower(quint8 port/* = 0*/)
     mBatchOff = port == 00 ? true : false;
     mSingleOff = port == 00 ? false : true;
 
+    restartHeartbeatCheck();
     mCurrentQueryPort = port==0 ? 1 : port;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
@@ -431,6 +461,7 @@ void QHuaWeiSwitcherHelper::closeNextSwitcherPOEPower()
     if (mCurrentQueryPort >= DET_NUM)
         return;
 
+    restartHeartbeatCheck();
     mCurrentQueryPort++;
     mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
     mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
@@ -456,6 +487,16 @@ void QHuaWeiSwitcherHelper::startHeartbeatCheck()
         mWaitingHeartbeatResponse = false;
         mHeartbeatTimer->start();
         qInfo() << "交换机" << mIp << "心跳检测已启动";
+    }
+}
+
+void QHuaWeiSwitcherHelper::restartHeartbeatCheck()
+{
+    if (mHeartbeatTimer && mHeartbeatTimer->isActive()) {
+        mLastHeartbeatTime.restart();
+        mWaitingHeartbeatResponse = false;
+        mHeartbeatTimer->stop();
+        mHeartbeatTimer->start();
     }
 }
 

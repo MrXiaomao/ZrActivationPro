@@ -69,15 +69,6 @@ public:
     // 添加计数率显示更新函数
     void updateCountRateDisplay(int detectorId, double countRate);
 
-    // 翻页
-    void turnPage(int pageIndex);
-
-    //展示当前页面的六个能谱图
-    void showSpectrumDisplay(int currentPageIndex);
-
-    //展示当前页面的六个计数率图
-    void showCountRateDisplay(int currentPageIndex);
-
     // 将秒数转换为 天/时分秒 格式字符串
     QString formatTimeString(int totalSeconds);
 
@@ -192,14 +183,14 @@ private slots:
 
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
+    QCustomPlot* getCustomPlot(int detectorId, bool isSpectrum = true);
+    QCPGraph* getGraph(int detectorId, bool isSpectrum = true);
 
 private:
     Ui::CentralWidget *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
     DetSettingWindow *mDetSettingWindow = nullptr;
     bool mIsMeasuring = false;
-    quint8 mCurrentPageIndex = 1; // 当前显示的页面索引，1-4
-    QMutex mMutexSwitchPage;
 
     QVector<quint8> m_selectedChannels; // 记录所选的通道号，停止测量时使用(自定义通道测量)
     bool mIsDarkTheme = true;
@@ -224,9 +215,11 @@ private:
     int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长    
 
     // 交换机连接状态管理
+    bool mSwitcherLogged = false;  // 交换机是否已登录
     bool mSwitcherConnected = false;  // 交换机是否已连接
     QTimer *mConnectButtonDisableTimer = nullptr;  // 连接按钮禁用定时器
 
+    QVector<QColor> mGraphisColor;
     // 更新连接按钮状态（文本、图标、启用/禁用）
     void updateConnectButtonState(bool connected);
 

@@ -63,14 +63,19 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
 
     // 继电器
     connect(commHelper, &CommHelper::switcherConnected, this, [=](QString ip){
+        mSwitcherConnected = true;
+        qInfo().noquote() << tr("交换机[%1]：已连通").arg(ip);
+    });
+
+    connect(commHelper, &CommHelper::switcherLogged, this, [=](QString ip){
         // QLabel* label_Connected = this->findChild<QLabel*>("label_Connected");
         // label_Connected->setStyleSheet("color:#00ff00;");
         // label_Connected->setText(tr("交换机[%1]：已连通").arg(ip));
-        mSwitcherConnected = true;
+        mSwitcherLogged = true;
         updateConnectButtonState(true);
         ui->action_powerOn->setEnabled(true);
         ui->action_powerOff->setEnabled(true);
-        qInfo().noquote() << tr("交换机[%1]：已连通").arg(ip);
+        qInfo().noquote() << tr("交换机[%1]：已登录").arg(ip);
 
         /// 再给设备上电
         if (mEnableAutoMeasure)
@@ -237,12 +242,10 @@ void CentralWidget::initUi()
         QWidget* spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(index));
         if (spectroMeterWidget->property("isZoomIn").toBool())
         {
-            QSplitter *splitterV = this->findChild<QSplitter*>("splitterV");
-            splitterV->setHandleWidth(1);
             this->setProperty("isZoomIn", false);
             spectroMeterWidget->setProperty("isZoomIn", false);
             btn->setIcon(QIcon(":/zoom_in.png"));
-            for (int i=1; i<=6; ++i)
+            for (int i=1; i<=2; ++i)
             {
                 spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
                 spectroMeterWidget->show();
@@ -254,7 +257,7 @@ void CentralWidget::initUi()
             this->setProperty("currentMeterIndex", index);
             spectroMeterWidget->setProperty("isZoomIn", true);
             btn->setIcon(QIcon(":/zoom_out.png"));
-            for (int i=1; i<=6; ++i)
+            for (int i=1; i<=2; ++i)
             {
                 spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
                 if (i==index)
@@ -262,32 +265,16 @@ void CentralWidget::initUi()
                 else
                     spectroMeterWidget->hide();
             }
-            QSplitter *splitterV = this->findChild<QSplitter*>("splitterV");
-            splitterV->setHandleWidth(0);
         }
     });
     connect(ui->toolButton_title_1, &QToolButton::clicked, this, titleClicked);
     connect(ui->toolButton_title_2, &QToolButton::clicked, this, titleClicked);
-    connect(ui->toolButton_title_3, &QToolButton::clicked, this, titleClicked);
-    connect(ui->toolButton_title_4, &QToolButton::clicked, this, titleClicked);
-    connect(ui->toolButton_title_5, &QToolButton::clicked, this, titleClicked);
-    connect(ui->toolButton_title_6, &QToolButton::clicked, this, titleClicked);
-
     ui->leftStackedWidget->hide();
 
     // 隐藏页面【历史数据、数据分析、数据管理】
     ui->centralHboxTabWidget->setTabVisible(1, false);
     ui->centralHboxTabWidget->setTabVisible(2, false);
     ui->centralHboxTabWidget->setTabVisible(3, false);
-
-    // 只显示一个谱仪
-    if (0){
-        ui->spectroMeterWidget2->setVisible(false);
-        ui->spectroMeterWidget3->setVisible(false);
-        ui->spectroMeterWidget4->setVisible(false);
-        ui->spectroMeterWidget5->setVisible(false);
-        ui->spectroMeterWidget6->setVisible(false);
-    }
     
     //加载界面参数
     {
@@ -335,116 +322,6 @@ void CentralWidget::initUi()
     QActionGroup *actionGrp = new QActionGroup(this);
     actionGrp->addAction(ui->action_waveformMode);
     actionGrp->addAction(ui->action_spectrumMode);
-
-    QToolButton* pageupButton = new QToolButton(this);
-    pageupButton->setText(tr("上一页"));
-    pageupButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_ArrowUp));
-    QToolButton* pagedownButton = new QToolButton(this);
-    pagedownButton->setText(tr("下一页"));
-    pagedownButton->setIcon(QApplication::style()->standardIcon(QStyle::SP_ArrowDown));
-    QWidget* tabWidgetButtonGroup = new QWidget(this);
-    tabWidgetButtonGroup->setObjectName(QLatin1String("tabWidgetButtonGroup"));
-    tabWidgetButtonGroup->setLayout(new QHBoxLayout(this));
-    tabWidgetButtonGroup->layout()->setMargin(0);
-    tabWidgetButtonGroup->layout()->setSpacing(0);
-    tabWidgetButtonGroup->layout()->addWidget(pageupButton);
-    tabWidgetButtonGroup->layout()->addWidget(pagedownButton);
-    ui->centralHboxTabWidget->setCornerWidget(tabWidgetButtonGroup); // 右上角添加翻页按钮
-
-    connect(pageupButton, &QToolButton::clicked, this, [=](){
-        if (this->property("isZoomIn").toBool())
-        {
-            int currentMeterIndex = this->property("currentMeterIndex").toInt();
-            if (1 == this->mCurrentPageIndex && currentMeterIndex == 1)
-                return;
-
-            if (currentMeterIndex == 1)
-            {
-                currentMeterIndex = 6;
-                this->mCurrentPageIndex--;
-
-                turnPage(this->mCurrentPageIndex);
-            }
-            else
-            {
-                currentMeterIndex--;
-            }
-
-            this->setProperty("currentMeterIndex", currentMeterIndex);
-            for (int i=1; i<=6; ++i)
-            {
-                QWidget *spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
-                if (i==currentMeterIndex){
-                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
-                    btn->setIcon(QIcon(":/zoom_out.png"));
-                    spectroMeterWidget->setProperty("isZoomIn", true);
-                    spectroMeterWidget->show();
-                }
-                else{
-                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
-                    btn->setIcon(QIcon(":/zoom_in.png"));
-                    spectroMeterWidget->setProperty("isZoomIn", false);
-                    spectroMeterWidget->hide();
-                }
-            }
-        }
-        else
-        {
-            if (1 == this->mCurrentPageIndex)
-                return;
-
-            this->mCurrentPageIndex--;
-            turnPage(this->mCurrentPageIndex);
-        }
-    });
-
-    connect(pagedownButton, &QToolButton::clicked, this, [=](){
-        if (this->property("isZoomIn").toBool())
-        {
-            int currentMeterIndex = this->property("currentMeterIndex").toInt();
-            if (4 == this->mCurrentPageIndex && currentMeterIndex == 6)
-                return;
-
-            if (currentMeterIndex == 6)
-            {
-                currentMeterIndex = 1;
-                this->mCurrentPageIndex++;
-
-                turnPage(this->mCurrentPageIndex);
-            }
-            else
-            {
-                currentMeterIndex++;
-            }
-
-            this->setProperty("currentMeterIndex", currentMeterIndex);
-            for (int i=1; i<=6; ++i)
-            {
-                QWidget *spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(i));
-                if (i==currentMeterIndex){
-                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
-                    btn->setIcon(QIcon(":/zoom_out.png"));
-                    spectroMeterWidget->setProperty("isZoomIn", true);
-                    spectroMeterWidget->show();
-                }
-                else{
-                    QToolButton* btn = spectroMeterWidget->findChild<QToolButton*>(QString("toolButton_title_%1").arg(i));
-                    btn->setIcon(QIcon(":/zoom_in.png"));
-                    spectroMeterWidget->setProperty("isZoomIn", false);
-                    spectroMeterWidget->hide();
-                }
-            }
-
-        }
-        else
-        {
-            if (4 == this->mCurrentPageIndex)
-                return;
-
-            this->mCurrentPageIndex++;
-            turnPage(this->mCurrentPageIndex);
-        }
-    });
 
     connect(ui->centralHboxTabWidget,&QTabWidget::tabCloseRequested,this,[=](int index){
         if (index != 0){
@@ -549,40 +426,21 @@ void CentralWidget::initUi()
 
     {
         ui->widget__plot->setLayout(new QVBoxLayout(ui->widget__plot));
-        QSplitter *splitterV = new QSplitter(Qt::Vertical,this);
-        splitterV->setObjectName("splitterV");
-        splitterV->setHandleWidth(2);
 
         QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
-        splitterH1->setObjectName("splitterH1");
         splitterH1->setHandleWidth(1);
         splitterH1->addWidget(ui->spectroMeterWidget1);
         splitterH1->addWidget(ui->spectroMeterWidget2);
-        splitterH1->addWidget(ui->spectroMeterWidget3);
-        splitterH1->setSizes(QList<int>() << 100000 << 100000 << 100000);
+        splitterH1->setSizes(QList<int>() << 100000 << 100000);
         splitterH1->setCollapsible(0,false);
         splitterH1->setCollapsible(1,false);
-        splitterH1->setCollapsible(2,false);
-        splitterV->addWidget(splitterH1);
 
-        QSplitter *splitterH2 = new QSplitter(Qt::Horizontal,this);
-        splitterH2->setObjectName("splitterH2");
-        splitterH2->setHandleWidth(1);
-        splitterH2->addWidget(ui->spectroMeterWidget4);
-        splitterH2->addWidget(ui->spectroMeterWidget5);
-        splitterH2->addWidget(ui->spectroMeterWidget6);
-        splitterH2->setSizes(QList<int>() << 100000 << 100000 << 100000);
-        splitterH2->setCollapsible(0,false);
-        splitterH2->setCollapsible(1,false);
-        splitterH2->setCollapsible(2,false);
-        splitterV->addWidget(splitterH2);
-
-        ui->widget__plot->layout()->addWidget(splitterV);
+        ui->widget__plot->layout()->addWidget(splitterH1);
     }
 
     QSplitter *splitterH1 = new QSplitter(Qt::Horizontal,this);
     splitterH1->setObjectName("splitterH1");
-    splitterH1->setHandleWidth(5);
+    splitterH1->setHandleWidth(1);
     splitterH1->addWidget(ui->leftStackedWidget);
     splitterH1->addWidget(ui->centralHboxTabWidget);
     splitterH1->addWidget(ui->rightVboxWidget);
@@ -768,7 +626,7 @@ void CentralWidget::initUi()
             }
         }
 
-        if (settingsGlobal.contains("Global/splitter/State")){
+        if (settingsGlobal.contains("Global/splitterV2/State")){
             QSplitter *splitterV2 = this->findChild<QSplitter*>("splitterV2");
             if (splitterV2)
             {
@@ -777,17 +635,70 @@ void CentralWidget::initUi()
         }
     }
 
-    for (int i=1; i<=6; ++i){
+    auto getRandomColor = []() {
+        static std::mt19937 engine(std::chrono::system_clock::now().time_since_epoch().count());
+        std::uniform_int_distribution<int> distR(0, 255); // 红色通道高值
+        std::uniform_int_distribution<int> distG(0, 255);  // 绿色通道中值
+        std::uniform_int_distribution<int> distB(0, 255);   // 蓝色通道低值
+        return QColor(distR(engine), distG(engine), distB(engine));
+    };
+    for (int i=0; i<24; ++i)
+        mGraphisColor.push_back(getRandomColor());
+
+    for (int i=1; i<=2; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-        initCustomPlot(i, spectroMeter_top, tr(""), tr("时间/s 计数率/cps"), tr("计数曲线"), 1);
+        initCustomPlot(i, spectroMeter_top, tr(""), tr("时间/s 计数率/cps"), tr("计数曲线"), 12);
         QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-        initCustomPlot(i, spectroMeter_bottom, tr(""), tr("道址 计数"), tr("累积能谱"), 1);
+        initCustomPlot(i, spectroMeter_bottom, tr(""), tr("道址 计数"), tr("累积能谱"), 12);
     }
 
     QCustomPlot *spectroMeter_left = this->findChild<QCustomPlot*>(QString("spectroMeter_left"));
     initCustomPlot(100, spectroMeter_left, tr(""), tr("时间/ns ADC采样值"), tr("实时波形"), 1);
     QCustomPlot *spectroMeter_right = this->findChild<QCustomPlot*>(QString("spectroMeter_right"));
     initCustomPlot(101, spectroMeter_right, tr(""), tr("道址 计数"), tr("累积能谱"), 1);
+
+    {
+        // 添加可选项
+        QGridLayout* layoutLeft = new QGridLayout(ui->widget_left);
+        layoutLeft->setSpacing(5);
+        layoutLeft->setContentsMargins(9,3,9,3);
+        QGridLayout* layoutRight = new QGridLayout(ui->widget_left);
+        layoutRight->setSpacing(5);
+        layoutRight->setContentsMargins(9,3,9,3);
+        ui->widget_left->setLayout(layoutLeft);
+        ui->widget_right->setLayout(layoutRight);
+
+        for (int index=1; index<=24; ++index)
+        {
+            QCheckBox* checkBox = new QCheckBox(index==1 ? ui->widget_left : ui->widget_right);
+            checkBox->setText(QLatin1String("")+QString::number(index));
+            checkBox->setObjectName(QLatin1String("CH ")+QString::number(index));
+            checkBox->setIcon(QIcon(roundPixmap(QSize(16, 16), mGraphisColor.at(index-1) /*colors[i]*/)));
+            checkBox->setProperty("index", index);
+            checkBox->setChecked(true);
+            connect(checkBox, &QCheckBox::stateChanged, this, [=](int state){
+                int index = checkBox->property("index").toInt();
+                QCPGraph *graph = getGraph((index-1) % 12);
+                if (graph){
+                    graph->setVisible(Qt::CheckState::Checked == state ? true : false);
+                    getCustomPlot((index-1) % 12)->replot();
+                    getCustomPlot((index-1) % 12, false)->replot();
+                }
+            });
+
+            if (index<=12)
+            {
+                layoutLeft->addWidget(checkBox, index<=6 ? 0 : 1, (index-1) % 6);
+            }
+            else
+            {
+                layoutRight->addWidget(checkBox, index<=18 ? 0 : 1, (index-1) % 6);
+            }
+        }
+
+        layoutLeft->addWidget(ui->toolButton_title_1, 0, 7);
+        layoutRight->addWidget(ui->toolButton_title_2, 0, 7);
+    }
 
     //更新温度状态
     connect(commHelper, &CommHelper::reportDetectorTemperature, this, [=](quint8 index, float temperature){
@@ -855,9 +766,8 @@ void CentralWidget::initUi()
     
     // 接收波形曲线数据
     connect(commHelper, &CommHelper::reportWaveformCurveData, this, [=](quint8 index, QVector<quint16>& data){
-        Q_UNUSED(index);
-        index = index - (mCurrentPageIndex-1)*6;
-        if (index < 1 || index > 6)
+        QCustomPlot *customPlot = getCustomPlot(index, true);
+        if (!customPlot)
             return;
 
         QVector<double> x, y;
@@ -867,9 +777,8 @@ void CentralWidget::initUi()
             y << data.at(i);
         }
 
-        QMutexLocker locket(&mMutexSwitchPage);
-        QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(index));
-        customPlot->graph(0)->setData(x, y);
+
+        getGraph(index, true)->setData(x, y);
         customPlot->xAxis->rescale(true);
         customPlot->yAxis->rescale(true);
         //customPlot->yAxis->setRange(0, 10000);
@@ -1029,48 +938,16 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     customPlot->yAxis2->setSubTicks(false);
 
     // 添加散点图
-    QColor colors[] = {Qt::green, Qt::blue, Qt::red, Qt::cyan};
     for (int i=0; i<graphCount; ++i){
         QCPGraph * graph = customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
         //graph->setName("");
         graph->setAntialiased(false);
-        graph->setPen(QPen(colors[i]));
-        graph->selectionDecorator()->setPen(QPen(colors[i]));
+        graph->setPen(mGraphisColor.at(i));
+        //graph->selectionDecorator()->setPen(QPen(getRandomColor()));
         graph->setLineStyle(QCPGraph::lsLine);
         graph->setSelectable(QCP::SelectionType::stNone);
         //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, colors[i], 2));//显示散点图
         //graph->setSmooth(true);
-    }
-
-    // 添加可选项
-    if (graphCount > 1){
-        static int index = 0;
-        for (int i=0; i<graphCount; ++i){
-            QCheckBox* checkBox = new QCheckBox(customPlot);
-            checkBox->setText(QLatin1String("")+QString::number(++index));
-            checkBox->setObjectName(QLatin1String("CH ")+QString::number(index));            
-
-            QColor colors[] = {Qt::green, Qt::blue, Qt::red, Qt::cyan};
-            checkBox->setIcon(QIcon(roundPixmap(QSize(16, 16), colors[i])));
-            checkBox->setProperty("index", i+1);
-            checkBox->setChecked(true);
-            connect(checkBox, &QCheckBox::stateChanged, this, [=](int state){
-                int index = checkBox->property("index").toInt();
-                QCPGraph *graph = customPlot->graph(QLatin1String("Graph ")+QString::number(index));
-                if (graph){
-                    graph->setVisible(Qt::CheckState::Checked == state ? true : false);
-                    customPlot->replot();
-                }
-            });
-        }
-        connect(customPlot, &QCustomPlot::afterLayout, this, [=](){
-            QCustomPlot* customPlot = qobject_cast<QCustomPlot*>(sender());
-            QList<QCheckBox*> checkBoxs = customPlot->findChildren<QCheckBox*>();
-            int i = 0;
-            for (auto checkBox : checkBoxs){
-                checkBox->move(customPlot->axisRect()->topRight().x() - 70, customPlot->axisRect()->topRight().y() + i++ * 20 + 10);
-            }
-        });
     }
 
     // if (graphCount == 1){
@@ -1192,9 +1069,9 @@ void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
     if (msgType == QtDebugMsg || msgType == QtInfoMsg)
         cursor.insertHtml(QString("<span style='color:%1;'>%2</span>").arg(color, msg));
     else if (msgType == QtCriticalMsg || msgType == QtFatalMsg)
-        cursor.insertHtml(QString("<span style='color:red;'>%1</span>").arg(msg));
+        cursor.insertHtml(QString("<span style='color:#FF0000;'>%1</span>").arg(msg));
     else
-        cursor.insertHtml(QString("<span style='color:green;'>%1</span>").arg(msg));
+        cursor.insertHtml(QString("<span style='color:#FFFF00;'>%1</span>").arg(msg));
 
     // 最后插入换行符
     cursor.insertHtml("<br>");
@@ -1356,7 +1233,7 @@ void CentralWidget::on_action_autoMeasure_triggered()
 void CentralWidget::on_pushButton_startMeasure_clicked()
 {
     QVector<double> keys, values;
-    for (int i=1; i<=6; ++i){
+    for (int i=1; i<=2; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
         for (int j=0; j<spectroMeter_top->graphCount(); ++j)
             spectroMeter_top->graph(j)->data()->clear();
@@ -1805,14 +1682,9 @@ QList<int> CentralWidget::getOnlineDetectors() const {
 // 更新能谱、计数率显示
 void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum[]) {
     // 计算在页面中的索引
-    int displayIndex = detectorId - (mCurrentPageIndex - 1) * 6;
-    if (displayIndex < 1 || displayIndex > 6) {
-        return;  // 不在当前显示页面
-    }
-
-    QMutexLocker locker(&mMutexSwitchPage);
-    QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(displayIndex));
-    if (!customPlot) return;
+    QCustomPlot *customPlot = getCustomPlot(detectorId);
+    if (!customPlot)
+        return;
 
     // 转换数据格式
     QVector<double> x, y;
@@ -1822,7 +1694,7 @@ void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum
     }
 
     // 更新图表
-    customPlot->graph(0)->setData(x, y);
+    getGraph(detectorId)->setData(x, y);
     // customPlot->xAxis->setRange(0, 8192);
     customPlot->yAxis->rescale(true);
 
@@ -1836,14 +1708,11 @@ void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum
 // 添加计数率显示更新函数
 void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     // 计算在页面中的索引
-    int displayIndex = detectorId - (mCurrentPageIndex - 1) * 6;
-    if (displayIndex < 1 || displayIndex > 6) {
-        return;  // 不在当前显示页面
-    }
+    QCustomPlot *customPlot = getCustomPlot(detectorId, false);
+    if (!customPlot)
+        return;
+
     DetectorData &data = m_detectorData[detectorId];
-    QMutexLocker locker(&mMutexSwitchPage);
-    QCustomPlot *customPlot = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(displayIndex));
-    if (!customPlot) return;
 
     // 获取当前时间（使用相对时间或绝对时间）
     static QElapsedTimer timer;
@@ -1856,7 +1725,7 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     // 添加新的数据点
     int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
     // qDebug().noquote()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
-    customPlot->graph(0)->addData(elapsedSeconds, countRate);
+    getGraph(detectorId, false)->addData(elapsedSeconds, countRate);
 
     // 显示最近300秒
     const int WINDOW = 300;
@@ -1872,120 +1741,6 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     customPlot->yAxis->setRange(y_min - pad, y_max + pad);
 
     customPlot->replot(QCustomPlot::rpQueuedReplot);
-}
-
-// 翻页
-void CentralWidget::turnPage(int pageIndex)
-{
-    for (int i=1; i<=6; ++i){
-        QLabel* label_spectroMeter = this->findChild<QLabel*>(QString("label_spectroMeter%1").arg(i));
-        if (label_spectroMeter)
-            label_spectroMeter->setText(tr("谱仪#%1").arg((pageIndex-1)*6 + i));
-    }
-
-
-    {
-        QMutexLocker locket(&mMutexSwitchPage);
-        for (int i=1; i<=6; ++i){
-            QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
-            QCustomPlot *spectroMeter_bottom = this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(i));
-            spectroMeter_top->graph(0)->data().clear();
-            spectroMeter_bottom->graph(0)->data().clear();
-        }
-    }
-
-    //展示当前页面的六个能谱图
-    showSpectrumDisplay(pageIndex);
-    //展示当前页面的六个计数率图
-    showCountRateDisplay(pageIndex);
-}
-
-// 展示当前页面的六个能谱图
-void CentralWidget::showSpectrumDisplay(int currentPageIndex)
-{
-    // 备份当前页面索引，暂时切换到要展示的页面，方便复用 updateSpectrumDisplay
-    int oldPageIndex = mCurrentPageIndex;
-    mCurrentPageIndex = currentPageIndex;
-
-    int startDetectorId = (currentPageIndex - 1) * 6 + 1;
-    int endDetectorId   = startDetectorId + 5;
-
-    for (int detectorId = startDetectorId; detectorId <= endDetectorId; ++detectorId) {
-        int displayIndex = detectorId - (currentPageIndex - 1) * 6; // 1~6
-
-        QMutexLocker locker(&mMutexSwitchPage);
-        QCustomPlot *plot = this->findChild<QCustomPlot*>(
-            QString("spectroMeter%1_bottom").arg(displayIndex));
-        if (!plot) {
-            continue;
-        }
-
-        // 如果这个探测器有数据，就画出来；否则清空这一个图
-        auto it = m_detectorData.find(detectorId);
-        if (it != m_detectorData.end()) {
-            // 复用已有的更新逻辑
-            locker.unlock(); // updateSpectrumDisplay 内部也会加锁
-            updateSpectrumDisplay(detectorId, it->spectrum);
-        } else {
-            plot->graph(0)->data()->clear();
-            plot->replot(QCustomPlot::rpQueuedReplot);
-        }
-    }
-
-    // 恢复原来的页面索引
-    mCurrentPageIndex = oldPageIndex;
-}
-
-// 展示当前页面的六个计数率图
-void CentralWidget::showCountRateDisplay(int currentPageIndex)
-{
-    int startDetectorId = (currentPageIndex - 1) * 6 + 1;
-    int endDetectorId   = startDetectorId + 5;
-
-    for (int detectorId = startDetectorId; detectorId <= endDetectorId; ++detectorId) {
-        int displayIndex = detectorId - (currentPageIndex - 1) * 6; // 1~6
-
-        QMutexLocker locker(&mMutexSwitchPage);
-        QCustomPlot *plot = this->findChild<QCustomPlot*>(
-            QString("spectroMeter%1_top").arg(displayIndex));
-        if (!plot) {
-            continue;
-        }
-
-        auto it = m_detectorData.find(detectorId);
-        if (it == m_detectorData.end() || it->countRateHistory.isEmpty()) {
-            // 没有数据，清空
-            plot->graph(0)->data()->clear();
-            plot->replot(QCustomPlot::rpQueuedReplot);
-            continue;
-        }
-
-        // 用历史计数率重绘整条曲线
-        QVector<double> x, y;
-        x.reserve(it->countRateHistory.size());
-        y.reserve(it->countRateHistory.size());
-
-        // 这里用采样序号作为 X 轴（0,1,2,...），
-        // 如果你有真实时间戳，也可以改成时间。
-        for (int i = 0; i < it->countRateHistory.size(); ++i) {
-            x << i;
-            y << it->countRateHistory[i];
-        }
-
-        plot->graph(0)->setData(x, y);
-
-        // X 轴范围：完整显示历史数据
-        plot->xAxis->setRange(0, qMax(1, x.size()));
-
-        // Y 轴自适应
-        plot->yAxis->rescale(true);
-        double y_min = plot->yAxis->range().lower;
-        double y_max = plot->yAxis->range().upper;
-        y_max = y_min + (y_max - y_min) * 1.1;
-        plot->yAxis->setRange(y_min - 1, y_max);
-
-        plot->replot(QCustomPlot::rpQueuedReplot);
-    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -2357,14 +2112,9 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
     
     // 先判断该编号探测器是否在当前页面，如果在则更新能谱图显示范围,注意要结合能量刻度系数
     // 计算在页面中的索引
-    int displayIndex = detectorId - (mCurrentPageIndex - 1) * 6;
-    if(displayIndex <1 || displayIndex > 6)
-    {
+    QCustomPlot* customPlot = getCustomPlot(detectorId);
+    if (!customPlot)
         return;
-    }
-
-    QWidget *spectroMeterWidget = this->findChild<QWidget*>(QString("spectroMeterWidget%1").arg(displayIndex));
-    QCustomPlot* customPlot = spectroMeterWidget->findChild<QCustomPlot*>("customPlot_spectrum");
 
     double xMin = 0.0;
     double maxX = multiCh*1.0;
@@ -2430,11 +2180,6 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
 void CentralWidget::on_spin_specDetID_valueChanged(int arg1)
 {
   //判断谱仪编号是否在当前页面
-  int displayIndex = arg1 - (mCurrentPageIndex - 1) * 6;
-  if(displayIndex <1 || displayIndex > 6)
-  {
-    return;
-  }
   updateSpectrumPlotSettings(arg1);
 }
 
@@ -2510,7 +2255,7 @@ void CentralWidget::startMeasure()
     }
 
     QVector<double> keys, values;
-    for (int i=1; i<=6; ++i){
+    for (int i=1; i<=2; ++i){
         QCustomPlot *spectroMeter_top = this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(i));
         for (int j=0; j<spectroMeter_top->graphCount(); ++j)
             spectroMeter_top->graph(j)->data()->clear();
@@ -2625,3 +2370,17 @@ void CentralWidget::stopMeasure()
     ui->tabWidget_autoPage->setEnabled(true);
 }
 
+QCustomPlot* CentralWidget::getCustomPlot(int detectorId, bool isSpectrum)
+{
+    if (isSpectrum)
+        return this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(detectorId <= 12 ? 1 : 2));
+    else
+        return this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottoom").arg(detectorId <= 12 ? 1 : 2));
+}
+QCPGraph* CentralWidget::getGraph(int detectorId, bool isSpectrum)
+{
+    QCustomPlot *customPlot = getCustomPlot(detectorId, isSpectrum);
+    if (!customPlot) nullptr;
+
+    return  customPlot->graph((detectorId-1) % 12);
+}
