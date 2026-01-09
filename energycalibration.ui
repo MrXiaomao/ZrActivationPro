@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1242</width>
-    <height>803</height>
+    <width>1024</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,10 +33,13 @@
         </property>
         <property name="maximumSize">
          <size>
-          <width>200</width>
+          <width>100</width>
           <height>16777215</height>
          </size>
         </property>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
         <row>
          <property name="text">
           <string>谱仪#1</string>
@@ -210,7 +213,7 @@
          </sizepolicy>
         </property>
         <property name="title">
-         <string>Results</string>
+         <string>结果</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>

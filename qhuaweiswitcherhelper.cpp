@@ -119,7 +119,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             // 如果是重连成功，重置重连标志
             if (mIsReconnecting) {
                 mIsReconnecting = false;
-                qInfo() << "交换机" << mIp << "重连成功";
+                qInfo().noquote() << "交换机[" << mIp << "]重连成功";
             }
 
             emit switcherLogged(mIp);
@@ -139,7 +139,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             mWaitingHeartbeatResponse = false;
             mLastHeartbeatTime.restart();
             mRespondString.clear();
-            qDebug() << "交换机" << mIp << "心跳检测正常";
+            qDebug().noquote() << "交换机[" << mIp << "]心跳检测正常";
         }
         else if (mSwitcherInSystemView){
             /*
@@ -288,7 +288,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
             mSwitcherIsLoginOk = false;
             mSwitcherInSystemView = false;
             stopHeartbeatCheck();  // 停止心跳检测
-            qInfo() << "交换机" << mIp << "会话失效，重新登录";
+            qInfo().noquote() << "交换机[" << mIp << "]会话失效，重新登录";
             emit switcherDisconnected(mIp);
         }
     });
@@ -297,7 +297,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
         mSwitcherIsLoginOk = false;
         mSwitcherInSystemView = false;
         stopHeartbeatCheck();  // 停止心跳检测
-        qWarning() << "交换机" << mIp << "连接错误，错误码：" << socketError;
+        qWarning().noquote() << "交换机[" << mIp << "]连接错误，错误码：" << socketError;
         emit switcherDisconnected(mIp);
     });
     
@@ -305,7 +305,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
     connect(mTelnet, &QTelnet::stateChanged, this, [=](QAbstractSocket::SocketState socketState){
         if (socketState == QAbstractSocket::UnconnectedState) {
             stopHeartbeatCheck();
-            qDebug() << "交换机" << mIp << "连接断开[QTelnet::stateChanged]";
+            qDebug().noquote() << "交换机[" << mIp << "]连接断开[QTelnet::stateChanged]";
             mSwitcherIsLoginOk = false;
             mSwitcherInSystemView = false;
         } else if (socketState == QAbstractSocket::ConnectedState && mSwitcherInSystemView) {
@@ -368,6 +368,10 @@ void QHuaWeiSwitcherHelper::setAssociatedDetector(QString text)
 */
 void QHuaWeiSwitcherHelper::queryPowerStatus()
 {
+    emit switcherConnected(mIp);
+    emit switcherLogged(mIp);
+    return;
+
     mBatchOn = true;
     mSingleOn = false;
     mBatchOff = false;
@@ -386,6 +390,37 @@ void QHuaWeiSwitcherHelper::queryPowerStatus()
     else
     {
         //emit switcherDisconnected(mIp);
+    }
+}
+
+void QHuaWeiSwitcherHelper::forceOpenPower()
+{
+    mBatchOn = true;
+    mSingleOn = false;
+    mBatchOff = false;
+    mSingleOff = false;
+    quint8 fromPort = 1;
+    quint8 toPort = DET_NUM;
+
+    //开机仅查询POE供电
+    mCurrentQueryPort = 1;
+    mCurrentCommand = QString("interface GigabitEthernet 0/0/%1").arg(mCurrentQueryPort) + "\r";
+    if (mTelnet->isConnected())
+    {
+        restartHeartbeatCheck();
+        mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
+    }
+    else
+    {
+        mTelnet->disconnectFromHost();
+        mTelnet->setType(QTelnet::TCP);
+        if (mTelnet->connectToHost(mIp, 23)){
+            emit switcherConnected(mIp);
+        }
+        else
+        {
+            //emit switcherDisconnected(mIp);
+        }
     }
 }
 
@@ -486,7 +521,7 @@ void QHuaWeiSwitcherHelper::startHeartbeatCheck()
         mLastHeartbeatTime.start();
         mWaitingHeartbeatResponse = false;
         mHeartbeatTimer->start();
-        qInfo() << "交换机" << mIp << "心跳检测已启动";
+        qInfo().noquote() << "交换机[" << mIp << "]心跳检测已启动";
     }
 }
 
@@ -506,7 +541,7 @@ void QHuaWeiSwitcherHelper::stopHeartbeatCheck()
     if (mHeartbeatTimer && mHeartbeatTimer->isActive()) {
         mHeartbeatTimer->stop();
         mWaitingHeartbeatResponse = false;
-        qInfo() << "交换机" << mIp << "心跳检测已停止";
+        qInfo().noquote() << "交换机[" << mIp << "]心跳检测已停止";
     }
 }
 
@@ -520,7 +555,7 @@ void QHuaWeiSwitcherHelper::performHeartbeatCheck()
     
     // 如果不在系统视图或未连接，尝试重连
     if (!mTelnet->isConnected() || !mSwitcherInSystemView) {
-        qInfo() << "交换机" << mIp << "连接状态异常，尝试重连";
+        qInfo().noquote() << "交换机[" << mIp << "]连接状态异常，尝试重连";
         reconnectSwitcher();
         return;
     }
@@ -529,7 +564,7 @@ void QHuaWeiSwitcherHelper::performHeartbeatCheck()
     if (mWaitingHeartbeatResponse) {
         // 如果超过10秒没有收到响应，认为掉线
         if (mLastHeartbeatTime.elapsed() > 10000) {
-            qInfo() << "交换机" << mIp << "心跳响应超时，可能已掉线，尝试重连";
+            qInfo().noquote() << "交换机[" << mIp << "]心跳响应超时，可能已掉线，尝试重连";
             reconnectSwitcher();
             return;
         }
@@ -541,7 +576,7 @@ void QHuaWeiSwitcherHelper::performHeartbeatCheck()
         mWaitingHeartbeatResponse = true;
         mLastHeartbeatTime.restart();
         mTelnet->sendData(mCurrentCommand.toStdString().c_str(), mCurrentCommand.size());
-        qDebug() << "交换机" << mIp << "发送心跳检测命令";
+        qDebug().noquote() << "交换机[" << mIp << "]发送心跳检测命令";
     }
 }
 
@@ -556,7 +591,7 @@ void QHuaWeiSwitcherHelper::reconnectSwitcher()
     mIsReconnecting = true;
     stopHeartbeatCheck();
     
-    qInfo() << "交换机" << mIp << "开始重连...";
+    qInfo().noquote() << "交换机[" << mIp << "]开始重连...";
     
     // 断开当前连接
     if (mTelnet->isConnected()) {
@@ -572,9 +607,9 @@ void QHuaWeiSwitcherHelper::reconnectSwitcher()
     QTimer::singleShot(2000, this, [=](){
         mTelnet->setType(QTelnet::TCP);
         if (mTelnet->connectToHost(mIp, 23)) {
-            qInfo() << "交换机" << mIp << "重连请求已发送";
+            qInfo().noquote() << "交换机[" << mIp << "]重连请求已发送";
         } else {
-            qWarning() << "交换机" << mIp << "重连失败，将在下次心跳检测时重试";
+            qWarning().noquote() << "交换机[" << mIp << "]重连失败，将在下次心跳检测时重试";
             mIsReconnecting = false;
             // 如果重连失败，延迟一段时间后再次尝试
             QTimer::singleShot(30000, this, [=](){

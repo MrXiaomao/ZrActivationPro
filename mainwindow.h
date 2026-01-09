@@ -168,8 +168,6 @@ private slots:
 
     void on_action_energycalibration_triggered();
 
-    // 能谱图像属性 切换谱仪编号
-    void on_spin_specDetID_valueChanged(int arg1);
     // 能谱图像属性 是否能量刻度勾选
     void on_cb_calibration_checkStateChanged(const Qt::CheckState &arg1);
     // 能谱图像属性 自动X轴范围
@@ -180,6 +178,10 @@ private slots:
     void on_action_yieldCalibration_triggered();
 
     void on_action_autoMeasure_triggered();
+
+    void on_checkBox_continueMeasure_checkStateChanged(const Qt::CheckState &arg1);
+
+    void on_cbb_measureMode_activated(int index);
 
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
@@ -195,7 +197,6 @@ private:
     QVector<quint8> m_selectedChannels; // 记录所选的通道号，停止测量时使用(自定义通道测量)
     bool mIsDarkTheme = true;
     bool mThemeColorEnable = true;
-    bool mIsOneLayout = false;
     QColor mThemeColor = QColor(255,255,255);
 
     //记录联网的探测器ID
@@ -212,7 +213,12 @@ private:
     // 测量倒计时定时器
     QTimer *mMeasureCountdownTimer = nullptr;
     int mRemainingCountdown = 0;  // 剩余倒计时（秒）
-    int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长    
+    int mTotalCountdown = 0;  // 总倒计时时间（秒），用于计算已测量时长
+
+    // 自动化测量延时器
+    QTimer *mAutoMeasureDelayTimer = nullptr;
+    // 自动化测量计时器
+    QElapsedTimer *mAutoMeasureCountTimer = nullptr;
 
     // 交换机连接状态管理
     bool mSwitcherLogged = false;  // 交换机是否已登录
@@ -236,6 +242,7 @@ private:
         double yMax = 100.0;
     };
     
+    // 能谱图像属性
     QVector<SpectrumPlotSettings> m_spectrumPlotSettings = QVector<SpectrumPlotSettings>(24);
 
     // 日志内容查找功能相关

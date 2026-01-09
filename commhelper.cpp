@@ -464,11 +464,14 @@ bool CommHelper::isOpen()
     return this->mTcpServer->isListening();
 }
 
-void CommHelper::connectSwitcher()
+void CommHelper::connectSwitcher(bool query)
 {
     for (auto switcherHelper : mHuaWeiSwitcherHelper)
     {
-        switcherHelper->queryPowerStatus();
+        if (query)
+            switcherHelper->queryPowerStatus();
+        else
+            switcherHelper->forceOpenPower();
     }
 }
 

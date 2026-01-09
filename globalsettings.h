@@ -1,4 +1,4 @@
-#ifndef GLOBALSETTINGS_H
+﻿#ifndef GLOBALSETTINGS_H
 #define GLOBALSETTINGS_H
 
 #include <QObject>
@@ -597,6 +597,7 @@ protected:
     QFileSystemWatcher *mConfigurationFileWatch;
 };
 
+#include <QColor>
 #include <QSettings>
 #include <QApplication>
 class GlobalSettings: public QSettings
@@ -621,8 +622,16 @@ public:
                                  const QVector<int>& def = {}) const;
     QVector<double> GetDoubleVector(const QString& key,
                                  const QVector<double>& def = {}) const;
+
+    bool isDarkTheme(){return mIsDarkTheme;};
+    bool enableThemeColor(){return mThemeColorEnable;};
+    QColor colorTheme(){return mThemeColor;};
+
 private:
     bool realtime = false;
+    bool mIsDarkTheme = true;
+    bool mThemeColorEnable = true;
+    QColor mThemeColor = QColor(255,255,255);
 };
 
 #define DET_NUM 24

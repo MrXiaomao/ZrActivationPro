@@ -1,4 +1,4 @@
-/*
+﻿/*
  * @Author: MrPan
  * @Date: 2025-12-29 22:08:10
  * @LastEditors: Maoxiaoqing
@@ -187,6 +187,7 @@ void EnergyCalibration::initUI()
         //单选按钮
         QRadioButton *radioButton = new QRadioButton(ui->tableWidget_det);
         radioButton->setChecked(false);
+        radioButton->setText(tr("谱仪#%0").arg(i+1));
         // 将单选按钮添加到第i行，第0列
         ui->tableWidget_det->setCellWidget(i, 0, radioButton);
         

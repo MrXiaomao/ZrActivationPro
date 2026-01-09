@@ -41,6 +41,11 @@ public:
     void queryPowerStatus();
 
     /*
+     强制打开电源，一般用于自动化测量
+    */
+    void forceOpenPower();
+
+    /*
     * 主动退出登录/断开 Telnet 连接。
     * 逻辑：system-view 下先 quit 回到 <HUAWEI>，再 quit 退出会话，最后关闭 socket。
     */

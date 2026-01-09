@@ -328,17 +328,17 @@
           </row>
           <column>
            <property name="text">
-            <string>电源状态</string>
+            <string>电源</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>网络状态</string>
+            <string>网络</string>
            </property>
           </column>
           <column>
            <property name="text">
-            <string>工作状态</string>
+            <string>工作</string>
            </property>
           </column>
           <column>
@@ -463,77 +463,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item>
-         <widget class="QWidget" name="widget" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>50</height>
-           </size>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QLabel" name="label_9">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>测量时长：</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="edit_measureTime">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>120</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>12</pointsize>
-              </font>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
         </item>
        </layout>
       </widget>
@@ -854,59 +783,12 @@
                   </property>
                   <item>
                    <layout class="QVBoxLayout" name="verticalLayout_7">
-                    <item>
-                     <widget class="QWidget" name="widget_6" native="true">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>22</height>
-                       </size>
-                      </property>
-                      <layout class="QHBoxLayout" name="horizontalLayout_9">
-                       <property name="topMargin">
-                        <number>0</number>
-                       </property>
-                       <property name="bottomMargin">
-                        <number>0</number>
-                       </property>
-                       <item>
-                        <widget class="QLabel" name="label_10">
-                         <property name="text">
-                          <string>谱仪编号：</string>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QSpinBox" name="spin_specDetID">
-                         <property name="sizePolicy">
-                          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                           <horstretch>0</horstretch>
-                           <verstretch>0</verstretch>
-                          </sizepolicy>
-                         </property>
-                         <property name="minimumSize">
-                          <size>
-                           <width>40</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                         <property name="minimum">
-                          <number>1</number>
-                         </property>
-                         <property name="maximum">
-                          <number>24</number>
-                         </property>
-                        </widget>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
+                    <property name="leftMargin">
+                     <number>9</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>9</number>
+                    </property>
                     <item>
                      <widget class="QCheckBox" name="cb_calibration">
                       <property name="text">
@@ -1132,17 +1014,66 @@
                 </widget>
                </item>
                <item row="0" column="1">
-                <spacer name="horizontalSpacer_3">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
+                <widget class="QGroupBox" name="groupBox_2">
+                 <property name="title">
+                  <string>测量状态</string>
                  </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
+                 <layout class="QHBoxLayout" name="horizontalLayout">
+                  <item>
+                   <widget class="QLabel" name="label_9">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="text">
+                     <string>测量时长：</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLineEdit" name="edit_measureTime">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>120</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <pointsize>12</pointsize>
+                     </font>
+                    </property>
+                    <property name="readOnly">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>52</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -1600,14 +1531,82 @@
                    <property name="bottomMargin">
                     <number>9</number>
                    </property>
-                   <item row="4" column="0">
-                    <widget class="QLabel" name="label">
+                   <item row="5" column="3">
+                    <widget class="QCheckBox" name="checkBox_autoIncrease">
                      <property name="text">
-                      <string>测量总时间(s):</string>
+                      <string>自动递增</string>
+                     </property>
+                     <property name="checked">
+                      <bool>true</bool>
                      </property>
                     </widget>
                    </item>
+                   <item row="3" column="2" colspan="2">
+                    <widget class="QLineEdit" name="lineEdit_triggerflag">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
+                     <property name="text">
+                      <string>未触发</string>
+                     </property>
+                     <property name="readOnly">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string>测量模式：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="0" column="2" colspan="2">
+                    <widget class="QComboBox" name="cbb_measureMode">
+                     <item>
+                      <property name="text">
+                       <string>手动测量</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>自动测量</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="5" column="2">
+                    <widget class="QLineEdit" name="lineEdit_shotNum"/>
+                   </item>
                    <item row="3" column="0">
+                    <widget class="QLabel" name="label_7">
+                     <property name="text">
+                      <string>触发状态</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="2" colspan="2">
+                    <widget class="QComboBox" name="com_triggerModel">
+                     <item>
+                      <property name="text">
+                       <string>软件触发</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>外触发</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>打靶时刻：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="0">
                     <widget class="QLabel" name="label_5">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1620,19 +1619,64 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="1">
+                   <item row="6" column="2">
+                    <widget class="QSpinBox" name="spinBox_measureTime">
+                     <property name="minimum">
+                      <number>10</number>
+                     </property>
+                     <property name="maximum">
+                      <number>1000000</number>
+                     </property>
+                     <property name="value">
+                      <number>36000</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="3">
+                    <widget class="QCheckBox" name="checkBox_continueMeasure">
+                     <property name="text">
+                      <string>连续测量</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label">
+                     <property name="text">
+                      <string>测量总时间(s):</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_2">
+                     <property name="text">
+                      <string>触发模式:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>开始时刻：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2" colspan="2">
+                    <widget class="QDateTimeEdit" name="dateTimeEdit_autoTrigger">
+                     <property name="toolTip">
+                      <string>系统在该时刻之前提前30s做好测试准备工作</string>
+                     </property>
+                     <property name="displayFormat">
+                      <string>yyyy/M/d H:mm:ss</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="4" column="2">
                     <widget class="QDateTimeEdit" name="dateTime_shotTime">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                        <horstretch>0</horstretch>
                        <verstretch>0</verstretch>
                       </sizepolicy>
-                     </property>
-                     <property name="minimumSize">
-                      <size>
-                       <width>160</width>
-                       <height>0</height>
-                      </size>
                      </property>
                      <property name="date">
                       <date>
@@ -1648,79 +1692,15 @@
                        <second>0</second>
                       </time>
                      </property>
+                     <property name="displayFormat">
+                      <string>yyyy/M/d H:mm:ss</string>
+                     </property>
                     </widget>
                    </item>
-                   <item row="3" column="1">
-                    <widget class="QLineEdit" name="lineEdit_shotNum"/>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_7">
+                   <item row="4" column="3">
+                    <widget class="QCheckBox" name="checkBox">
                      <property name="text">
-                      <string>触发状态</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="1">
-                    <widget class="QLineEdit" name="lineEdit_triggerflag">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
-                     <property name="text">
-                      <string>未触发</string>
-                     </property>
-                     <property name="readOnly">
-                      <bool>true</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_2">
-                     <property name="text">
-                      <string>触发模式:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_3">
-                     <property name="text">
-                      <string>打靶时刻：</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="1">
-                    <widget class="QSpinBox" name="spinBox_measureTime">
-                     <property name="minimum">
-                      <number>10</number>
-                     </property>
-                     <property name="maximum">
-                      <number>1000000</number>
-                     </property>
-                     <property name="value">
-                      <number>36000</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="0" column="1">
-                    <widget class="QComboBox" name="com_triggerModel">
-                     <item>
-                      <property name="text">
-                       <string>软件触发</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>外触发</string>
-                      </property>
-                     </item>
-                    </widget>
-                   </item>
-                   <item row="3" column="2">
-                    <widget class="QCheckBox" name="checkBox_autoIncrease">
-                     <property name="text">
-                      <string>自动递增</string>
-                     </property>
-                     <property name="checked">
-                      <bool>true</bool>
+                      <string>自动获取</string>
                      </property>
                     </widget>
                    </item>
@@ -2083,7 +2063,6 @@
    <addaction name="separator"/>
    <addaction name="action_startMeasure"/>
    <addaction name="action_stopMeasure"/>
-   <addaction name="action_autoMeasure"/>
    <addaction name="separator"/>
    <addaction name="action_exit"/>
   </widget>
@@ -2472,7 +2451,15 @@
      <normaloff>:/measure.png</normaloff>:/measure.png</iconset>
    </property>
    <property name="text">
-    <string>产额刻度</string>
+    <string>灵敏度标定</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_pari">
+   <property name="text">
+    <string>粒子模式</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

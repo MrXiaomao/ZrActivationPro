@@ -47,7 +47,7 @@ public:
      */
     quint8 indexOfPort(int index);
 
-    void connectSwitcher();
+    void connectSwitcher(bool query);
 
     //退出华为交换机登录
     void disconnectSwitcher();

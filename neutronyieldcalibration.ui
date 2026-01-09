@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>中子产额刻度</string>
+   <string>灵敏度标定</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
