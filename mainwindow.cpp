@@ -248,6 +248,14 @@ CentralWidget::~CentralWidget()
 
 void CentralWidget::initUi()
 {
+    // 隐藏能谱Y轴属性
+    ui->label_13->hide();
+    ui->leSpecYLeft->hide();
+    ui->label_14->hide();
+    ui->leSpecYRight->hide();
+    ui->check_AutoRangeY->hide();
+
+    // 自动测量
     ui->dateTimeEdit_autoTrigger->setDateTime(QDateTime::currentDateTime().addSecs(180));
     emit ui->cbb_measureMode->activated(0);
 
@@ -1733,22 +1741,46 @@ void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum
     if (!customPlot)
         return;
 
-    // 转换数据格式
     QVector<double> x, y;
-    for (int i = 0; i < 8192; ++i) {
-        x << i;
-        y << spectrum[i];
+
+    // 转换数据格式
+    if(m_spectrumPlotSettings[detectorId-1].EnScale)
+    {
+        for (int i = 0; i < 8192; ++i) {
+            if (m_spectrumPlotSettings[detectorId-1].fitType == 1){
+                x << m_spectrumPlotSettings[detectorId-1].c0*i + m_spectrumPlotSettings[detectorId-1].c1;
+            } else if (m_spectrumPlotSettings[detectorId-1].fitType == 2){
+                //拟合参数赋值
+                x << m_spectrumPlotSettings[detectorId-1].c0*i*i + m_spectrumPlotSettings[detectorId-1].c1*i + m_spectrumPlotSettings[detectorId-1].c2;
+            }
+
+            y << spectrum[i];
+        }
+    }
+    else
+    {
+        for (int i = 0; i < 8192; ++i) {
+            x << i;
+            y << spectrum[i];
+        }
     }
 
     // 更新图表
     getGraph(detectorId, true)->setData(x, y);
     // customPlot->xAxis->setRange(0, 8192);
-    customPlot->yAxis->rescale(true);
+    if(m_spectrumPlotSettings[detectorId-1].autoScaleY)
+    {
+        customPlot->yAxis->rescale(true);
+    }
+    else
+    {
+        customPlot->yAxis->rescale(false);
+        double y_min = customPlot->yAxis->range().lower;
+        double y_max = customPlot->yAxis->range().upper;
+        y_max = y_min + (y_max - y_min) * 1.1;
+        customPlot->yAxis->setRange(y_min - 1, y_max);
+    }
 
-    double y_min = customPlot->yAxis->range().lower;
-    double y_max = customPlot->yAxis->range().upper;
-    y_max = y_min + (y_max - y_min) * 1.1;
-    customPlot->yAxis->setRange(y_min - 1, y_max);
     customPlot->replot(QCustomPlot::rpQueuedReplot);
 }
 
@@ -2168,18 +2200,16 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
     // 读取能量刻度系数
     // 判断是否勾选能量刻度
     if(m_spectrumPlotSettings[detectorId-1].EnScale)  {
-        //如果勾选自动X轴范围，则根据能量刻度系数计算X轴范围
-        if(m_spectrumPlotSettings[detectorId-1].autoScaleX)
         {
             GlobalSettings settings(CONFIG_FILENAME);
             settings.beginGroup("EnCalibration");
-            if (settings.contains(QString("EnCalibration/detChannel%1/pointsX").arg(detectorId)) == true)
+            if (settings.contains(QString("Detector%1/pointsX").arg(detectorId)) == true)
             {
-                settings.beginGroup(QString("EnCalibration/detChannel%1").arg(detectorId));
-                int type = settings.value("type", 0).toInt();
+                settings.beginGroup(QString("Detector%1").arg(detectorId));
+
                 //拟合参数赋值
-                int fitType = settings.value("type", 0).toInt();
-                if (fitType == 1){
+                m_spectrumPlotSettings[detectorId-1].fitType = settings.value("type", 0).toInt();
+                if (m_spectrumPlotSettings[detectorId-1].fitType == 1){
                     //拟合参数赋值
                     double k = settings.value("c0", 0.0).toDouble();
                     double b = settings.value("c1", 0.0).toDouble();
@@ -2189,7 +2219,9 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
                     //更新m_spectrumPlotSettings
                     m_spectrumPlotSettings[detectorId-1].xMin = b;
                     m_spectrumPlotSettings[detectorId-1].xMax = maxX;
-                } else if (fitType == 2){
+                    m_spectrumPlotSettings[detectorId-1].c0 = k;
+                    m_spectrumPlotSettings[detectorId-1].c1 = b;
+                } else if (m_spectrumPlotSettings[detectorId-1].fitType == 2){
                     //拟合参数赋值
                     double a = settings.value("c0", 0.0).toDouble();
                     double b = settings.value("c1", 0.0).toDouble();
@@ -2200,13 +2232,20 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
                     //更新m_spectrumPlotSettings
                     m_spectrumPlotSettings[detectorId-1].xMin = c;
                     m_spectrumPlotSettings[detectorId-1].xMax = maxX;
+
+                    m_spectrumPlotSettings[detectorId-1].c0 = a;
+                    m_spectrumPlotSettings[detectorId-1].c1 = b;
+                    m_spectrumPlotSettings[detectorId-1].c2 = c;
                 }
                 settings.endGroup();
-                settings.endGroup();
             }
+        }
 
+        //如果勾选自动X轴范围，则根据能量刻度系数计算X轴范围
+        if(m_spectrumPlotSettings[detectorId-1].autoScaleX)
+        {
             customPlot->xAxis->setRange(xMin, maxX);
-            customPlot->replot();
+            //customPlot->replot();
         }
     }
     else
@@ -2220,35 +2259,28 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
         {
             customPlot->xAxis->setRange(m_spectrumPlotSettings[detectorId-1].xMin, m_spectrumPlotSettings[detectorId-1].xMax);
         }
-        customPlot->replot();
+
+        //customPlot->replot();
     }
 }
 
 
-void CentralWidget::on_cb_calibration_checkStateChanged(const Qt::CheckState &arg1)
+void CentralWidget::on_cb_calibration_toggled(bool toggled)
 {
     // 先获取当前选中的谱仪编号
     for (int detectorId=1; detectorId<=24; ++detectorId)
     {
-        if(arg1 == Qt::Checked)
-        {
-            m_spectrumPlotSettings[detectorId-1].EnScale = true;
-        }
-        else if(arg1 == Qt::Unchecked)
-        {
-            m_spectrumPlotSettings[detectorId-1].EnScale = false;
-        }
-
+        m_spectrumPlotSettings[detectorId-1].EnScale = toggled;
         updateSpectrumPlotSettings(detectorId);
     }
 }
 
 
-void CentralWidget::on_check_AutoRangeX_checkStateChanged(const Qt::CheckState &arg1)
+void CentralWidget::on_check_AutoRangeX_toggled(bool toggled)
 {
     for (int detectorId=1; detectorId<=24; ++detectorId)
     {
-        m_spectrumPlotSettings[detectorId-1].autoScaleX = arg1 == Qt::Checked ? true : false;
+        m_spectrumPlotSettings[detectorId-1].autoScaleX = toggled;
 
         updateSpectrumPlotSettings(detectorId);
 
@@ -2260,12 +2292,12 @@ void CentralWidget::on_check_AutoRangeX_checkStateChanged(const Qt::CheckState &
 }
 
 
-void CentralWidget::on_check_AutoRangeY_checkStateChanged(const Qt::CheckState &arg1)
+void CentralWidget::on_check_AutoRangeY_toggled(bool toggled)
 {
     // 先获取当前选中的谱仪编号
     for (int detectorId=1; detectorId<=24; ++detectorId)
     {
-        m_spectrumPlotSettings[detectorId-1].autoScaleY = arg1 == Qt::Checked ? true : false;
+        m_spectrumPlotSettings[detectorId-1].autoScaleY = toggled;
 
         updateSpectrumPlotSettings(detectorId);
 
@@ -2425,9 +2457,9 @@ QCPGraph* CentralWidget::getGraph(int detectorId, bool isSpectrum)
     return  customPlot->graph((detectorId-1) % 12);
 }
 
-void CentralWidget::on_checkBox_continueMeasure_checkStateChanged(const Qt::CheckState &arg1)
+void CentralWidget::on_checkBox_continueMeasure_toggled(bool toggled)
 {
-    ui->spinBox_measureTime->setEnabled(arg1!=Qt::CheckState::Checked);
+    ui->spinBox_measureTime->setEnabled(!toggled);
 }
 
 

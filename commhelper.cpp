@@ -208,7 +208,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "] 创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
@@ -250,7 +250,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "] 创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){

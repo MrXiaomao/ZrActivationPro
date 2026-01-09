@@ -169,17 +169,17 @@ private slots:
     void on_action_energycalibration_triggered();
 
     // 能谱图像属性 是否能量刻度勾选
-    void on_cb_calibration_checkStateChanged(const Qt::CheckState &arg1);
+    void on_cb_calibration_toggled(bool toggled);
     // 能谱图像属性 自动X轴范围
-    void on_check_AutoRangeX_checkStateChanged(const Qt::CheckState &arg1);
+    void on_check_AutoRangeX_toggled(bool toggled);
     // 能谱图像属性 自动Y轴范围
-    void on_check_AutoRangeY_checkStateChanged(const Qt::CheckState &arg1);
+    void on_check_AutoRangeY_toggled(bool toggled);
 
     void on_action_yieldCalibration_triggered();
 
     void on_action_autoMeasure_triggered();
 
-    void on_checkBox_continueMeasure_checkStateChanged(const Qt::CheckState &arg1);
+    void on_checkBox_continueMeasure_toggled(bool toggled);
 
     void on_cbb_measureMode_activated(int index);
 
@@ -240,6 +240,11 @@ private:
         double xMax = 8192.0;
         double yMin = 0.0;
         double yMax = 100.0;
+
+        int fitType = 0;
+        double c0 = 0.0;
+        double c1 = 0.0;
+        double c2 = 0.0;
     };
     
     // 能谱图像属性

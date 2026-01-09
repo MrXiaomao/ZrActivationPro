@@ -213,9 +213,9 @@ void EnergyCalibration::initUI()
 
     // 读取当前通道的拟合数据
     if (detChannel > 0){
-        if (settings.contains(QString("EnCalibration/detChannel%1/pointsX").arg(detChannel)) == true)
+        if (settings.contains(QString("EnCalibration/Detector%1/pointsX").arg(detChannel)) == true)
         {
-            settings.beginGroup(QString("EnCalibration/detChannel%1").arg(detChannel));
+            settings.beginGroup(QString("EnCalibration/Detector%1").arg(detChannel));
             QVector<double> points_X = settings.GetDoubleVector("pointsX");
             QVector<double> points_Y = settings.GetDoubleVector("pointsY");
 
