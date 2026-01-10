@@ -41,6 +41,9 @@ void AppMessageHandler(QtMsgType type, const QMessageLogContext& context, const 
         QMetaObject::invokeMethod(mw, "sigWriteLog", Qt::QueuedConnection, Q_ARG(QString, msg), Q_ARG(QtMsgType, type));
     }
 
+    if (type == QtFatalMsg){
+        return ;
+    }
 
     //这里必须调用，否则消息被拦截，log4qt无法捕获系统日志
     if (system_default_message_handler){

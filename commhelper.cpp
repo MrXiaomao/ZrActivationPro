@@ -208,7 +208,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "] 创建存储文件：" << filePath;
+                    qInfo().noquote() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
@@ -250,7 +250,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote().nospace() << "[谱仪#"<< processor->index() << "] 创建存储文件：" << filePath;
+                    qInfo().noquote() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
@@ -495,11 +495,11 @@ void CommHelper::openPower()
 /*
  断开电源
 */
-void CommHelper::closePower()
+void CommHelper::closePower(bool disconnect)
 {
     for (auto switcherHelper : mHuaWeiSwitcherHelper)
     {
-        switcherHelper->closeSwitcherPOEPower(0x00);
+        switcherHelper->closeSwitcherPOEPower(0x00, disconnect);
     }
 }
 

@@ -64,7 +64,7 @@ public:
     /*
      关闭交换机POE口输出电源
     */
-    Q_SLOT bool closeSwitcherPOEPower(quint8 port = 0);
+    Q_SLOT bool closeSwitcherPOEPower(quint8 port = 0, bool disconnect = false);
     Q_SLOT void closeNextSwitcherPOEPower();
 
     Q_SIGNAL void switcherLogged(QString);//交换机登陆
@@ -89,6 +89,7 @@ private:
     bool mSingleOn = false;//单开
     bool mBatchOff = false;//批量关
     bool mSingleOff = false;//批量关
+    bool mDisconnect = false;//关闭网络
     QString mCurrentCommand;
     QByteArray mRespondString;
     QMap<quint8/*port-POE端口号*/, quint8/*index-谱仪编号*/> mMapAssociatedDetector;

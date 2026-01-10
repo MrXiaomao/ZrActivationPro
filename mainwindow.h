@@ -165,23 +165,11 @@ private slots:
     void on_bt_highlightAll_toggled(bool checked);
     void on_lineEdit_search_returnPressed();
     void on_lineEdit_search_textChanged(const QString &text);
-
     void on_action_energycalibration_triggered();
-
-    // 能谱图像属性 是否能量刻度勾选
-    void on_cb_calibration_toggled(bool toggled);
-    // 能谱图像属性 自动X轴范围
-    void on_check_AutoRangeX_toggled(bool toggled);
-    // 能谱图像属性 自动Y轴范围
-    void on_check_AutoRangeY_toggled(bool toggled);
-
     void on_action_yieldCalibration_triggered();
-
-    void on_action_autoMeasure_triggered();
-
     void on_checkBox_continueMeasure_toggled(bool toggled);
-
     void on_cbb_measureMode_activated(int index);
+    void on_cbb_energyCalibration_toggled(bool checked);
 
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
@@ -233,9 +221,6 @@ private:
     struct SpectrumPlotSettings {
         //多道道数
         int multiChannel = 8192;
-        bool EnScale = false; // 是否勾选能量刻度
-        bool autoScaleX = true;
-        bool autoScaleY = true;
         double xMin = 0.0;
         double xMax = 8192.0;
         double yMin = 0.0;
@@ -248,6 +233,7 @@ private:
     };
     
     // 能谱图像属性
+    std::atomic<bool> mEnScale = false;// 是否勾选能量刻度
     QVector<SpectrumPlotSettings> m_spectrumPlotSettings = QVector<SpectrumPlotSettings>(24);
 
     // 日志内容查找功能相关

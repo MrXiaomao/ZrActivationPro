@@ -368,9 +368,9 @@ void QHuaWeiSwitcherHelper::setAssociatedDetector(QString text)
 */
 void QHuaWeiSwitcherHelper::queryPowerStatus()
 {
-    emit switcherConnected(mIp);
-    emit switcherLogged(mIp);
-    return;
+    // emit switcherConnected(mIp);
+    // emit switcherLogged(mIp);
+    // return;
 
     mBatchOn = true;
     mSingleOn = false;
@@ -439,6 +439,7 @@ bool QHuaWeiSwitcherHelper::openSwitcherPOEPower(quint8 port/* = 0*/)
     mSingleOn = port == 00 ? false : true;
     mBatchOff = false;
     mSingleOff = false;
+    mDisconnect = false;
 
     restartHeartbeatCheck();
     mCurrentQueryPort = port==0 ? 1 : port;
@@ -473,13 +474,14 @@ void QHuaWeiSwitcherHelper::queryNextSwitcherPOEPower()
 /*
  关闭交换机POE口输出电源
 */
-bool QHuaWeiSwitcherHelper::closeSwitcherPOEPower(quint8 port/* = 0*/)
+bool QHuaWeiSwitcherHelper::closeSwitcherPOEPower(quint8 port/* = 0*/, bool disconnect/* = false*/)
 {
     if (nullptr == mTelnet || !mTelnet->isConnected() || !mSwitcherInSystemView)
         return false;
 
     mBatchOn = false;
     mSingleOn = false;
+    mDisconnect = disconnect;
     mBatchOff = port == 00 ? true : false;
     mSingleOff = port == 00 ? false : true;
 
@@ -494,7 +496,22 @@ bool QHuaWeiSwitcherHelper::closeSwitcherPOEPower(quint8 port/* = 0*/)
 void QHuaWeiSwitcherHelper::closeNextSwitcherPOEPower()
 {
     if (mCurrentQueryPort >= DET_NUM)
+    {
+        // 已经关闭了所有POE供电口
+        if (mDisconnect)
+        {
+            mTelnet->disconnectFromHost();
+            mIsLoggingOut = false;
+            mLogoutStep = 0;
+            mSwitcherIsLoginOk = false;
+            mSwitcherInSystemView = false;
+            mSwitcherIsBusy = false;
+            mRespondString.clear();
+            emit switcherDisconnected(mIp);
+        }
+
         return;
+    }
 
     restartHeartbeatCheck();
     mCurrentQueryPort++;

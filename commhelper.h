@@ -59,7 +59,7 @@ public:
     /*
      断开电源
     */
-    void closePower();
+    void closePower(bool disconnect = false/*是否断开网络*/);
 
     /*
      开始测量
