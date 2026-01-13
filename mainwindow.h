@@ -12,7 +12,7 @@
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
-class CentralWidget;
+class MainWindow;
 }
 QT_END_NAMESPACE
 
@@ -40,13 +40,13 @@ struct DetectorData {
     }
 };
 
-class CentralWidget : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    CentralWidget(bool isDarkTheme = true, QWidget *parent = nullptr);
-    ~CentralWidget();
+    MainWindow(bool isDarkTheme = true, QWidget *parent = nullptr);
+    ~MainWindow();
 
     /*
     初始化
@@ -170,7 +170,6 @@ private slots:
     void on_checkBox_continueMeasure_toggled(bool toggled);
     void on_cbb_measureMode_activated(int index);
     void on_cbb_energyCalibration_toggled(bool checked);
-
     void on_action_partical_triggered();
 
 private:
@@ -179,7 +178,7 @@ private:
     QCPGraph* getGraph(int detectorId, bool isSpectrum = true);
 
 private:
-    Ui::CentralWidget *ui;
+    Ui::MainWindow *ui;
     ClientPeersWindow *mClientPeersWindow = nullptr;
     DetSettingWindow *mDetSettingWindow = nullptr;
     bool mIsMeasuring = false;
@@ -188,6 +187,7 @@ private:
     bool mIsDarkTheme = true;
     bool mThemeColorEnable = true;
     QColor mThemeColor = QColor(255,255,255);
+    class QGoodWindowHelper *mainWindow = nullptr;
 
     //记录联网的探测器ID
     QVector<quint8> mOnlineDetectors;
@@ -198,7 +198,6 @@ private:
     // 探测器数据管理
     QHash<int, DetectorData> m_detectorData;  // 只存储联网探测器的数据
     CommHelper *commHelper = nullptr;
-    class MainWindow *mainWindow = nullptr;
     
     // 测量倒计时定时器
     QTimer *mMeasureCountdownTimer = nullptr;
@@ -252,43 +251,6 @@ private:
     bool mEnableAutoMeasure = false; // 开始自动测量模式
     void startMeasure();
     void stopMeasure();
-};
-
-class MainWindow : public QGoodWindow
-{
-    Q_OBJECT
-public:
-    explicit MainWindow(bool isDarkTheme = true, QWidget *parent = nullptr);
-    ~MainWindow();
-    void fixMenuBarWidth(void) {
-        if (mMenuBar) {
-            /* FIXME: Fix the width of the menu bar
-             * please optimize this code */
-            int width = 0;
-            int itemSpacingPx = mMenuBar->style()->pixelMetric(QStyle::PM_MenuBarItemSpacing);
-            for (int i = 0; i < mMenuBar->actions().size(); i++) {
-                QString text = mMenuBar->actions().at(i)->text();
-                QFontMetrics fm(mMenuBar->font());
-                width += fm.size(0, text).width() + itemSpacingPx*1.5;
-            }
-            mGoodCentraWidget->setLeftTitleBarWidth(width);
-        }
-    }
-
-    CentralWidget* centralWidget() const
-    {
-        return this->mCentralWidget;
-    }
-
-
-protected:
-    void closeEvent(QCloseEvent *event) override;
-    bool event(QEvent * event) override;
-
-private:
-    QGoodCentralWidget *mGoodCentraWidget;
-    QMenuBar *mMenuBar = nullptr;
-    CentralWidget *mCentralWidget;
 };
 
 #endif // MAINWINDOW_H

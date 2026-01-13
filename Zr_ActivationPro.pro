@@ -22,6 +22,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     neutronyieldcalibration.cpp \
+    offlinewindow.cpp \
     parsedata.cpp \
     particalwindow.cpp \
     qcomboboxdelegate.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     energycalibration.h \
     localsettingwindow.h \
     neutronyieldcalibration.h \
+    offlinewindow.h \
     parsedata.h \
     particalwindow.h \
     qcomboboxdelegate.h \
@@ -57,6 +59,7 @@ FORMS += \
     localsettingwindow.ui \
     mainwindow.ui \
     neutronyieldcalibration.ui \
+    offlinewindow.ui \
     particalwindow.ui
 
 # Default rules for deployment.
@@ -64,7 +67,6 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-RESOURCES +=
 
 DESTDIR = $$PWD/../build_Zr_ActivationPro
 contains(QT_ARCH, x86_64) {

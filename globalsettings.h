@@ -821,6 +821,8 @@ public:
                                   const std::string& datasetName,
                                   std::function<void(const FullSpectrum&)> callback);
 
+    Q_SIGNAL void sigSpectrum(const FullSpectrum&);
+
 private:
     H5::H5File *mfH5Setting = nullptr; // H5配置文件
     H5::H5File *mfH5Spectrum = nullptr; // H5能谱文件

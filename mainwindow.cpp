@@ -7,11 +7,11 @@
 #include "energycalibration.h"
 #include "qcustomplothelper.h"
 
-CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
+MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::CentralWidget)
+    , ui(new Ui::MainWindow)
     , mIsDarkTheme(isDarkTheme)
-    , mainWindow(static_cast<MainWindow *>(parent))
+    , mainWindow(static_cast<QGoodWindowHelper *>(parent))
 {
     ui->setupUi(this);
     setWindowTitle(QApplication::applicationName()+" - "+APP_VERSION);
@@ -44,7 +44,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     mMeasureCountdownTimer = new QTimer(this);
     mMeasureCountdownTimer->setSingleShot(false);
     mMeasureCountdownTimer->setInterval(1000); // 每秒触发一次
-    connect(mMeasureCountdownTimer, &QTimer::timeout, this, &CentralWidget::onMeasureCountdownTimeout);
+    connect(mMeasureCountdownTimer, &QTimer::timeout, this, &MainWindow::onMeasureCountdownTimeout);
     
     // 初始化连接按钮禁用定时器
     mConnectButtonDisableTimer = new QTimer(this);
@@ -81,8 +81,8 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     updateConnectButtonState(false);
 
     // 初始化查找功能
-    connect(ui->lineEdit_search, &QLineEdit::returnPressed, this, &CentralWidget::on_lineEdit_search_returnPressed);
-    connect(ui->lineEdit_search, &QLineEdit::textChanged, this, &CentralWidget::on_lineEdit_search_textChanged);
+    connect(ui->lineEdit_search, &QLineEdit::returnPressed, this, &MainWindow::on_lineEdit_search_returnPressed);
+    connect(ui->lineEdit_search, &QLineEdit::textChanged, this, &MainWindow::on_lineEdit_search_textChanged);
 
     // 继电器
     connect(commHelper, &CommHelper::switcherConnected, this, [=](QString ip){
@@ -211,7 +211,7 @@ CentralWidget::CentralWidget(bool isDarkTheme, QWidget *parent)
     });
 }
 
-CentralWidget::~CentralWidget()
+MainWindow::~MainWindow()
 {
     GlobalSettings settings(CONFIG_FILENAME);
     // 保存界面设置
@@ -238,7 +238,7 @@ CentralWidget::~CentralWidget()
     delete ui;
 }
 
-void CentralWidget::initUi()
+void MainWindow::initUi()
 {
     // 自动测量
     ui->dateTimeEdit_autoTrigger->setDateTime(QDateTime::currentDateTime().addSecs(180));
@@ -303,7 +303,7 @@ void CentralWidget::initUi()
     }
 
     connect(ui->com_triggerModel, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &CentralWidget::onTriggerModelChanged);
+            this, &MainWindow::onTriggerModelChanged);
 
     // 创建上线客户端页面
     mClientPeersWindow = new ClientPeersWindow();
@@ -835,7 +835,7 @@ void CentralWidget::initUi()
     // timer->start(10);
 }
 
-QPixmap CentralWidget::roundPixmap(QSize sz, QColor clrOut)
+QPixmap MainWindow::roundPixmap(QSize sz, QColor clrOut)
 {
     QPixmap result(sz);
     result.fill(Qt::transparent);
@@ -850,7 +850,7 @@ QPixmap CentralWidget::roundPixmap(QSize sz, QColor clrOut)
     return result;
 }
 
-QPixmap CentralWidget::dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut)
+QPixmap MainWindow::dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut)
 {
     QPixmap result(sz);
     result.fill(Qt::transparent);
@@ -870,14 +870,14 @@ QPixmap CentralWidget::dblroundPixmap(QSize sz, QColor clrIn, QColor clrOut)
     return result;
 }
 
-void CentralWidget::initNet()
+void MainWindow::initNet()
 {
     connect(commHelper, &CommHelper::connectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
 
     });
 }
 
-void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel, 
+void MainWindow::initCustomPlot(int index, QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel,
         QString str_title, int graphCount/* = 1*/)
 {
     QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
@@ -991,7 +991,7 @@ void CentralWidget::initCustomPlot(int index, QCustomPlot* customPlot, QString a
     //connect(customPlot, SIGNAL(mouseMove(QMouseEvent*)), this,SLOT(slotShowTracer(QMouseEvent*)));
 }
 
-void CentralWidget::closeEvent(QCloseEvent *event) {
+void MainWindow::closeEvent(QCloseEvent *event) {
     if (mIsMeasuring){
         QMessageBox::information(this, tr("系统退出提示"), tr("测量中禁止退出软件系统！"),
                                              QMessageBox::Ok, QMessageBox::Ok);
@@ -1006,7 +1006,7 @@ void CentralWidget::closeEvent(QCloseEvent *event) {
     }
 }
 
-bool CentralWidget::checkStatusTipEvent(QEvent * event) {
+bool MainWindow::checkStatusTipEvent(QEvent * event) {
     if(event->type() == QEvent::StatusTip) {
         QStatusTipEvent* statusTipEvent = static_cast<QStatusTipEvent *>(event);
         if (!statusTipEvent->tip().isEmpty()) {
@@ -1019,7 +1019,7 @@ bool CentralWidget::checkStatusTipEvent(QEvent * event) {
     return false;
 }
 
-bool CentralWidget::eventFilter(QObject *watched, QEvent *event){
+bool MainWindow::eventFilter(QObject *watched, QEvent *event){
     if (watched != this){
         if (event->type() == QEvent::MouseButtonPress){
             QMouseEvent *e = reinterpret_cast<QMouseEvent*>(event);
@@ -1038,7 +1038,7 @@ bool CentralWidget::eventFilter(QObject *watched, QEvent *event){
     return QMainWindow::eventFilter(watched, event);
 }
 
-void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
+void MainWindow::slotWriteLog(const QString &msg, QtMsgType msgType)
 {
     // 创建一个 QTextCursor
     QTextCursor cursor = ui->textEdit_log->textCursor();
@@ -1080,38 +1080,52 @@ void CentralWidget::slotWriteLog(const QString &msg, QtMsgType msgType)
 }
 
 
-void CentralWidget::on_action_cfgParam_triggered()
+void MainWindow::on_action_cfgParam_triggered()
 {
     mDetSettingWindow->show();
 }
 
 
-void CentralWidget::on_action_exit_triggered()
+void MainWindow::on_action_exit_triggered()
 {
     //qApp->quit();
     mainWindow->close();
 }
 
-void CentralWidget::on_action_open_triggered()
+
+void MainWindow::on_action_open_triggered()
 {
+    QString program = QCoreApplication::applicationFilePath();
+    QStringList arguments;
+    arguments.append("-m");
+    arguments.append("offline");
+
+    static int num = 0;
+    arguments.append("-num");
+    arguments.append(QString::number(num));
+    num++;
+    QProcess::startDetached(program, arguments);
+
+    qInfo().noquote() << tr("打开离线数据分析程序");
+
     // 打开历史测量数据文件...
-    GlobalSettings settings;
-    QString lastPath = settings.value("mainWindow/LastFilePath", QDir::homePath()).toString();
-    QString filter = "二进制文件 (*.dat);;文本文件 (*.csv);;所有文件 (*.dat *.csv)";
-    QString filePath = QFileDialog::getOpenFileName(this, tr("打开测量数据文件"), lastPath, filter);
+    // GlobalSettings settings;
+    // QString lastPath = settings.value("mainWindow/LastFilePath", QDir::homePath()).toString();
+    // QString filter = "二进制文件 (*.dat);;文本文件 (*.csv);;所有文件 (*.dat *.csv)";
+    // QString filePath = QFileDialog::getOpenFileName(this, tr("打开测量数据文件"), lastPath, filter);
 
-    if (filePath.isEmpty() || !QFileInfo::exists(filePath))
-        return;
+    // if (filePath.isEmpty() || !QFileInfo::exists(filePath))
+    //     return;
 
-    settings.setValue("mainWindow/LastFilePath", filePath);
-    if (!commHelper->openHistoryWaveFile(filePath))
-    {
-        QMessageBox::information(this, tr("提示"), tr("文件格式错误，加载失败！"));
-    }
+    // settings.setValue("mainWindow/LastFilePath", filePath);
+    // if (!commHelper->openHistoryWaveFile(filePath))
+    // {
+    //     QMessageBox::information(this, tr("提示"), tr("文件格式错误，加载失败！"));
+    // }
 }
 
 
-void CentralWidget::on_action_startServer_triggered()
+void MainWindow::on_action_startServer_triggered()
 {
     // 连接网络
     if (commHelper->startServer()){
@@ -1130,7 +1144,7 @@ void CentralWidget::on_action_startServer_triggered()
 }
 
 
-void CentralWidget::on_action_stopServer_triggered()
+void MainWindow::on_action_stopServer_triggered()
 {
     //先记录下所有联网的探测器
     foreach (quint8 index, mOnlineDetectors){   
@@ -1164,10 +1178,10 @@ void CentralWidget::on_action_stopServer_triggered()
 }
 
 /**
- * @brief CentralWidget::onTriggerModelChanged 触发模式选择：软件触发/外触发
+ * @brief MainWindow::onTriggerModelChanged 触发模式选择：软件触发/外触发
  * @param index 下拉框序号，触发类型
  */
-void CentralWidget::onTriggerModelChanged(int index)
+void MainWindow::onTriggerModelChanged(int index)
 {
     switch(index) {
     case 0: // 软件触发
@@ -1190,7 +1204,7 @@ void CentralWidget::onTriggerModelChanged(int index)
 }
 
 // 开始测量 全部通道测量
-void CentralWidget::on_action_startMeasure_triggered()
+void MainWindow::on_action_startMeasure_triggered()
 {
     ui->action_startMeasure->setEnabled(false);
     ui->action_stopMeasure->setEnabled(true);
@@ -1243,7 +1257,7 @@ void CentralWidget::on_action_startMeasure_triggered()
 }
 
 //单通道测量，单独测量某个通道
-void CentralWidget::on_pushButton_startMeasure_clicked()
+void MainWindow::on_pushButton_startMeasure_clicked()
 {
     QVector<double> keys, values;
     for (int i=1; i<=2; ++i){
@@ -1338,7 +1352,7 @@ void CentralWidget::on_pushButton_startMeasure_clicked()
 
 
 //（自定义通道）停止测量，停止测量已选中的通道
-void CentralWidget::on_pushButton_stopMeasure_clicked()
+void MainWindow::on_pushButton_stopMeasure_clicked()
 {
     for (const auto &index : m_selectedChannels)
     {
@@ -1356,7 +1370,7 @@ void CentralWidget::on_pushButton_stopMeasure_clicked()
 }
 
 
-void CentralWidget::on_action_stopMeasure_triggered()
+void MainWindow::on_action_stopMeasure_triggered()
 {
     ui->action_startMeasure->setEnabled(true);
     ui->action_stopMeasure->setEnabled(false);
@@ -1387,7 +1401,7 @@ void CentralWidget::on_action_stopMeasure_triggered()
     mEnableAutoMeasure = false;
 }
 
-void CentralWidget::onMeasureCountdownTimeout()
+void MainWindow::onMeasureCountdownTimeout()
 {
     mRemainingCountdown--;
     
@@ -1482,7 +1496,7 @@ void CentralWidget::onMeasureCountdownTimeout()
 }
 
 // 对尾缀_1等数字进行加1操作。一定要有下划线
-QString CentralWidget::increaseShotNumSuffix(QString shotNumStr)
+QString MainWindow::increaseShotNumSuffix(QString shotNumStr)
 {
     QRegularExpression  rx(R"(^(.*?_)(\d+)$)"); // 匹配以数字结尾的字符串
     auto m = rx.match(shotNumStr);
@@ -1501,7 +1515,7 @@ QString CentralWidget::increaseShotNumSuffix(QString shotNumStr)
     }
 }
 
-void CentralWidget::on_action_powerOn_triggered()
+void MainWindow::on_action_powerOn_triggered()
 {
     //清除所有
     commHelper->manualOpenSwitcherPOEPower();
@@ -1511,13 +1525,13 @@ void CentralWidget::on_action_powerOn_triggered()
 }
 
 
-void CentralWidget::on_action_powerOff_triggered()
+void MainWindow::on_action_powerOff_triggered()
 {
     // 关闭电源
     commHelper->closePower();
 }
 
-void CentralWidget::on_action_about_triggered()
+void MainWindow::on_action_about_triggered()
 {
     QString filename = QFileInfo(QCoreApplication::applicationFilePath()).baseName();
     QMessageBox::about(this, tr("关于"),
@@ -1534,13 +1548,13 @@ void CentralWidget::on_action_about_triggered()
                        );
 }
 
-void CentralWidget::on_action_aboutQt_triggered()
+void MainWindow::on_action_aboutQt_triggered()
 {
     QMessageBox::aboutQt(this);
 }
 
 
-void CentralWidget::on_action_lightTheme_triggered()
+void MainWindow::on_action_lightTheme_triggered()
 {
     if(!mIsDarkTheme) return;
     mIsDarkTheme = false;
@@ -1552,7 +1566,7 @@ void CentralWidget::on_action_lightTheme_triggered()
 }
 
 
-void CentralWidget::on_action_darkTheme_triggered()
+void MainWindow::on_action_darkTheme_triggered()
 {
     if(mIsDarkTheme) return;
     mIsDarkTheme = true;
@@ -1564,7 +1578,7 @@ void CentralWidget::on_action_darkTheme_triggered()
 }
 
 
-void CentralWidget::on_action_colorTheme_triggered()
+void MainWindow::on_action_colorTheme_triggered()
 {
     GlobalSettings settingsGlobal;
     QColor color = QColorDialog::getColor(mThemeColor, this, tr("选择颜色"));
@@ -1582,7 +1596,7 @@ void CentralWidget::on_action_colorTheme_triggered()
     applyColorTheme();
 }
 
-void CentralWidget::applyColorTheme()
+void MainWindow::applyColorTheme()
 {
     QList<QCustomPlot*> customPlots = this->findChildren<QCustomPlot*>();
     for (auto customPlot : customPlots){
@@ -1692,7 +1706,7 @@ void CentralWidget::applyColorTheme()
     }
 }
 
-void CentralWidget::restoreSettings()
+void MainWindow::restoreSettings()
 {
     GlobalSettings settingsGlobal;
     if(mainWindow) {
@@ -1713,7 +1727,7 @@ void CentralWidget::restoreSettings()
 }
 
 // 重置能谱
-void CentralWidget::resetDetectorSpectrum(int detectorId) {
+void MainWindow::resetDetectorSpectrum(int detectorId) {
     auto it = m_detectorData.find(detectorId);
     if (it == m_detectorData.end())
         return;
@@ -1735,22 +1749,22 @@ void CentralWidget::resetDetectorSpectrum(int detectorId) {
 }
 
 // 获取探测器数据
-DetectorData CentralWidget::getDetectorData(int detectorId) const {
+DetectorData MainWindow::getDetectorData(int detectorId) const {
     return m_detectorData.value(detectorId, DetectorData{});
 }
 
 // 检查探测器是否在线
-bool CentralWidget::isDetectorOnline(int detectorId) const {
+bool MainWindow::isDetectorOnline(int detectorId) const {
     return m_detectorData.contains(detectorId);
 }
 
 // 获取在线探测器列表
-QList<int> CentralWidget::getOnlineDetectors() const {
+QList<int> MainWindow::getOnlineDetectors() const {
     return m_detectorData.keys();
 }
 
 // 更新能谱、计数率显示
-void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum[]) {
+void MainWindow::updateSpectrumDisplay(int detectorId, const quint32 spectrum[]) {
     // 计算在页面中的索引
     QCustomPlot *customPlot = getCustomPlot(detectorId, true);
     if (!customPlot)
@@ -1797,7 +1811,7 @@ void CentralWidget::updateSpectrumDisplay(int detectorId, const quint32 spectrum
 }
 
 // 添加计数率显示更新函数
-void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
+void MainWindow::updateCountRateDisplay(int detectorId, double countRate) {
     // 计算在页面中的索引
     QCustomPlot *customPlot = getCustomPlot(detectorId, false);
     if (!customPlot)
@@ -1834,83 +1848,8 @@ void CentralWidget::updateCountRateDisplay(int detectorId, double countRate) {
     customPlot->replot(QCustomPlot::rpQueuedReplot);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
-    : QGoodWindow(parent) {
-    mCentralWidget = new CentralWidget(isDarkTheme, this);
-    mCentralWidget->setWindowFlags(Qt::Widget);
-    mGoodCentraWidget = new QGoodCentralWidget(this);
-
-#ifdef Q_OS_MAC
-    //macOS uses global menu bar
-    if(QApplication::testAttribute(Qt::AA_DontUseNativeMenuBar)) {
-#else
-    if(true) {
-#endif
-        mMenuBar = mCentralWidget->menuBar();
-        if (mMenuBar)
-        {
-            //Set font of menu bar
-            QFont font = mMenuBar->font();
-#ifdef Q_OS_WIN
-            font.setFamily("Segoe UI");
-#else
-            font.setFamily(qApp->font().family());
-#endif
-            mMenuBar->setFont(font);
-
-            QTimer::singleShot(0, this, [&]{
-                const int title_bar_height = mGoodCentraWidget->titleBarHeight();
-                mMenuBar->setStyleSheet(QString("QMenuBar {height: %0px;}").arg(title_bar_height));
-            });
-
-            connect(mGoodCentraWidget,&QGoodCentralWidget::windowActiveChanged,this, [&](bool active){
-                mMenuBar->setEnabled(active);
-            });
-
-            mGoodCentraWidget->setLeftTitleBarWidget(mMenuBar);
-        }
-    }
-
-    connect(qGoodStateHolder, &QGoodStateHolder::currentThemeChanged, this, [](){
-        if (qGoodStateHolder->isCurrentThemeDark())
-            QGoodWindow::setAppDarkTheme();
-        else
-            QGoodWindow::setAppLightTheme();
-    });
-    connect(this, &QGoodWindow::systemThemeChanged, this, [&]{
-        qGoodStateHolder->setCurrentThemeDark(QGoodWindow::isSystemThemeDark());
-    });
-    qGoodStateHolder->setCurrentThemeDark(isDarkTheme);
-
-    mGoodCentraWidget->setCentralWidget(mCentralWidget);
-    setCentralWidget(mGoodCentraWidget);
-
-    setWindowIcon(QIcon(":/logo.png"));
-    setWindowTitle(mCentralWidget->windowTitle());
-
-    mGoodCentraWidget->setTitleAlignment(Qt::AlignCenter);
-}
-
-MainWindow::~MainWindow() {
-    delete mCentralWidget;
-}
-
-void MainWindow::closeEvent(QCloseEvent *event) {
-    mCentralWidget->closeEvent(event);
-}
-
-bool MainWindow::event(QEvent * event) {
-    if(event->type() == QEvent::StatusTip) {
-        mCentralWidget->checkStatusTipEvent(static_cast<QStatusTipEvent *>(event));
-        return true;
-    }
-
-    return QGoodWindow::event(event);
-}
-
 #include "localsettingwindow.h"
-void CentralWidget::on_action_localService_triggered()
+void MainWindow::on_action_localService_triggered()
 {
     LocalSettingWindow *w = new LocalSettingWindow(this);
     w->setAttribute(Qt::WA_DeleteOnClose, true);
@@ -1919,7 +1858,7 @@ void CentralWidget::on_action_localService_triggered()
     w->showNormal();
 }
 
-QString CentralWidget::formatTimeString(int totalSeconds)
+QString MainWindow::formatTimeString(int totalSeconds)
 {
     int days = totalSeconds / 86400;  // 86400秒 = 24小时
     int remainingSeconds = totalSeconds % 86400;
@@ -1943,7 +1882,7 @@ QString CentralWidget::formatTimeString(int totalSeconds)
     }
 }
 
-void CentralWidget::on_action_connectSwitch_triggered()
+void MainWindow::on_action_connectSwitch_triggered()
 {
      if (mSwitcherConnected) {
         // 当前已连接，执行断开操作
@@ -1960,7 +1899,7 @@ void CentralWidget::on_action_connectSwitch_triggered()
     }
 }
 
-void CentralWidget::updateConnectButtonState(bool connected)
+void MainWindow::updateConnectButtonState(bool connected)
 {
     if (connected) {
         // 已连接状态：显示"断开交换机"，使用在线图标
@@ -1982,7 +1921,7 @@ void CentralWidget::updateConnectButtonState(bool connected)
 }
 
 // 清除日志
-void CentralWidget::on_bt_clearLog_clicked()
+void MainWindow::on_bt_clearLog_clicked()
 {
     ui->textEdit_log->clear();
     clearHighlights();
@@ -1991,22 +1930,22 @@ void CentralWidget::on_bt_clearLog_clicked()
 }
 
 // 查找功能实现
-void CentralWidget::on_bt_search_clicked()
+void MainWindow::on_bt_search_clicked()
 {
     performSearch(true, true);  // 向前查找，支持循环
 }
 
-void CentralWidget::on_bt_searchPrevious_clicked()
+void MainWindow::on_bt_searchPrevious_clicked()
 {
     performSearch(false, true);  // 向后查找，支持循环
 }
 
-void CentralWidget::on_bt_searchNext_clicked()
+void MainWindow::on_bt_searchNext_clicked()
 {
     performSearch(true, true);  // 向前查找，支持循环
 }
 
-void CentralWidget::on_bt_highlightAll_toggled(bool checked)
+void MainWindow::on_bt_highlightAll_toggled(bool checked)
 {
     QString searchText = ui->lineEdit_search->text();
     if (checked && !searchText.isEmpty()) {
@@ -2016,12 +1955,12 @@ void CentralWidget::on_bt_highlightAll_toggled(bool checked)
     }
 }
 
-void CentralWidget::on_lineEdit_search_returnPressed()
+void MainWindow::on_lineEdit_search_returnPressed()
 {
     performSearch(true, true);  // 按回车键执行查找
 }
 
-void CentralWidget::on_lineEdit_search_textChanged(const QString &text)
+void MainWindow::on_lineEdit_search_textChanged(const QString &text)
 {
     // 如果高亮全部已启用，更新高亮
     if (ui->bt_highlightAll->isChecked()) {
@@ -2035,7 +1974,7 @@ void CentralWidget::on_lineEdit_search_textChanged(const QString &text)
     }
 }
 
-void CentralWidget::performSearch(bool forward, bool wrap)
+void MainWindow::performSearch(bool forward, bool wrap)
 {
     QString searchText = ui->lineEdit_search->text();
     if (searchText.isEmpty()) {
@@ -2122,7 +2061,7 @@ void CentralWidget::performSearch(bool forward, bool wrap)
     }
 }
 
-void CentralWidget::highlightAllMatches(const QString &searchText)
+void MainWindow::highlightAllMatches(const QString &searchText)
 {
     if (searchText.isEmpty()) {
         clearHighlights();
@@ -2163,14 +2102,14 @@ void CentralWidget::highlightAllMatches(const QString &searchText)
     textEdit->setExtraSelections(mExtraSelections);
 }
 
-void CentralWidget::clearHighlights()
+void MainWindow::clearHighlights()
 {
     mExtraSelections.clear();
     ui->textEdit_log->setExtraSelections(mExtraSelections);
 }
 
 // 能量刻度
-void CentralWidget::on_action_energycalibration_triggered()
+void MainWindow::on_action_energycalibration_triggered()
 {
     //模态窗口
     // EnergyCalibration *w = new EnergyCalibration(this);
@@ -2183,7 +2122,7 @@ void CentralWidget::on_action_energycalibration_triggered()
 
 
 #include "neutronyieldcalibration.h"
-void CentralWidget::on_action_yieldCalibration_triggered()
+void MainWindow::on_action_yieldCalibration_triggered()
 {
     //模态窗口
     // NeutronYieldCalibration *w = new NeutronYieldCalibration(this);
@@ -2194,7 +2133,7 @@ void CentralWidget::on_action_yieldCalibration_triggered()
     w->show();
 }
 
-void CentralWidget::startMeasure()
+void MainWindow::startMeasure()
 {
     /*设置发次信息*/
     QString shotDir = ui->lineEdit_filePath->text();
@@ -2256,7 +2195,7 @@ void CentralWidget::startMeasure()
     //ui->cb_calibration->setEnabled(false);
 }
 
-void CentralWidget::stopMeasure()
+void MainWindow::stopMeasure()
 {
     // 停止倒计时定时器
     if (mMeasureCountdownTimer && mMeasureCountdownTimer->isActive()) {
@@ -2292,7 +2231,7 @@ void CentralWidget::stopMeasure()
     //ui->cb_calibration->setEnabled(true);
 }
 
-QCustomPlot* CentralWidget::getCustomPlot(int detectorId, bool isSpectrum)
+QCustomPlot* MainWindow::getCustomPlot(int detectorId, bool isSpectrum)
 {
     if (isSpectrum)
         return this->findChild<QCustomPlot*>(QString("spectroMeter%1_bottom").arg(detectorId <= 12 ? 1 : 2));
@@ -2300,7 +2239,7 @@ QCustomPlot* CentralWidget::getCustomPlot(int detectorId, bool isSpectrum)
         return this->findChild<QCustomPlot*>(QString("spectroMeter%1_top").arg(detectorId <= 12 ? 1 : 2));
 }
 
-QCPGraph* CentralWidget::getGraph(int detectorId, bool isSpectrum)
+QCPGraph* MainWindow::getGraph(int detectorId, bool isSpectrum)
 {
     QCustomPlot *customPlot = getCustomPlot(detectorId, isSpectrum);
     if (!customPlot) nullptr;
@@ -2308,13 +2247,13 @@ QCPGraph* CentralWidget::getGraph(int detectorId, bool isSpectrum)
     return  customPlot->graph((detectorId-1) % 12);
 }
 
-void CentralWidget::on_checkBox_continueMeasure_toggled(bool toggled)
+void MainWindow::on_checkBox_continueMeasure_toggled(bool toggled)
 {
     ui->spinBox_measureTime->setEnabled(!toggled);
 }
 
 
-void CentralWidget::on_cbb_measureMode_activated(int index)
+void MainWindow::on_cbb_measureMode_activated(int index)
 {
     if (index == 0)
     {
@@ -2328,14 +2267,14 @@ void CentralWidget::on_cbb_measureMode_activated(int index)
     }
 }
 
-void CentralWidget::on_cbb_energyCalibration_toggled(bool checked)
+void MainWindow::on_cbb_energyCalibration_toggled(bool checked)
 {
     mEnScale = checked;
 
     updateSpectrumPlotSettings();
 }
 
-void CentralWidget::updateSpectrumPlotSettings(int detectorId)
+void MainWindow::updateSpectrumPlotSettings(int detectorId)
 {
     if(detectorId == 0)
     {
@@ -2422,7 +2361,7 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
 }
 
 #include "particalwindow.h"
-void CentralWidget::on_action_partical_triggered()
+void MainWindow::on_action_partical_triggered()
 {
     ParticalWindow *w = new ParticalWindow(nullptr);
     w->setAttribute(Qt::WA_DeleteOnClose, true); // 关闭时自动删除

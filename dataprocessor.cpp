@@ -238,9 +238,6 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             it = mFullSpectrums.insert(spectrumSeq, newSpectrum);
         }
         fullSpectrum = &(it.value());
-
-        // H5能谱文件写入
-        HDF5Settings::instance()->writeFullSpectrum(mIndex, it.value());
     }
 
     // 3. 数据拼接与状态更新（核心逻辑，线程安全）
@@ -279,6 +276,9 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             // 发送完整的 FullSpectrum 数据到 MainWindow
             FullSpectrum fullSpectrumCopy = *fullSpectrum; // 拷贝数据，避免在锁外访问
             emit reportFullSpectrum(mIndex, fullSpectrumCopy);
+
+            // H5能谱文件写入
+            HDF5Settings::instance()->writeFullSpectrum(mIndex, fullSpectrumCopy);
 
             if(spectrumSeq%1000 == 0){
                 qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq

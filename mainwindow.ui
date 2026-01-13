@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CentralWidget</class>
- <widget class="QMainWindow" name="CentralWidget">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -1858,6 +1858,7 @@
     <addaction name="action_energycalibration"/>
     <addaction name="action_yieldCalibration"/>
     <addaction name="separator"/>
+    <addaction name="action_count"/>
     <addaction name="action_OTA"/>
     <addaction name="menu_Fpga"/>
    </widget>
@@ -1867,6 +1868,7 @@
     </property>
     <addaction name="action_waveformMode"/>
     <addaction name="action_spectrumMode"/>
+    <addaction name="action_partical"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_setup"/>
@@ -2289,6 +2291,14 @@
   <action name="action_partical">
    <property name="text">
     <string>粒子模式</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_count">
+   <property name="text">
+    <string>计数率分析</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

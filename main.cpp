@@ -1,11 +1,11 @@
 ﻿#include "mainwindow.h"
 #include "globalsettings.h"
 #include "commhelper.h"
+#include "offlinewindow.h"
 
 #include "lightstyle.h"
 #include "darkstyle.h"
 #include "customcolorstyle.h"
-//#include "qfonticon.h"
 
 #include <QApplication>
 #include <QStyleFactory>
@@ -27,7 +27,7 @@
 #include <log4qt/loggerrepository.h>
 #include <log4qt/fileappender.h>
 
-CentralWidget *mw = nullptr;
+QMainWindow *mMainWindow = nullptr;
 QMutex mutexMsg;
 QtMessageHandler system_default_message_handler = NULL;// 用来保存系统默认的输出接口
 void AppMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString &msg)
@@ -36,9 +36,9 @@ void AppMessageHandler(QtMsgType type, const QMessageLogContext& context, const 
     if (type == QtWarningMsg && context.file == nullptr && context.function == nullptr)
         return;// 主要用于过滤系统的警告信息
 
-    if (mw && type != QtDebugMsg){
+    if (mMainWindow && type != QtDebugMsg){
         //emit mw->sigWriteLog(msg, type);
-        QMetaObject::invokeMethod(mw, "sigWriteLog", Qt::QueuedConnection, Q_ARG(QString, msg), Q_ARG(QtMsgType, type));
+        QMetaObject::invokeMethod(mMainWindow, "sigWriteLog", Qt::QueuedConnection, Q_ARG(QString, msg), Q_ARG(QtMsgType, type));
     }
 
     if (type == QtFatalMsg){
@@ -112,10 +112,16 @@ int main(int argc, char *argv[])
     splash.setPixmap(QPixmap(":/splash.png"));
     splash.show();
 
-    splash.showMessage(QObject::tr("加载语言库..."), Qt::AlignLeft | Qt::AlignBottom, Qt::white);
+    splash.showMessage(QObject::tr("启动中，请稍等..."), Qt::AlignLeft | Qt::AlignBottom, Qt::white);
 
     // 启用新的日子记录类
     QString filename = QFileInfo(QCoreApplication::applicationFilePath()).baseName();
+    QStringList args = QCoreApplication::arguments();
+    if (args.contains("-m") && args.contains("offline")){
+        filename += ".offline";
+    }
+
+    // 启用新的日子记录类
     QString sConfFilename = QString("./config/%1.log4qt.conf").arg(filename);
     if (QFileInfo::exists(sConfFilename)){
         Log4Qt::PropertyConfigurator::configure(sConfFilename);
@@ -180,13 +186,16 @@ int main(int argc, char *argv[])
     // QFontIcon::instance()->setColor(isDarkTheme?Qt::white:Qt::black);
 
     QTextCodec::setCodecForLocale(QTextCodec::codecForMib(106));/* Utf8 */
-    MainWindow w(isDarkTheme);
-    mw = w.centralWidget();
+    QGoodWindowHelper w;
+    if (args.contains("-m") && args.contains("offline")){
+        QApplication::setApplicationName("锆活化工程");
+        mMainWindow = new OfflineWindow(isDarkTheme, &w);
+    }
+    else
+        mMainWindow = new MainWindow(isDarkTheme, &w);
+    w.setupUiHelper(mMainWindow, isDarkTheme);
 
     qInfo().noquote() << QObject::tr("系统启动");
-    QObject::connect(mw, &CentralWidget::sigUpdateBootInfo, &splash, [&](const QString &msg) {
-        splash.showMessage(msg, Qt::AlignLeft | Qt::AlignBottom, Qt::white);
-    }/*, Qt::QueuedConnection */);
     splash.finish(&w);
 
     QRect screenRect = QGuiApplication::primaryScreen()->availableGeometry();
@@ -197,11 +206,6 @@ int main(int argc, char *argv[])
     w.show();
 
     int ret = a.exec();
-
-#ifdef ENABLE_MATLAB
-    UnfolddingAlgorithm_GravelTerminate();
-    mclTerminateApplication();
-#endif //ENABLE_MATLAB
 
     //运行运行到这里，此时主窗体析构函数还没触发，所以shutdownRootLogger需要在主窗体销毁以后再做处理
     QObject::connect(&w, &QObject::destroyed, []{

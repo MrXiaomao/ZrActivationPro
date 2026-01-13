@@ -474,6 +474,8 @@ void HDF5Settings::closeH5Spectrum()
 {
     if (mfH5Spectrum)
     {
+        for (int i=0;i<DET_NUM; ++i)
+            mSpectrumDataset[i].close();
         H5Fflush(mfH5Spectrum->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
         mfH5Spectrum->close();
         delete mfH5Spectrum;
