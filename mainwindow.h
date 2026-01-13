@@ -171,6 +171,8 @@ private slots:
     void on_cbb_measureMode_activated(int index);
     void on_cbb_energyCalibration_toggled(bool checked);
 
+    void on_action_partical_triggered();
+
 private:
     QString increaseShotNumSuffix(QString shotNumStr);
     QCustomPlot* getCustomPlot(int detectorId, bool isSpectrum = true);

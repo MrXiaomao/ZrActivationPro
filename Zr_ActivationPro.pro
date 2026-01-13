@@ -23,6 +23,7 @@ SOURCES += \
     mainwindow.cpp \
     neutronyieldcalibration.cpp \
     parsedata.cpp \
+    particalwindow.cpp \
     qcomboboxdelegate.cpp \
     qhuaweiswitcherhelper.cpp \
     switchbutton.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     localsettingwindow.h \
     neutronyieldcalibration.h \
     parsedata.h \
+    particalwindow.h \
     qcomboboxdelegate.h \
     qhuaweiswitcherhelper.h \
     qlitethread.h \
@@ -54,7 +56,8 @@ FORMS += \
     energycalibration.ui \
     localsettingwindow.ui \
     mainwindow.ui \
-    neutronyieldcalibration.ui
+    neutronyieldcalibration.ui \
+    particalwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

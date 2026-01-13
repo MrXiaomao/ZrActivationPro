@@ -789,12 +789,47 @@ public:
     // 给数据集写入探测器参数结构属性说明
     void writeDetParStrAttr(H5::DataSet& dataset);
 
+    void writeBytes(quint8 index, QByteArray& data);
+
     // 同步内存数据到文件
     void sync();
 
+    // 定义FullSpectrum的HDF5复合类型
+    H5::CompType createFullSpectrumType();
+    H5::CompType createCfgDataType();
+
+    void createH5Config();
+    void createH5Spectrum(QString filePath);
+    void closeH5Spectrum();
+
+    /**
+     * @brief 写入单个FullSpectrum结构体到HDF5文件
+     * @param data 要写入的结构体数据
+     */
+    void writeFullSpectrum(quint8 index, const FullSpectrum& data);
+
+    /**
+     * @brief 从HDF5文件读取FullSpectrum结构体
+     * @param filePath H5文件路径
+     * @param groupName 分组名称(Detector#1)
+     * @param datasetName 数据集名称(Spectrum)
+     * @param callback 数据回调
+     * @return 是否读取成功
+     */
+    bool readFullSpectrum(const std::string& filePath,
+                                  const std::string& groupName,
+                                  const std::string& datasetName,
+                                  std::function<void(const FullSpectrum&)> callback);
+
 private:
+    H5::H5File *mfH5Setting = nullptr; // H5配置文件
+    H5::H5File *mfH5Spectrum = nullptr; // H5能谱文件
+    quint32 mSpectrumRef = 0;// 能谱计数
+    H5::DataSet mSpectrumDataset[DET_NUM];
     H5::CompType mCompDataType;//复合数据类型
+    H5::CompType mSpectrumDataType;//复合数据类型
     QMap<quint8, DetParameter> mMapDetParameter;
+    QMutex mWrite_mutex;
 };
 
 #endif // GLOBALSETTINGS_H

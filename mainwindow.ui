@@ -2286,7 +2286,7 @@
     <enum>QAction::NoRole</enum>
    </property>
   </action>
-  <action name="action_pari">
+  <action name="action_partical">
    <property name="text">
     <string>粒子模式</string>
    </property>

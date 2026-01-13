@@ -186,7 +186,7 @@ void CommHelper::initDataProcessor()
             });
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray data){
+        connect(detectorDataProcessor, &DataProcessor::reportSpectrumData, this, [=](QByteArray& data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
                 保存数据
@@ -209,6 +209,9 @@ void CommHelper::initDataProcessor()
                     }
 
                     qInfo().noquote() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+
+                    filePath = QString("%1/%2/%3_%4.H5").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    HDF5Settings::instance()->createH5Spectrum(filePath);
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
@@ -217,7 +220,6 @@ void CommHelper::initDataProcessor()
                     checkAndFlushFile(processor->index(), bytesWritten);
                 }
             }
-
             // 数据解包
             detectorDataProcessor->inputSpectrumData(processor->index(), data);
         });
@@ -227,7 +229,7 @@ void CommHelper::initDataProcessor()
                     emit reportFullSpectrum(index, fullSpectrum);
                 });
 
-        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray data){
+        connect(detectorDataProcessor, &DataProcessor::reportWaveformData, this, [=](QByteArray& data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
             /*
                 保存数据
@@ -284,9 +286,13 @@ void CommHelper::initDataProcessor()
             }
         });
 
-        connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray data){
-            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());            
-            //emit reportParticleCurveData(processor->index(), data);
+        connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+            //emit reportParticleCurveData(index, data);
+            // 保存粒子数据
+
+            // 上报计数
+
         });
     }
 }
@@ -545,6 +551,8 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
                 emit measureStart(index);
             }
         }
+
+        HDF5Settings::instance()->closeH5Spectrum();
     }
     else if (index >= 1 && index <= DET_NUM){
         if (mDetectorFileProcessor.contains(index)){
@@ -554,6 +562,7 @@ void CommHelper::startMeasure(CommandAdapter::WorkMode mode, quint8 index/* = 0*
                 mDetectorFileProcessor.remove(index);
             }
         }
+
         // 清理flush信息
         {
             QMutexLocker flushLocker(&mMutexFileFlush);
@@ -659,6 +668,8 @@ void CommHelper::stopMeasure(quint8 index/* = 0*/)
                 }
             }
         }
+
+        HDF5Settings::instance()->closeH5Spectrum();
     }
     else if (index >= 1 && index <= DET_NUM){ //关闭单个通道
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];

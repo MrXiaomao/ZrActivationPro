@@ -1,4 +1,4 @@
-#include "commandadapter.h"
+﻿#include "commandadapter.h"
 #include <QDebug>
 #include <QtEndian>
 #include <QTimer>
@@ -321,6 +321,11 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             else if (dataType == dtSpectrum){
                 //能谱
                 //包头0xFFFFAAB1 + 数据类型（0x00D2）+ 能谱序号（32bit） + 测量时间（32bit） + 死时间（32bit）+ 能谱编号（16bit）+ 能谱数据（256*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 4 + 4 + 4 + 2 + 256*4 + 4 + 8 + 4;
+            }
+            else if (dataType == dtParticle){
+                //粒子
+                //包头0xFFFFAAB1 + 数据类型（0x00D3）+ 能谱序号（32bit） + 测量时间（32bit） + 死时间（32bit）+ 能谱编号（16bit）+ 能谱数据（256*32bit）+分秒-毫秒（32bit）+ 保留位（64bit） + 包尾0xFFFFCCD1
                 onePkgSize = 4 + 2 + 4 + 4 + 4 + 2 + 256*4 + 4 + 8 + 4;
             }
             else{

@@ -1,4 +1,4 @@
-#include "globalsettings.h"
+﻿#include "globalsettings.h"
 #include <QFileInfo>
 #include <QApplication>
 #include <QTextCodec>
@@ -94,164 +94,30 @@ void GlobalSettings::setRealtimeSave(bool realtime)
 HDF5Settings::HDF5Settings(QObject *parent) : QObject(parent)
 {
     //初始化数据类型
-    mCompDataType = H5::CompType(sizeof(DetParameter));//复合数据类型
+    mCompDataType = createCfgDataType();
+    mSpectrumDataType = createFullSpectrumType();
 
-    // 定义固定长度字符串类型(20字符)
-    H5::StrType ipStrType(H5::PredType::C_S1, IP_LENGTH);
+    // 创建配置文件
+    createH5Config();
 
-    mCompDataType.insertMember("id", HOFFSET(DetParameter, id), H5::PredType::NATIVE_UINT8);
-
-    // 全局
-    {
-        //心跳时间(秒)
-        mCompDataType.insertMember("checkTime", HOFFSET(DetParameter, pluseCheckTime), H5::PredType::NATIVE_INT);
-        //交换机地址
-        //mCompDataType.insertMember("switcherIp", HOFFSET(DetParameter, switcherIp), ipStrType);
-
-        //时间服务器
-        //IP地址
-        mCompDataType.insertMember("timerSrvIp", HOFFSET(DetParameter, timerSrvIp), ipStrType);
-    }
-
-    //基本设置
-    {
-        //增益
-        mCompDataType.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_DOUBLE);
-        //死时间
-        mCompDataType.insertMember("deathT", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_UINT8);
-        //触发阈值
-        mCompDataType.insertMember("Threshold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_UINT16);
-    }
-
-    // 探测器网络设置，用于界面匹配对应通道
-    {
-        //IP地址,port号
-        char det_Ip_port[16];
-        mCompDataType.insertMember("detIpPort", HOFFSET(DetParameter, det_Ip_port), ipStrType);
-    }
-
-    //能谱设置
-    {
-        //能谱刷新时间（毫秒）
-        mCompDataType.insertMember("specDeltaT", HOFFSET(DetParameter, spectrumRefreshTime), H5::PredType::NATIVE_ULONG);
-        //能谱长度
-        mCompDataType.insertMember("specLen", HOFFSET(DetParameter, spectrumLength), H5::PredType::NATIVE_ULONG);
-    }
-
-    //波形设置
-    {
-        //触发模式
-        mCompDataType.insertMember("waveTrigMode", HOFFSET(DetParameter, waveformTriggerMode), H5::PredType::NATIVE_UINT8);
-        //波形长度
-        mCompDataType.insertMember("waveLen", HOFFSET(DetParameter, waveformLength), H5::PredType::NATIVE_ULONG);
-    }
-
-    //梯形成型
-    {
-        //是否启用
-
-        mCompDataType.insertMember("TShapeEnable", HOFFSET(DetParameter, trapShapeEnable), H5::PredType::NATIVE_HBOOL);
-        //时间常数D1
-        mCompDataType.insertMember("TShapeD1", HOFFSET(DetParameter, trapShapeTimeConstD1), H5::PredType::NATIVE_UINT16);
-        //时间常数D2
-        mCompDataType.insertMember("TShapeD2", HOFFSET(DetParameter, trapShapeTimeConstD2), H5::PredType::NATIVE_UINT16);
-        //上升沿
-        mCompDataType.insertMember("TShapeRise", HOFFSET(DetParameter, trapShapeRisePoint), H5::PredType::NATIVE_UINT8);
-        //平顶
-        mCompDataType.insertMember("TShapePeak", HOFFSET(DetParameter, trapShapePeakPoint), H5::PredType::NATIVE_UINT8);
-        //下降沿
-        mCompDataType.insertMember("TShapeFall", HOFFSET(DetParameter, trapShapeFallPoint), H5::PredType::NATIVE_UINT8);
-    }
-
-    //高压电源
-    {
-        //是否启用
-        mCompDataType.insertMember("HV_Enable", HOFFSET(DetParameter, highVoltageEnable), H5::PredType::NATIVE_HBOOL);
-        //DAC高压输出电平
-        mCompDataType.insertMember("HV_Out", HOFFSET(DetParameter, highVoltageOutLevel), H5::PredType::NATIVE_USHORT);
-    }
-
-    if (QFileInfo::exists(DEFAULT_HDF5_FILENAME)){
-        H5::H5File *pfH5Setting = new H5::H5File(DEFAULT_HDF5_FILENAME, H5F_ACC_RDONLY);
-        H5::Group cfgGroup = pfH5Setting->openGroup("Config");
-        H5::DataSet globalDataset = cfgGroup.openDataSet("Detector");
-        H5::DataSpace file_space = globalDataset.getSpace();
-
-        // 获取数据集维度(行)
-        int ndims = file_space.getSimpleExtentNdims();
-        std::vector<hsize_t> dims(ndims);
-        file_space.getSimpleExtentDims(dims.data());
-
-        // 读取数据
-        //一次性读取所有数据
-        QVector<DetParameter> read_data(dims[0]);
-        globalDataset.read(read_data.data(), mCompDataType);
-        for (const auto& item : read_data) {
-            mMapDetParameter[item.id] = item;
-        }
-
-        //逐行读取数据
-        // size_t chunkSize = 1;//一次读1行数据
-        // for (int i=0; i<dims[0]; ++i){
-        //     hsize_t offset[1] = {(hsize_t)i};
-        //     hsize_t chunkDims[1] = {chunkSize};
-
-        //     // 准备内存空间
-        //     H5::DataSpace mem_space(1, chunkDims);
-
-        //     // 文件定位
-        //     file_space.selectHyperslab(H5S_SELECT_SET, chunkDims, offset);
-
-        //     QVector<DetParameter> chunkData(chunkSize);
-        //     globalDataset.read(chunkData.data(), mCompDataType, mem_space, file_space);
-        //     for (const auto& item : chunkData) {
-        //         mMapDetParameter[item.id] = item;
-        //     }
-        // }
-
-        pfH5Setting->close();
-        delete pfH5Setting;
-    }
-    else{
-        for (int i=1; i<=DET_NUM; ++i){
-            DetParameter detParameter;
-            detParameter.id = i;
-            mMapDetParameter[i] = detParameter;
-        }
-
-        try {
-            H5::H5File fH5Setting(DEFAULT_HDF5_FILENAME, H5F_ACC_TRUNC);
-
-            QVector<DetParameter> data;
-            for (auto &pair : mMapDetParameter.toStdMap())
-            {
-                data.push_back(pair.second);
-            }
-
-            hsize_t dims[1] = {DET_NUM};
-            H5::DataSpace dataspace(1, dims);
-            H5::Group cfgGroup = fH5Setting.createGroup("Config");
-            H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
-
-
-            dataset.write(data.data(), mCompDataType);
-            fH5Setting.close();
-        } catch (H5::FileIException& error) {
-            error.printErrorStack();
-            return ;
-        } catch (H5::DataSetIException& error) {
-            error.printErrorStack();
-            return ;
-        } catch (H5::DataSpaceIException& error) {
-            error.printErrorStack();
-            return ;
-        }
-    }
+    //readFullSpectrum("./cache/000_61/2026-01-13_124611_1.H5", "Detector#1", "Spectrum", nullptr);
 }
 
 HDF5Settings::~HDF5Settings()
 {
+    if (mfH5Setting)
+    {
+        mfH5Setting->close();
+        delete mfH5Setting;
+        mfH5Setting = nullptr;
+    }
 
+    if (mfH5Spectrum)
+    {
+        mfH5Spectrum->close();
+        delete mfH5Spectrum;
+        mfH5Spectrum = nullptr;
+    }
 }
 
 QMap<quint8, DetParameter>& HDF5Settings::detParameters()
@@ -266,9 +132,8 @@ void HDF5Settings::setDetParameter(QMap<quint8, DetParameter>& detParameters)
 
 void HDF5Settings::sync()
 {
+    QMutexLocker locker(&mWrite_mutex);
     try {
-        H5::H5File fH5Setting(DEFAULT_HDF5_FILENAME, H5F_ACC_TRUNC);
-
         QVector<DetParameter> data;
         for (auto &pair : mMapDetParameter.toStdMap())
         {
@@ -277,11 +142,10 @@ void HDF5Settings::sync()
 
         hsize_t dims[1] = {DET_NUM};
         H5::DataSpace dataspace(1, dims);
-        H5::Group cfgGroup = fH5Setting.createGroup("Config");
-        H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
-        writeDetParStrAttr(dataset);
-        dataset.write(data.data(), mCompDataType);
-        fH5Setting.close();
+        H5::Group cfgGroup = mfH5Setting->openGroup("Config");
+        H5::DataSet dataset = cfgGroup.openDataSet("Detector");//, mCompDataType, dataspace);
+        //writeDetParStrAttr(dataset);
+        dataset.write(data.data(), mCompDataType);        
     } catch (H5::FileIException& error) {
         error.printErrorStack();
         return ;
@@ -327,4 +191,543 @@ void HDF5Settings::writeStrAttr(H5::DataSet& ds, const std::string& key, const s
     // H5Cpp 常见写法：写 const char*
     const char* s = val.c_str();
     a.write(vstr, &s);
+}
+
+void HDF5Settings::writeBytes(quint8 index, QByteArray& data)
+{
+    QMutexLocker locker(&mWrite_mutex);
+    H5::DataSet dataset = mSpectrumDataset[index-1];//cfgGroup.openDataSet("Spectrum");
+
+    // 获取当前维度
+    H5::DataSpace file_space = dataset.getSpace();  // 初始文件空间
+    hsize_t current_dims[2];
+    file_space.getSimpleExtentDims(current_dims, NULL);
+
+    // 1. 扩展数据集维度
+    current_dims[0] += 1;
+    dataset.extend(current_dims);
+
+    // 2. 重新获取扩展后的文件空间
+    file_space = dataset.getSpace();  // 关键：更新文件空间
+
+    // 3. 定义内存空间（1行数据）
+    hsize_t mem_dims[2] = {1, (hsize_t)data.size()};
+    H5::DataSpace mem_space(2, mem_dims);
+
+    // 4. 设置写入偏移（新行位置）
+    hsize_t offset[2] = {current_dims[0] - 1, 0};  // 偏移到最后一行
+    file_space.selectHyperslab(H5S_SELECT_SET, mem_dims, offset);
+
+    // 5. 写入数据（示例：填充i值）
+    dataset.write(data.constData(), H5::PredType::NATIVE_UCHAR, mem_space, file_space);
+
+    // 6. 同步当前数据集，防止发生异常，数据丢失
+    H5Dflush(dataset.getId());
+
+    H5Fflush(mfH5Setting->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
+}
+
+void HDF5Settings::createH5Config()
+{
+    if (QFileInfo::exists(DEFAULT_HDF5_FILENAME))
+    //if (H5::H5File::isHdf5(DEFAULT_HDF5_FILENAME))
+    {
+        try {
+            mfH5Setting = new H5::H5File(DEFAULT_HDF5_FILENAME, H5F_ACC_RDWR);
+            H5::Group cfgGroup = mfH5Setting->openGroup("Config");
+            H5::DataSet globalDataset = cfgGroup.openDataSet("Detector");
+            H5::DataSpace file_space = globalDataset.getSpace();
+
+            // 获取数据集维度(行)
+            int ndims = file_space.getSimpleExtentNdims();
+            std::vector<hsize_t> dims(ndims);
+            file_space.getSimpleExtentDims(dims.data());
+
+            // 读取数据
+            //一次性读取所有数据
+            QVector<DetParameter> read_data(dims[0]);
+            globalDataset.read(read_data.data(), mCompDataType);
+            for (const auto& item : read_data) {
+                mMapDetParameter[item.id] = item;
+            }
+
+            //逐行读取数据
+            // size_t chunkSize = 1;//一次读1行数据
+            // for (int i=0; i<dims[0]; ++i){
+            //     hsize_t offset[1] = {(hsize_t)i};
+            //     hsize_t chunkDims[1] = {chunkSize};
+
+            //     // 准备内存空间
+            //     H5::DataSpace mem_space(1, chunkDims);
+
+            //     // 文件定位
+            //     file_space.selectHyperslab(H5S_SELECT_SET, chunkDims, offset);
+
+            //     QVector<DetParameter> chunkData(chunkSize);
+            //     globalDataset.read(chunkData.data(), mCompDataType, mem_space, file_space);
+            //     for (const auto& item : chunkData) {
+            //         mMapDetParameter[item.id] = item;
+            //     }
+            // }
+        } catch (const H5::FileIException& error) {
+            // 数据集不存在，创建新数据集
+            error.printErrorStack();
+        }
+    }
+    else
+    {
+        // 文件不存在，创建新文件
+        H5::FileAccPropList fapl;
+        fapl.setFcloseDegree(H5F_CLOSE_STRONG);  // 关闭时强制同步所有数据
+
+        try {
+            mfH5Setting = new H5::H5File(DEFAULT_HDF5_FILENAME, H5F_ACC_TRUNC, H5::FileCreatPropList::DEFAULT, fapl);
+
+            for (int i=1; i<=DET_NUM; ++i){
+                DetParameter detParameter;
+                detParameter.id = i;
+                mMapDetParameter[i] = detParameter;
+            }
+
+            // 创建配置信息分组
+            {
+                QVector<DetParameter> data;
+                for (auto &pair : mMapDetParameter.toStdMap())
+                {
+                    data.push_back(pair.second);
+                }
+
+                hsize_t dims[1] = {DET_NUM};
+                H5::DataSpace dataspace(1, dims);
+                H5::Group cfgGroup = mfH5Setting->createGroup("Config");
+                H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
+                dataset.write(data.data(), mCompDataType);
+                //H5Dflush(dataset.getId());
+                //H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+                H5Fflush(mfH5Setting->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
+            }
+            // 创建表格数组
+            if (0)
+            {
+                hsize_t init_dims[2] = {0, 1060};       // 初始维度
+                hsize_t max_dims[2] = {H5S_UNLIMITED, 1060};  // 最大维度
+                H5::DataSpace dataspace(2, init_dims, max_dims);
+
+                // 设置分块存储
+                H5::DSetCreatPropList prop_list;
+                hsize_t chunk_dims[2] = {1, 1060};  // 分块大小
+                prop_list.setChunk(2, chunk_dims);
+
+                for (int i=1; i<=DET_NUM; ++i){
+                    // 创建数据集
+                    H5::Group cfgGroup = mfH5Setting->createGroup(QString("Detector#%1").arg(i).toStdString());
+                    H5::DataSet dataset = cfgGroup.createDataSet("Spectrum", mSpectrumDataType/*H5::PredType::NATIVE_UCHAR*/, dataspace, prop_list);
+                    mSpectrumDataset[i-1] = dataset;
+                }
+
+                for (int i=1; i<=DET_NUM; ++i){
+                    // 创建数据集
+                    H5::DataSet dataset = mSpectrumDataset[i-1];
+
+                    // 获取当前维度
+                    H5::DataSpace file_space = dataset.getSpace();  // 初始文件空间
+                    hsize_t current_dims[2];
+                    file_space.getSimpleExtentDims(current_dims, NULL);
+
+                    // 1. 扩展数据集维度
+                    current_dims[0] += 1;
+                    dataset.extend(current_dims);
+
+                    // 2. 重新获取扩展后的文件空间
+                    file_space = dataset.getSpace();  // 关键：更新文件空间
+
+                    // 3. 定义内存空间（1行数据）
+                    hsize_t mem_dims[2] = {1, 1060};
+                    H5::DataSpace mem_space(2, mem_dims);
+
+                    // 4. 设置写入偏移（新行位置）
+                    hsize_t offset[2] = {current_dims[0] - 1, 0};  // 偏移到最后一行
+                    file_space.selectHyperslab(H5S_SELECT_SET, mem_dims, offset);
+
+                    // 5. 写入数据（示例：填充i值）
+                    QByteArray data(1060, static_cast<uchar>(i));
+                    dataset.write(data.constData(), H5::PredType::NATIVE_UCHAR, mem_space, file_space);
+
+                    // 6. 同步当前数据集，防止发生异常，数据丢失
+                    //H5Dflush(dataset.getId());
+                    H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+                }
+            }
+        } catch (H5::FileIException& error) {
+            error.printErrorStack();
+            return ;
+        } catch (H5::DataSetIException& error) {
+            error.printErrorStack();
+            return ;
+        } catch (H5::DataSpaceIException& error) {
+            error.printErrorStack();
+            return ;
+        }
+    }
+}
+
+void HDF5Settings::createH5Spectrum(QString filePath)
+{
+    // 创建表格数组
+    if (!QFileInfo::exists(filePath))
+    {
+        // 文件不存在，创建新文件
+        H5::FileAccPropList fapl;
+        fapl.setFcloseDegree(H5F_CLOSE_STRONG);  // 关闭时强制同步所有数据
+
+        try {
+            mSpectrumRef = 0;
+            mfH5Spectrum = new H5::H5File(filePath.toStdString(), H5F_ACC_TRUNC);//, H5::FileCreatPropList::DEFAULT, fapl);
+
+            for (int i=1; i<=DET_NUM; ++i){
+                DetParameter detParameter;
+                detParameter.id = i;
+                mMapDetParameter[i] = detParameter;
+            }
+
+            // 写入配置信息分组
+            {
+                QVector<DetParameter> data;
+                for (auto &pair : mMapDetParameter.toStdMap())
+                {
+                    data.push_back(pair.second);
+                }
+
+                hsize_t dims[1] = {DET_NUM};
+                H5::DataSpace dataspace(1, dims);
+                H5::Group cfgGroup = mfH5Spectrum->createGroup("Config");
+                H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
+                dataset.write(data.data(), mCompDataType);
+                //H5Dflush(dataset.getId());
+                //H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+                //H5Fflush(mfH5Spectrum->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
+            }
+
+            hsize_t columns = 8195;
+            hsize_t init_dims[2] = {0, columns};       // 初始维度
+            hsize_t max_dims[2] = {H5S_UNLIMITED, columns};  // 最大维度
+            H5::DataSpace dataspace(2, init_dims, max_dims);
+
+            // 设置分块存储
+            H5::DSetCreatPropList prop_list;
+            hsize_t chunk_dims[2] = {1, columns};  // 分块大小
+            prop_list.setChunk(2, chunk_dims);
+
+            for (int i=1; i<=DET_NUM; ++i){
+                // 创建数据集
+                H5::Group cfgGroup = mfH5Spectrum->createGroup(QString("Detector#%1").arg(i).toStdString());
+                H5::DataSet dataset = cfgGroup.createDataSet("Spectrum", H5::PredType::NATIVE_UINT, dataspace, prop_list);
+                mSpectrumDataset[i-1] = dataset;
+            }
+
+            // for (int i=1; i<=DET_NUM; ++i){
+            //     // 创建数据集
+            //     H5::DataSet dataset = mSpectrumDataset[i-1];
+
+            //     // 获取当前维度
+            //     H5::DataSpace file_space = dataset.getSpace();  // 初始文件空间
+            //     hsize_t current_dims[2];
+            //     file_space.getSimpleExtentDims(current_dims, NULL);
+
+            //     // 1. 扩展数据集维度
+            //     current_dims[0] += 1;
+            //     dataset.extend(current_dims);
+
+            //     // 2. 重新获取扩展后的文件空间
+            //     file_space = dataset.getSpace();  // 关键：更新文件空间
+
+            //     // 3. 定义内存空间（1行数据）
+            //     hsize_t mem_dims[2] = {1, columns};
+            //     H5::DataSpace mem_space(2, mem_dims);
+
+            //     // 4. 设置写入偏移（新行位置）
+            //     hsize_t offset[2] = {current_dims[0] - 1, 0};  // 偏移到最后一行
+            //     file_space.selectHyperslab(H5S_SELECT_SET, mem_dims, offset);
+
+            //     // 5. 写入数据（示例：填充i值）
+            //     QByteArray data(columns, static_cast<uchar>(i));
+            //     dataset.write(data.constData(), H5::PredType::NATIVE_UCHAR, mem_space, file_space);
+
+            //     // 6. 同步当前数据集，防止发生异常，数据丢失
+            //     //H5Dflush(dataset.getId());
+            //     H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+            // }
+        } catch (H5::FileIException& error) {
+            error.printErrorStack();
+            return ;
+        } catch (H5::DataSetIException& error) {
+            error.printErrorStack();
+            return ;
+        } catch (H5::DataSpaceIException& error) {
+            error.printErrorStack();
+            return ;
+        }
+    }
+}
+
+void HDF5Settings::closeH5Spectrum()
+{
+    if (mfH5Spectrum)
+    {
+        H5Fflush(mfH5Spectrum->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
+        mfH5Spectrum->close();
+        delete mfH5Spectrum;
+        mfH5Spectrum = nullptr;
+    }
+}
+
+H5::CompType HDF5Settings::createCfgDataType()
+{
+    H5::CompType type = H5::CompType(sizeof(DetParameter));//复合数据类型
+
+    // 定义固定长度字符串类型(20字符)
+    H5::StrType ipStrType(H5::PredType::C_S1, IP_LENGTH);
+
+    type.insertMember("id", HOFFSET(DetParameter, id), H5::PredType::NATIVE_UINT8);
+
+    // 全局
+    {
+        //心跳时间(秒)
+        type.insertMember("checkTime", HOFFSET(DetParameter, pluseCheckTime), H5::PredType::NATIVE_INT);
+        //交换机地址
+        //type.insertMember("switcherIp", HOFFSET(DetParameter, switcherIp), ipStrType);
+
+        //时间服务器
+        //IP地址
+        type.insertMember("timerSrvIp", HOFFSET(DetParameter, timerSrvIp), ipStrType);
+    }
+
+    //基本设置
+    {
+        //增益
+        type.insertMember("gain", HOFFSET(DetParameter, gain), H5::PredType::NATIVE_DOUBLE);
+        //死时间
+        type.insertMember("deathT", HOFFSET(DetParameter, deathTime), H5::PredType::NATIVE_UINT8);
+        //触发阈值
+        type.insertMember("Threshold", HOFFSET(DetParameter, triggerThold), H5::PredType::NATIVE_UINT16);
+    }
+
+    // 探测器网络设置，用于界面匹配对应通道
+    {
+        //IP地址,port号
+        char det_Ip_port[16];
+        type.insertMember("detIpPort", HOFFSET(DetParameter, det_Ip_port), ipStrType);
+    }
+
+    //能谱设置
+    {
+        //能谱刷新时间（毫秒）
+        type.insertMember("specDeltaT", HOFFSET(DetParameter, spectrumRefreshTime), H5::PredType::NATIVE_ULONG);
+        //能谱长度
+        type.insertMember("specLen", HOFFSET(DetParameter, spectrumLength), H5::PredType::NATIVE_ULONG);
+    }
+
+    //波形设置
+    {
+        //触发模式
+        type.insertMember("waveTrigMode", HOFFSET(DetParameter, waveformTriggerMode), H5::PredType::NATIVE_UINT8);
+        //波形长度
+        type.insertMember("waveLen", HOFFSET(DetParameter, waveformLength), H5::PredType::NATIVE_ULONG);
+    }
+
+    //梯形成型
+    {
+        //是否启用
+
+        type.insertMember("TShapeEnable", HOFFSET(DetParameter, trapShapeEnable), H5::PredType::NATIVE_HBOOL);
+        //时间常数D1
+        type.insertMember("TShapeD1", HOFFSET(DetParameter, trapShapeTimeConstD1), H5::PredType::NATIVE_UINT16);
+        //时间常数D2
+        type.insertMember("TShapeD2", HOFFSET(DetParameter, trapShapeTimeConstD2), H5::PredType::NATIVE_UINT16);
+        //上升沿
+        type.insertMember("TShapeRise", HOFFSET(DetParameter, trapShapeRisePoint), H5::PredType::NATIVE_UINT8);
+        //平顶
+        type.insertMember("TShapePeak", HOFFSET(DetParameter, trapShapePeakPoint), H5::PredType::NATIVE_UINT8);
+        //下降沿
+        type.insertMember("TShapeFall", HOFFSET(DetParameter, trapShapeFallPoint), H5::PredType::NATIVE_UINT8);
+    }
+
+    //高压电源
+    {
+        //是否启用
+        type.insertMember("HV_Enable", HOFFSET(DetParameter, highVoltageEnable), H5::PredType::NATIVE_HBOOL);
+        //DAC高压输出电平
+        type.insertMember("HV_Out", HOFFSET(DetParameter, highVoltageOutLevel), H5::PredType::NATIVE_USHORT);
+    }
+
+    return type;
+}
+
+// 定义FullSpectrum的HDF5复合类型
+H5::CompType HDF5Settings::createFullSpectrumType()
+{
+    H5::CompType type(offsetof(FullSpectrum, receivedMask));
+
+    // 逐个成员映射（注意内存对齐，需与结构体一致）
+    type.insertMember("sequence", offsetof(FullSpectrum, sequence), H5::PredType::NATIVE_UINT32);
+    type.insertMember("measureTime", offsetof(FullSpectrum, measureTime), H5::PredType::NATIVE_UINT32);
+    type.insertMember("deathTime", offsetof(FullSpectrum, deathTime), H5::PredType::NATIVE_UINT32);
+
+    // 数组成员：spectrum[8192]
+    hsize_t spectrum_dims[] = {8192};
+    H5::ArrayType spectrum_array(H5::PredType::NATIVE_UINT32, 1, spectrum_dims);
+    type.insertMember("spectrum", offsetof(FullSpectrum, spectrum), spectrum_array);
+
+    return type;
+}
+
+/**
+ * @brief 写入单个FullSpectrum结构体到HDF5文件
+ * @param index 探测器索引（1~24)
+ * @param data 要写入的结构体数据
+ */
+void HDF5Settings::writeFullSpectrum(quint8 index, const FullSpectrum& data)
+{
+    QMutexLocker locker(&mWrite_mutex);
+    if (!mfH5Spectrum)
+        return;
+
+    try {
+        hsize_t columns = 8195;
+
+        // 获取当前维度
+        H5::DataSet dataset = mSpectrumDataset[index-1];
+
+        // 获取当前维度
+        H5::DataSpace file_space = dataset.getSpace();  // 初始文件空间
+        hsize_t current_dims[2];
+        file_space.getSimpleExtentDims(current_dims, NULL);
+
+        // 1. 扩展数据集维度
+        current_dims[0] += 1;
+        dataset.extend(current_dims);
+
+        // 2. 重新获取扩展后的文件空间
+        file_space = dataset.getSpace();  // 关键：更新文件空间
+
+        // 3. 定义内存空间（1行数据）
+        hsize_t mem_dims[2] = {1, columns};
+        H5::DataSpace mem_space(2, mem_dims);
+
+        // 4. 设置写入偏移（新行位置）
+        hsize_t offset[2] = {current_dims[0] - 1, 0};  // 偏移到最后一行
+        file_space.selectHyperslab(H5S_SELECT_SET, mem_dims, offset);
+
+        // 5. 写入数据（示例：填充i值）
+        //QByteArray data(columns, static_cast<uchar>(i));
+        dataset.write(&data, H5::PredType::NATIVE_UINT, mem_space, file_space);
+
+        // 强制同步（避免异常丢失）
+        //H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+        if (++mSpectrumRef >= 100)
+        {
+            H5Fflush(mfH5Spectrum->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
+            mSpectrumRef = 0;
+        }
+    } catch (H5::Exception& e) {
+        e.printErrorStack();
+    }
+}
+
+/**
+ * @brief 从HDF5文件读取FullSpectrum结构体
+ * @param filePath H5文件路径
+ * @param groupName 分组名称
+ * @param datasetName 数据集名称
+ * @return 读取到的结构体数据
+ */
+ void readHDF5Table(const H5::DataSet& dataset) {
+     hsize_t current_dims[2];
+     H5::DataSpace dspace = dataset.getSpace();
+     dspace.getSimpleExtentDims(current_dims, NULL);
+     hsize_t rows = current_dims[0];
+     hsize_t cols = current_dims[1];
+
+     if (rows == 0) {
+         return;
+     }
+
+     // 内存空间：每次读取一行
+     hsize_t mem_dims[2] = {1, cols};
+     H5::DataSpace mem_space(2, mem_dims);
+
+     uint32_t* row_data = new uint32_t[cols];
+
+     for (hsize_t i = 0; i < rows; ++i) {
+         hsize_t start[2] = {i, 0};
+         hsize_t count[2] = {1, cols};
+         dspace.selectHyperslab(H5S_SELECT_SET, count, start);
+
+         dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, dspace);
+
+         // 打印第i行数据
+         for (hsize_t j = 0; j < cols; ++j) {
+
+         }
+
+         dspace.selectNone();
+     }
+
+     delete[] row_data;
+ }
+
+bool HDF5Settings::readFullSpectrum(const std::string& filePath,
+                                             const std::string& groupName,
+                                             const std::string& datasetName,
+                                             std::function<void(const FullSpectrum&)> callback)
+{
+    FullSpectrum data{};  // 初始化默认值
+
+    try {
+        // 1. 打开文件
+        H5::H5File file(filePath, H5F_ACC_RDONLY);
+
+        H5::Group cfgGroup = file.openGroup(groupName.c_str());
+        H5::DataSet dataset = cfgGroup.openDataSet(datasetName.c_str());
+        //readHDF5Table(dataset);
+        // 3. 确认数据类型匹配（可选，用于错误检查）
+        H5::CompType fileType = dataset.getCompType();
+        if (fileType != H5::PredType::NATIVE_UINT) {
+            return false;
+        }
+
+        H5::DataSpace file_space = dataset.getSpace();  // 初始文件空间
+        hsize_t current_dims[2];
+        file_space.getSimpleExtentDims(current_dims, NULL);
+        hsize_t rows = current_dims[0];
+        hsize_t cols = current_dims[1];
+
+        // 内存空间：每次读取一行
+        hsize_t mem_dims[2] = {1, cols};
+        H5::DataSpace mem_space(2, mem_dims);
+        uint32_t* row_data = new uint32_t[cols];
+        for (hsize_t i = 0; i < rows; ++i) {
+            hsize_t start[2] = {i, 0};
+            hsize_t count[2] = {1, cols};
+            file_space.selectHyperslab(H5S_SELECT_SET, count, start);
+
+            dataset.read(&data, H5::PredType::NATIVE_UINT, mem_space, file_space);
+            if (callback)
+                callback(data);
+            else
+                QMetaObject::invokeMethod(this, "sigSpectrum",
+                                          Qt::QueuedConnection,
+                                          Q_ARG(FullSpectrum, data));
+            file_space.selectNone();
+        }
+        delete[] row_data;
+
+        // 5. 关闭文件
+        file.close();
+    } catch (H5::Exception& e) {
+        e.printErrorStack();
+        return false;
+    }
+
+    return true;
 }

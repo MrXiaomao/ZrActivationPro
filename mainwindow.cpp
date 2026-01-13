@@ -1404,8 +1404,7 @@ void CentralWidget::onMeasureCountdownTimeout()
         mMeasureCountdownTimer->stop();
         // 显示最终测量时长
         ui->edit_measureTime->setText(formatTimeString(mTotalCountdown));
-        qInfo() << "测量倒计时结束，正在停止测量并关闭所有通道电源...";
-        
+
         // 自动更新发次号
         if (ui->checkBox_autoIncrease->isChecked()){
             ui->lineEdit_shotNum->setText(increaseShotNumSuffix(ui->lineEdit_shotNum->text().trimmed()));
@@ -1413,41 +1412,71 @@ void CentralWidget::onMeasureCountdownTimeout()
             settings.setValue("mainWindow/ShotNumStr", ui->lineEdit_shotNum->text());
         }
     
-        // 停止所有测量
-        commHelper->stopMeasure();
-        
-        //记录下关闭的电源通道号
-        foreach (quint8 index, mOnlineDetectors){
-            commHelper->manualCloseSwitcherPOEPower(index);
+        if (mEnableAutoMeasure)
+        {
+            qInfo() << "测量倒计时结束，正在停止测量并关闭所有通道电源...";
+
+            // 停止所有测量
+            commHelper->stopMeasure();
+
+
+            //记录下关闭的电源通道号
+            foreach (quint8 index, mOnlineDetectors)
+                commHelper->manualCloseSwitcherPOEPower(index);
+
+            // 关闭所有通道电源
+            commHelper->closePower(mEnableAutoMeasure);
+
+            qInfo() << "所有测量已停止，所有通道电源已关闭";
         }
-        // 关闭所有通道电源
-        commHelper->closePower(mEnableAutoMeasure);
-        
+        else
+        {
+            qInfo() << "测量倒计时结束，正在停止测量...";
+
+            // 停止所有测量
+            commHelper->stopMeasure();
+        }
+
         //清空温度超时报警的探测器ID
         mTemperatureTimeoutDetectors.clear();
         //清空探测器正在测量记录
         mDetectorMeasuring.clear();
         
-        qInfo() << "所有测量已停止，所有通道电源已关闭";
-
         // ui->action_startServer->setEnabled(true);
         // ui->action_stopServer->setEnabled(false);
-        ui->action_startMeasure->setEnabled(false);
-        ui->action_stopMeasure->setEnabled(false);
-        ui->pushButton_startMeasure->setEnabled(false);
-        ui->pushButton_stopMeasure->setEnabled(false);
-        ui->dateTime_shotTime->setEnabled(true);
-        ui->com_triggerModel->setEnabled(true);
-        ui->lineEdit_shotNum->setEnabled(true);
-        ui->checkBox_autoIncrease->setEnabled(true);
-        ui->spinBox_measureTime->setEnabled(true);
-        ui->checkBox_continueMeasure->setEnabled(true);
-        ui->lineEdit_filePath->setEnabled(true);
-        ui->dateTimeEdit_autoTrigger->setEnabled(true);
-        ui->cbb_measureMode->setEnabled(true);
 
-        if (mEnableAutoMeasure){
+        if (mEnableAutoMeasure)
+        {
+            ui->action_startMeasure->setEnabled(false);
+            ui->action_stopMeasure->setEnabled(false);
+            ui->pushButton_startMeasure->setEnabled(false);
+            ui->pushButton_stopMeasure->setEnabled(false);
+            ui->dateTime_shotTime->setEnabled(true);
+            ui->com_triggerModel->setEnabled(true);
+            ui->lineEdit_shotNum->setEnabled(true);
+            ui->checkBox_autoIncrease->setEnabled(true);
+            ui->spinBox_measureTime->setEnabled(true);
+            ui->checkBox_continueMeasure->setEnabled(true);
+            ui->lineEdit_filePath->setEnabled(true);
+            ui->dateTimeEdit_autoTrigger->setEnabled(true);
+            ui->cbb_measureMode->setEnabled(true);
             ui->action_connectSwitch->setEnabled(false);
+        }
+        else
+        {
+            ui->action_startMeasure->setEnabled(true);
+            ui->action_stopMeasure->setEnabled(false);
+            ui->pushButton_startMeasure->setEnabled(true);
+            ui->pushButton_stopMeasure->setEnabled(false);
+            ui->dateTime_shotTime->setEnabled(true);
+            ui->com_triggerModel->setEnabled(true);
+            ui->lineEdit_shotNum->setEnabled(true);
+            ui->checkBox_autoIncrease->setEnabled(true);
+            ui->spinBox_measureTime->setEnabled(true);
+            ui->checkBox_continueMeasure->setEnabled(true);
+            ui->lineEdit_filePath->setEnabled(true);
+            ui->dateTimeEdit_autoTrigger->setEnabled(true);
+            ui->cbb_measureMode->setEnabled(true);
         }
     }
 }
@@ -2391,3 +2420,14 @@ void CentralWidget::updateSpectrumPlotSettings(int detectorId)
         m_spectrumPlotSettings[detectorId-1].xMax = xMax;
     }
 }
+
+#include "particalwindow.h"
+void CentralWidget::on_action_partical_triggered()
+{
+    ParticalWindow *w = new ParticalWindow(nullptr);
+    w->setAttribute(Qt::WA_DeleteOnClose, true); // 关闭时自动删除
+    w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog); // 只显示关闭按钮
+    w->setWindowModality(Qt::ApplicationModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
+    w->show();
+}
+

@@ -1,4 +1,4 @@
-#include "dataprocessor.h"
+﻿#include "dataprocessor.h"
 #include <QDebug>
 #include <QTimer>
 
@@ -238,6 +238,9 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             it = mFullSpectrums.insert(spectrumSeq, newSpectrum);
         }
         fullSpectrum = &(it.value());
+
+        // H5能谱文件写入
+        HDF5Settings::instance()->writeFullSpectrum(mIndex, it.value());
     }
 
     // 3. 数据拼接与状态更新（核心逻辑，线程安全）
