@@ -92,7 +92,7 @@
     <item>
      <widget class="QStackedWidget" name="leftStackedWidget">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -195,17 +195,33 @@
            <enum>QAbstractScrollArea::AdjustIgnored</enum>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::NoSelection</enum>
+           <enum>QAbstractItemView::ExtendedSelection</enum>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectItems</enum>
           </property>
           <property name="showGrid">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="gridStyle">
            <enum>Qt::SolidLine</enum>
           </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <row>
+           <property name="text">
+            <string/>
+           </property>
+          </row>
+          <row>
+           <property name="text">
+            <string/>
+           </property>
+          </row>
           <row>
            <property name="text">
             <string>谱仪#1</string>
@@ -328,12 +344,32 @@
           </row>
           <column>
            <property name="text">
+            <string>序号</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>最小值</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
             <string>最小值</string>
            </property>
           </column>
           <column>
            <property name="text">
             <string>最大值</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>最大值</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>均值</string>
            </property>
           </column>
           <column>
@@ -358,18 +394,36 @@
           </column>
           <item row="0" column="0">
            <property name="text">
-            <string/>
+            <string>序号</string>
            </property>
            <property name="textAlignment">
             <set>AlignCenter</set>
            </property>
-           <property name="flags">
-            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-           </property>
           </item>
           <item row="0" column="1">
            <property name="text">
+            <string>最小值</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="0" column="2">
+           <property name="text">
             <string/>
+           </property>
+          </item>
+          <item row="0" column="3">
+           <property name="text">
+            <string>最大值</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="0" column="5">
+           <property name="text">
+            <string>均值</string>
            </property>
            <property name="textAlignment">
             <set>AlignCenter</set>
@@ -379,6 +433,83 @@
            <property name="text">
             <string/>
            </property>
+          </item>
+          <item row="1" column="1">
+           <property name="text">
+            <string>修正前</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="2">
+           <property name="text">
+            <string>修正后</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="3">
+           <property name="text">
+            <string>修正前</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="4">
+           <property name="text">
+            <string>修正后</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="5">
+           <property name="text">
+            <string>修正前</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="6">
+           <property name="text">
+            <string>修正后</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="7">
+           <property name="text">
+            <string>最小值</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="8">
+           <property name="text">
+            <string>最大值</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="1" column="9">
+           <property name="text">
+            <string>均值</string>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="2" column="1">
+           <property name="text">
+            <string/>
+           </property>
            <property name="textAlignment">
             <set>AlignCenter</set>
            </property>
@@ -386,7 +517,26 @@
             <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
            </property>
           </item>
-          <item row="1" column="1">
+          <item row="2" column="2">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="3" column="1">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="3" column="2">
            <property name="text">
             <string/>
            </property>
@@ -505,15 +655,6 @@
                </property>
                <item>
                 <widget class="QWidget" name="spectorMeterWidget1" native="true">
-                 <property name="styleSheet">
-                  <string notr="true">QWidget#widget_12{
-	background-color: rgb(244, 247, 252);
-	border: 1px solid rgb(170,170,170);
-	border-top-left-radius: 20px;
-	border-top-right-radius: 20px;
-}
-</string>
-                 </property>
                  <layout class="QVBoxLayout" name="verticalLayout_11">
                   <property name="spacing">
                    <number>1</number>
@@ -666,6 +807,9 @@
                 </item>
                 <item>
                  <widget class="QLineEdit" name="line_measure_startT">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -677,6 +821,9 @@
                     <width>40</width>
                     <height>0</height>
                    </size>
+                  </property>
+                  <property name="text">
+                   <string>0</string>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -692,6 +839,9 @@
                 </item>
                 <item>
                  <widget class="QLineEdit" name="line_measure_endT">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -703,6 +853,9 @@
                     <width>40</width>
                     <height>0</height>
                    </size>
+                  </property>
+                  <property name="text">
+                   <string>100</string>
                   </property>
                   <property name="readOnly">
                    <bool>true</bool>
@@ -728,6 +881,12 @@
                  <width>50</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="maximum">
+                <number>999999</number>
+               </property>
+               <property name="value">
+                <number>100</number>
                </property>
               </widget>
              </item>
@@ -789,7 +948,14 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QSpinBox" name="spinBox"/>
+              <widget class="QSpinBox" name="spinBox">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>9999</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
@@ -1079,24 +1245,6 @@
     <enum>QAction::NoRole</enum>
    </property>
   </action>
-  <action name="action_cfgParam">
-   <property name="icon">
-    <iconset resource="../3rdParty/resource/resource.qrc">
-     <normaloff>:/canshushezhi-05.png</normaloff>:/canshushezhi-05.png</iconset>
-   </property>
-   <property name="text">
-    <string>测量参数设置(&amp;P)</string>
-   </property>
-   <property name="iconText">
-    <string>测量参数设置</string>
-   </property>
-   <property name="toolTip">
-    <string>测量参数设置</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::NoRole</enum>
-   </property>
-  </action>
   <action name="action_about">
    <property name="icon">
     <iconset resource="../3rdParty/resource/resource.qrc">
@@ -1209,5 +1357,22 @@
   <include location="../3rdParty/resource/resource.qrc"/>
   <include location="../3rdParty/resource/resource.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>pushButton_start</sender>
+   <signal>clicked()</signal>
+   <receiver>action_startMeasure</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1341</x>
+     <y>373</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

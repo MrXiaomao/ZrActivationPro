@@ -636,48 +636,6 @@ void HDF5Settings::writeFullSpectrum(quint8 index, const FullSpectrum& data)
     }
 }
 
-/**
- * @brief 从HDF5文件读取FullSpectrum结构体
- * @param filePath H5文件路径
- * @param groupName 分组名称
- * @param datasetName 数据集名称
- * @return 读取到的结构体数据
- */
- void readHDF5Table(const H5::DataSet& dataset) {
-     hsize_t current_dims[2];
-     H5::DataSpace dspace = dataset.getSpace();
-     dspace.getSimpleExtentDims(current_dims, NULL);
-     hsize_t rows = current_dims[0];
-     hsize_t cols = current_dims[1];
-
-     if (rows == 0) {
-         return;
-     }
-
-     // 内存空间：每次读取一行
-     hsize_t mem_dims[2] = {1, cols};
-     H5::DataSpace mem_space(2, mem_dims);
-
-     uint32_t* row_data = new uint32_t[cols];
-
-     for (hsize_t i = 0; i < rows; ++i) {
-         hsize_t start[2] = {i, 0};
-         hsize_t count[2] = {1, cols};
-         dspace.selectHyperslab(H5S_SELECT_SET, count, start);
-
-         dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, dspace);
-
-         // 打印第i行数据
-         for (hsize_t j = 0; j < cols; ++j) {
-
-         }
-
-         dspace.selectNone();
-     }
-
-     delete[] row_data;
- }
-
 bool HDF5Settings::readFullSpectrum(const std::string& filePath,
                                              const std::string& groupName,
                                              const std::string& datasetName,

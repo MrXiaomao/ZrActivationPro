@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForLocale(QTextCodec::codecForMib(106));/* Utf8 */
     QGoodWindowHelper w;
     if (args.contains("-m") && args.contains("offline")){
-        QApplication::setApplicationName("锆活化工程");
+        QApplication::setApplicationName("锆活化工程离线数据分析-计数率统计");
         mMainWindow = new OfflineWindow(isDarkTheme, &w);
     }
     else

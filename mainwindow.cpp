@@ -5,7 +5,7 @@
 #include "switchbutton.h"
 #include <QTimer>
 #include "energycalibration.h"
-#include "qcustomplothelper.h"
+
 
 MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
@@ -1107,21 +1107,6 @@ void MainWindow::on_action_open_triggered()
     QProcess::startDetached(program, arguments);
 
     qInfo().noquote() << tr("打开离线数据分析程序");
-
-    // 打开历史测量数据文件...
-    // GlobalSettings settings;
-    // QString lastPath = settings.value("mainWindow/LastFilePath", QDir::homePath()).toString();
-    // QString filter = "二进制文件 (*.dat);;文本文件 (*.csv);;所有文件 (*.dat *.csv)";
-    // QString filePath = QFileDialog::getOpenFileName(this, tr("打开测量数据文件"), lastPath, filter);
-
-    // if (filePath.isEmpty() || !QFileInfo::exists(filePath))
-    //     return;
-
-    // settings.setValue("mainWindow/LastFilePath", filePath);
-    // if (!commHelper->openHistoryWaveFile(filePath))
-    // {
-    //     QMessageBox::information(this, tr("提示"), tr("文件格式错误，加载失败！"));
-    // }
 }
 
 

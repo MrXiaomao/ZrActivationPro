@@ -5,10 +5,8 @@
 #include "commhelper.h"
 #include "clientpeerswindow.h"
 #include "detsettingwindow.h"
-
-#include "QGoodWindow"
-#include "QGoodCentralWidget"
 #include "QGoodWindowHelper"
+#include "qcustomplothelper.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,12 +15,7 @@ class MainWindow;
 QT_END_NAMESPACE
 
 class QCustomPlot;
-class QCPItemText;
-class QCPItemLine;
-class QCPItemRect;
 class QCPGraph;
-class QCPAbstractPlottable;
-class QCPItemCurve;
 class QTimer;
 
 // 探测器数据结构
