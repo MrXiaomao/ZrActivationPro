@@ -92,16 +92,10 @@
     <item>
      <widget class="QStackedWidget" name="leftStackedWidget">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>300</width>
-        <height>0</height>
-       </size>
       </property>
       <property name="currentIndex">
        <number>0</number>
@@ -179,12 +173,6 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>300</width>
-            <height>750</height>
-           </size>
-          </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
@@ -207,21 +195,11 @@
            <enum>Qt::SolidLine</enum>
           </property>
           <attribute name="horizontalHeaderVisible">
-           <bool>false</bool>
+           <bool>true</bool>
           </attribute>
           <attribute name="verticalHeaderVisible">
            <bool>false</bool>
           </attribute>
-          <row>
-           <property name="text">
-            <string/>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string/>
-           </property>
-          </row>
           <row>
            <property name="text">
             <string>谱仪#1</string>
@@ -349,165 +327,22 @@
           </column>
           <column>
            <property name="text">
-            <string>最小值/cps</string>
+            <string>中子产额</string>
            </property>
           </column>
-          <column>
-           <property name="text">
-            <string>最小值</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>最大值/cps</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>最大值</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>均值/cps</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>均值</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>最小值(%)</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>最大值(%)</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>均值(%)</string>
-           </property>
-          </column>
-          <item row="0" column="0">
-           <property name="text">
-            <string>序号</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
           <item row="0" column="1">
            <property name="text">
-            <string>最小值</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="0" column="2">
-           <property name="text">
             <string/>
            </property>
-          </item>
-          <item row="0" column="3">
-           <property name="text">
-            <string>最大值</string>
-           </property>
            <property name="textAlignment">
             <set>AlignCenter</set>
            </property>
-          </item>
-          <item row="0" column="5">
-           <property name="text">
-            <string>均值</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="0">
-           <property name="text">
-            <string/>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
            </property>
           </item>
           <item row="1" column="1">
            <property name="text">
-            <string>修正前</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="2">
-           <property name="text">
-            <string>修正后</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="3">
-           <property name="text">
-            <string>修正前</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="4">
-           <property name="text">
-            <string>修正后</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="5">
-           <property name="text">
-            <string>修正前</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="6">
-           <property name="text">
-            <string>修正后</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="7">
-           <property name="text">
-            <string>最小值</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="8">
-           <property name="text">
-            <string>最大值</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="1" column="9">
-           <property name="text">
-            <string>均值</string>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="2" column="1">
-           <property name="text">
             <string/>
            </property>
            <property name="textAlignment">
@@ -515,33 +350,6 @@
            </property>
            <property name="flags">
             <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-           </property>
-          </item>
-          <item row="2" column="2">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
-          <item row="3" column="1">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-           <property name="flags">
-            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-           </property>
-          </item>
-          <item row="3" column="2">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
            </property>
           </item>
          </widget>
@@ -564,128 +372,174 @@
      </widget>
     </item>
     <item>
-     <widget class="QTabWidget" name="centralHboxTabWidget">
+     <widget class="QWidget" name="centralHboxWidget" native="true">
       <property name="minimumSize">
        <size>
         <width>300</width>
         <height>0</height>
        </size>
       </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <property name="iconSize">
-       <size>
-        <width>16</width>
-        <height>16</height>
-       </size>
-      </property>
-      <property name="tabsClosable">
-       <bool>false</bool>
-      </property>
-      <property name="tabBarAutoHide">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="leftHboxTabWidgetPage1">
-       <attribute name="icon">
-        <iconset>
-         <normaloff>:/line.png</normaloff>:/line.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>实验数据        </string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <item row="0" column="0">
-         <widget class="QStackedWidget" name="stackedWidget">
-          <property name="currentIndex">
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QStackedWidget" name="stackedWidget">
+         <property name="currentIndex">
+          <number>2</number>
+         </property>
+         <widget class="QWidget" name="page_spectrum">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="widget_flowLayoutContainer" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCustomPlot" name="spectorMeter_Spectrum" native="true"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_yield">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="horizontalSpacing">
+            <number>0</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QCustomPlot" name="spectorMeter_Yield" native="true"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_count">
+          <layout class="QGridLayout" name="gridLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QCustomPlot" name="spectorMeter_Count" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="widget" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>50</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <property name="leftMargin">
+           <number>9</number>
+          </property>
+          <property name="topMargin">
            <number>0</number>
           </property>
-          <widget class="QWidget" name="spectroMeterPageInfoWidget">
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <property name="spacing">
-             <number>2</number>
+          <property name="rightMargin">
+           <number>9</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
-            <property name="leftMargin">
-             <number>0</number>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>514</width>
+              <height>20</height>
+             </size>
             </property>
-            <property name="topMargin">
-             <number>0</number>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_spectrum">
+            <property name="text">
+             <string>显示能谱</string>
             </property>
-            <property name="rightMargin">
-             <number>0</number>
+            <property name="checked">
+             <bool>true</bool>
             </property>
-            <property name="bottomMargin">
-             <number>0</number>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_count">
+            <property name="text">
+             <string>显示计数</string>
             </property>
-            <item>
-             <widget class="QWidget" name="widget__plot" native="true">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_12">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="spectorMeterWidget1" native="true">
-                 <layout class="QVBoxLayout" name="verticalLayout_11">
-                  <property name="spacing">
-                   <number>1</number>
-                  </property>
-                  <property name="leftMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <widget class="QCustomPlot" name="spectorMeter" native="true"/>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_neutronYield">
+            <property name="text">
+             <string>显示中子产额</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
     <item>
@@ -721,6 +575,18 @@
           </sizepolicy>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <widget class="QGroupBox" name="groupBox_2">
             <property name="sizePolicy">
@@ -906,7 +772,10 @@
              <item row="1" column="0" rowspan="2">
               <widget class="QLabel" name="label_8">
                <property name="text">
-                <string>时间终点/s:</string>
+                <string>解析时间终点/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
@@ -936,19 +805,25 @@
              <item row="0" column="0">
               <widget class="QLabel" name="label_6">
                <property name="text">
-                <string>时间起点/s:</string>
+                <string>解析时间起点/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label">
                <property name="text">
-                <string>步长/s:</string>
+                <string>时间步长/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QSpinBox" name="spinBox">
+              <widget class="QSpinBox" name="spinBox_step">
                <property name="minimum">
                 <number>1</number>
                </property>
@@ -956,6 +831,47 @@
                 <number>9999</number>
                </property>
               </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox">
+            <property name="title">
+             <string>分析数据另存为</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_5">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_24">
+               <property name="text">
+                <string>存储路径：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="lineEdit_savepath"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_55">
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>文件名(.txt)：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QLineEdit" name="lineEdit_fileName"/>
              </item>
             </layout>
            </widget>
@@ -1009,7 +925,7 @@
                 <string>开始解析</string>
                </property>
                <property name="icon">
-                <iconset resource="../ZrActivation/resource.qrc">
+                <iconset>
                  <normaloff>:/resource/analyze.png</normaloff>:/resource/analyze.png</iconset>
                </property>
                <property name="checkable">
@@ -1205,7 +1121,7 @@
   </widget>
   <action name="action_open">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/open.png</normaloff>:/open.png</iconset>
    </property>
    <property name="text">
@@ -1226,7 +1142,7 @@
   </action>
   <action name="action_exit">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/exit.png</normaloff>:/exit.png</iconset>
    </property>
    <property name="text">
@@ -1247,7 +1163,7 @@
   </action>
   <action name="action_about">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/logo.png</normaloff>:/logo.png</iconset>
    </property>
    <property name="text">
@@ -1265,7 +1181,7 @@
   </action>
   <action name="action_startMeasure">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/work-on.png</normaloff>:/work-on.png</iconset>
    </property>
    <property name="text">
@@ -1280,7 +1196,7 @@
   </action>
   <action name="action_stopMeasure">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/work-off.png</normaloff>:/work-off.png</iconset>
    </property>
    <property name="text">
@@ -1337,7 +1253,7 @@
   </action>
   <action name="action_aboutQt">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/aboutqt.png</normaloff>:/aboutqt.png</iconset>
    </property>
    <property name="text">
@@ -1353,7 +1269,10 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../3rdParty/resource/resource.qrc"/>
+  <include location="../3rdParty/resource/resource.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>pushButton_start</sender>

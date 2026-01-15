@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     PeerConnection.cpp \
+    QFlowLayout.cpp \
     TcpAgentServer.cpp \
     clientpeerswindow.cpp \
     commandadapter.cpp \
@@ -34,6 +35,7 @@ SOURCES += \
 
 HEADERS += \
     PeerConnection.h \
+    QFlowLayout.h \
     TcpAgentServer.h \
     clientpeerswindow.h \
     commandadapter.h \

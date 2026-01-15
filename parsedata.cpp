@@ -1,4 +1,4 @@
-#include "parsedata.h"
+﻿#include "parsedata.h"
 #include <QFile>
 #include <QDataStream>
 #include <QDebug>
@@ -1021,4 +1021,9 @@ void ParseData::clearFitResult()
     specStripData_y.clear(); //拟合数据点y坐标
     specStripData_fity.clear(); //拟合曲线y
     specStripData_residualRate.clear(); //残差
+}
+
+void ParseData::parseH5File(QString filePath)
+{
+
 }

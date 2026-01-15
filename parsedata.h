@@ -1,4 +1,4 @@
-#ifndef PARSEDATA_H
+﻿#ifndef PARSEDATA_H
 #define PARSEDATA_H
 
 //中子产额分析算法
@@ -91,6 +91,9 @@ public:
         T0_beforeShot = time;
     }
 
+    // 解析H5文件
+    void parseH5File(QString filePath);
+
 private:
     bool getResult(QVector<mergeSpecData> mergeSpec);
 
@@ -127,6 +130,8 @@ private:
     int timeBin_online = 300*60; //解析能谱的时间宽度，单位s.分时能谱的单个能谱测量时间
 
     QVector<int> specStrip_rightCH; //存放所有剥谱图形的右端点下标
+
+
 };
 
 #endif // PARSEDATA_H

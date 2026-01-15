@@ -17,6 +17,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QMessageBox>
 #include <math.h>
 
 NeutronYieldStatisticsWindow::NeutronYieldStatisticsWindow(bool isDarkTheme, QWidget *parent)
@@ -92,7 +93,7 @@ void NeutronYieldStatisticsWindow::initUi()
         splitterH1->setObjectName("splitterH1");
         splitterH1->setHandleWidth(1);
         splitterH1->addWidget(ui->leftStackedWidget);
-        splitterH1->addWidget(ui->centralHboxTabWidget);
+        splitterH1->addWidget(ui->centralHboxWidget);
         splitterH1->addWidget(ui->rightVboxWidget);
         splitterH1->setSizes(QList<int>() << 100000 << 600000 << 100000);
         splitterH1->setCollapsible(0,false);
@@ -207,22 +208,9 @@ void NeutronYieldStatisticsWindow::initUi()
 
     for (int column=0; column<ui->tableWidget->columnCount(); ++column)
     {
-        //ui->tableWidget->horizontalHeader()->setSectionResizeMode(column, QHeaderView::Fixed);
-        //ui->tableWidget->setColumnWidth(column, column==0 ? 40 : 60);
-
         for (int row=0; row<ui->tableWidget->rowCount(); ++row)
         {
-            if (row>=0 && row<=1)
-            {
-                if (nullptr == ui->tableWidget->item(row, column))
-                    ui->tableWidget->setItem(row, column, new QTableWidgetItem(""));
-                ui->tableWidget->item(row, column)->setBackground(Qt::gray);
-            }
-            else
-            {
-                ui->tableWidget->setItem(row, column, new QTableWidgetItem(""));
-            }
-
+            ui->tableWidget->setItem(row, column, new QTableWidgetItem(""));
             ui->tableWidget->item(row, column)->setTextAlignment(Qt::AlignCenter);
         }
     }
@@ -230,37 +218,23 @@ void NeutronYieldStatisticsWindow::initUi()
     for (int row=0; row<ui->tableWidget->rowCount(); ++row)
     {
         ui->tableWidget->setRowHeight(row, 25);
-        if (row>=2)
-        {
-            ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString("#%1").arg(row-1)));
-            ui->tableWidget->item(row, 0)->setTextAlignment(Qt::AlignCenter);
-        }
+        ui->tableWidget->setItem(row, 0, new QTableWidgetItem(QString("#%1").arg(row+1)));
+        ui->tableWidget->item(row, 0)->setTextAlignment(Qt::AlignCenter);
     }
-    ui->tableWidget->setFixedHeight(650);
-    ui->leftStackedWidget->setMinimumWidth(582);
+    ui->tableWidget->setFixedHeight(625);
+    ui->leftStackedWidget->setMinimumWidth(200);
 
-    ui->tableWidget->setSpan(0, 0, 2, 1);
-    ui->tableWidget->setSpan(0, 1, 1, 2);
-    ui->tableWidget->setItem(0, 1, new QTableWidgetItem("最小值(计数)"));
-    ui->tableWidget->setSpan(0, 3, 1, 2);
-    ui->tableWidget->setItem(0, 3, new QTableWidgetItem("最大值(计数)"));
-    ui->tableWidget->setSpan(0, 5, 1, 2);
-    ui->tableWidget->setItem(0, 5, new QTableWidgetItem("均值(计数)"));
-    ui->tableWidget->setSpan(0, 7, 1, 3);
-    ui->tableWidget->setItem(0, 7, new QTableWidgetItem("死时间率％"));
+    initSpectrumCustomPlot();
+    initCountCustomPlot();
 
-    ui->tableWidget->item(0, 1)->setTextAlignment(Qt::AlignCenter);
-    ui->tableWidget->item(0, 3)->setTextAlignment(Qt::AlignCenter);
-    ui->tableWidget->item(0, 5)->setTextAlignment(Qt::AlignCenter);
-    ui->tableWidget->item(0, 7)->setTextAlignment(Qt::AlignCenter);
-
-    ui->tableWidget->item(0, 1)->setBackground(Qt::gray);
-    ui->tableWidget->item(0, 3)->setBackground(Qt::gray);
-    ui->tableWidget->item(0, 5)->setBackground(Qt::gray);
-    ui->tableWidget->item(0, 7)->setBackground(Qt::gray);
-
-    //initCustomPlot(ui->spectorMeter, tr("时间/s"), tr("计数率/cps"));
-    initCustomPlot(ui->spectorMeter, tr("道址"), tr("能量keV"));
+    // 显示计数/能谱
+    QButtonGroup *grp = new QButtonGroup(this);
+    grp->addButton(ui->radioButton_count, 0);
+    grp->addButton(ui->radioButton_spectrum, 1);
+    grp->addButton(ui->radioButton_neutronYield, 2);
+    connect(grp, QOverload<int>::of(&QButtonGroup::idClicked), this, [=](int index){
+        ui->stackedWidget->setCurrentIndex(index);
+    });
 
     //恢复页面布局
     {
@@ -502,8 +476,15 @@ void NeutronYieldStatisticsWindow::replyWriteLog(const QString &msg, QtMsgType m
     }
 }
 
-void NeutronYieldStatisticsWindow::initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel)
+#include "QFlowLayout.h"
+void NeutronYieldStatisticsWindow::initSpectrumCustomPlot()
 {
+    QCustomPlot* customPlot = ui->spectorMeter_Spectrum;
+    QFlowLayout* flowLayout = new QFlowLayout(ui->widget_flowLayoutContainer, 40, 20, 20);
+    flowLayout->setObjectName("flowLayout");
+    flowLayout->setContentsMargins(80, 20, 20, 0);
+    ui->widget_flowLayoutContainer->setLayout(flowLayout);
+
     QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
     customPlot->setAntialiasedElements(QCP::aeAll);
     customPlot->legend->setVisible(false);
@@ -517,35 +498,234 @@ void NeutronYieldStatisticsWindow::initCustomPlot(QCustomPlot* customPlot, QStri
     customPlot->yAxis->setRange(0, 10000);
     customPlot->yAxis->ticker()->setTickCount(5);
     customPlot->xAxis->ticker()->setTickCount(10);
-    customPlot->yAxis2->ticker()->setTickCount(5);
-    customPlot->xAxis2->ticker()->setTickCount(10);
 
     //设置轴标签名称
-    customPlot->xAxis->setLabel(axisXLabel);
-    customPlot->yAxis->setLabel(axisYLabel);
+    customPlot->xAxis->setLabel(tr("道址"));
+    customPlot->yAxis->setLabel(tr("计数率/cps"));
 
     customPlot->xAxis2->setTicks(false);
     customPlot->xAxis2->setSubTicks(false);
     customPlot->yAxis2->setTicks(false);
     customPlot->yAxis2->setSubTicks(false);
 
-    // 添加散点图
-    for (int i=0; i<2; ++i){
-        QCPGraph * graph = customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
-        graph->setName(i==0 ? "修正前" : "修正后");
-        graph->setAntialiased(false);
-        graph->setPen(QPen(i==0 ? Qt::red : Qt::blue));
-        graph->setLineStyle(QCPGraph::lsLine);
-        graph->setSelectable(QCP::SelectionType::stNone);
-    }
-
-    customPlotHelper->setGraphCheckBox(customPlot);
     customPlot->replot();
     connect(customPlot->xAxis, SIGNAL(rangeChanged(const QCPRange &)), customPlot->xAxis2, SLOT(setRange(const QCPRange &)));
     connect(customPlot->yAxis, SIGNAL(rangeChanged(const QCPRange &)), customPlot->yAxis2, SLOT(setRange(const QCPRange &)));
     connect(customPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(slotShowTracer(QMouseEvent*)));
     connect(customPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(slotRestorePlot(QMouseEvent*)));
 }
+
+void NeutronYieldStatisticsWindow::initCountCustomPlot()
+{
+    QCustomPlot* customPlot = ui->spectorMeter_Count;
+    QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
+    customPlot->setAntialiasedElements(QCP::aeAll);
+    customPlot->legend->setVisible(false);
+    customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    customPlot->xAxis->rescale(true);
+    customPlot->yAxis->rescale(true);
+
+    // 909全能峰计数随时间变化曲线
+    QCPAxisRect *timeCountAxisRect = new QCPAxisRect(customPlot);
+    timeCountAxisRect->setObjectName("timeCountAxisRect");
+    {
+        timeCountAxisRect->setupFullAxesBox();
+        timeCountAxisRect->setMinimumMargins(QMargins(0,0,0,0));
+        timeCountAxisRect->setMargins(QMargins(0,0,0,0));
+        timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->setPadding(0);
+        timeCountAxisRect->axis(QCPAxis::AxisType::atLeft)->setLabel(tr("计数率/cps"));
+        timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr(""));
+        timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->setTickLabels(false);
+        timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(790, 1150);
+        timeCountAxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(0, 1000);
+        timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->grid()->setZeroLinePen(Qt::NoPen);
+
+    }
+
+    // 909计数随时间变化的拟合曲线
+    {
+        QCPAxis *keyAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->addGraph(keyAxis, valueAxis);
+        graph->setName("timeCountFitGraph");
+        graph->setProperty("isTimeCountFitGraph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(QColor(Qt::red)));
+        //graph->setSelectable(QCP::SelectionType::stNone);
+        graph->setLineStyle(QCPGraph::lsLine);
+        graph->setSmooth(true);
+    }
+
+    // 909计数拟合残差
+    {
+        QCPGraph *graph = customPlot->addGraph(timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), timeCountAxisRect->axis(QCPAxis::AxisType::atLeft));
+        graph->setName("timeCountGraph");
+        graph->setProperty("isTimeCountGraph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(QColor(Qt::black)));
+        //graph->selectionDecorator()->setPen(QPen(clrLine));
+        graph->setLineStyle(QCPGraph::lsNone);
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+    }
+
+    QCPAxisRect *timeCountRemainAxisRect = new QCPAxisRect(customPlot);
+    timeCountRemainAxisRect->setObjectName("timeCountRemainAxisRect");
+    {
+        timeCountRemainAxisRect->setupFullAxesBox();
+        timeCountRemainAxisRect->setMinimumMargins(QMargins(0,0,0,0));
+        timeCountRemainAxisRect->setMargins(QMargins(0,0,0,0));
+        timeCountRemainAxisRect->axis(QCPAxis::AxisType::atTop)->setPadding(0);
+        timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft)->setLabel(tr("残差(%)"));
+        timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr("时间(分钟)"));
+        timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(790, 1150);
+        timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(-10, 10);
+
+        QCPGraph *graph = customPlot->addGraph(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft));
+        graph->setName("timeCountRemainGraph");
+        graph->setProperty("isTimeCountRemainGraph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(Qt::blue));
+        //graph->setSelectable(QCP::SelectionType::stNone);
+        graph->setLineStyle(QCPGraph::lsNone);
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+    }
+
+    // 设置左边边界联动对齐
+    {
+        QCPMarginGroup* timeCountMarginGroup = new QCPMarginGroup(customPlot);
+        timeCountAxisRect->setMarginGroup(QCP::msLeft | QCP::msRight, timeCountMarginGroup);
+        timeCountRemainAxisRect->setMarginGroup(QCP::msLeft | QCP::msRight, timeCountMarginGroup);
+    }
+
+    // 布局
+    QCPLayoutGrid *timeCountLayout = new QCPLayoutGrid;
+    {
+        timeCountLayout->setRowSpacing(0);
+        timeCountLayout->addElement(0, 0, timeCountAxisRect);
+        timeCountLayout->addElement(1, 0, timeCountRemainAxisRect);
+        timeCountLayout->setRowStretchFactor(0, 2);
+        timeCountLayout->setRowStretchFactor(1, 1);
+    }
+
+    QCPAxisRect *spec909_AxisRect = new QCPAxisRect(customPlot);
+    spec909_AxisRect->setObjectName("spec909_AxisRect");
+    {
+        spec909_AxisRect->setupFullAxesBox();
+        spec909_AxisRect->setMinimumMargins(QMargins(0,0,0,0));
+        spec909_AxisRect->setMargins(QMargins(0,0,0,0));
+        spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setPadding(0);
+        spec909_AxisRect->axis(QCPAxis::AxisType::atLeft)->setLabel(tr("能谱计数"));
+        //spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr("道址"));
+        spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr(""));
+        spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setTickLabels(false);
+        spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(0, 3600);
+        spec909_AxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(0, 8192);
+        spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->grid()->setZeroLinePen(Qt::NoPen);
+    }
+
+    // 创建Graph-曲线-阶梯 909keV能段的能谱
+    {
+        QCPGraph * graph = customPlot->addGraph(spec909_AxisRect->axis(QCPAxis::AxisType::atBottom), spec909_AxisRect->axis(QCPAxis::AxisType::atLeft));
+        graph->setName("Spec909_Graph");
+        graph->setProperty("isSpec909_Graph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(QColor(Qt::black)));
+        //graph->setSelectable(QCP::SelectionType::stNone);
+        //graph->selectionDecorator()->setPen(QPen(clrLine));
+        graph->setLineStyle(QCPGraph::lsStepCenter);
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+    }
+
+    // 创建Graph-曲线-拟合 909keV能段的能谱拟合曲线
+    {
+        QCPGraph * graph = customPlot->addGraph(spec909_AxisRect->axis(QCPAxis::AxisType::atBottom), spec909_AxisRect->axis(QCPAxis::AxisType::atLeft));
+        graph->setName("spec909_FitGraph");
+        graph->setProperty("isSpec909_FitGraph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(QColor(Qt::red)));
+        //graph->setSelectable(QCP::SelectionType::stNone);
+        //graph->selectionDecorator()->setPen(QPen(clrLine));
+        graph->setLineStyle(QCPGraph::lsLine);
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+    }
+
+    QCPAxisRect *Spec909_residualAxisRect = new QCPAxisRect(customPlot);
+    Spec909_residualAxisRect->setObjectName("Spec909_residualAxisRect");
+    {
+        Spec909_residualAxisRect->setupFullAxesBox();
+        Spec909_residualAxisRect->setMinimumMargins(QMargins(0,0,0,0));
+        Spec909_residualAxisRect->setMargins(QMargins(0,0,0,0));
+        Spec909_residualAxisRect->axis(QCPAxis::AxisType::atTop)->setPadding(0);
+        Spec909_residualAxisRect->axis(QCPAxis::AxisType::atLeft)->setLabel(tr("残差(%)"));
+        Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr("能量/keV"));
+        Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(0, 3600);
+        Spec909_residualAxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(-10, 10);
+
+        QCPGraph *graph = customPlot->addGraph(Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom), Spec909_residualAxisRect->axis(QCPAxis::AxisType::atLeft));
+        graph->setName("Spec909_residualGraph");
+        graph->setProperty("isSpec909_residualGraph", true);
+        graph->setAntialiased(false);
+        graph->setPen(QPen(QColor(Qt::black)));
+        //graph->selectionDecorator()->setPen(QPen(clrLine));
+        graph->setLineStyle(QCPGraph::lsNone);
+        graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+    }
+
+    // 设置左边边界联动对齐
+    {
+        QCPMarginGroup* energyCountMarginGroup = new QCPMarginGroup(customPlot);
+        spec909_AxisRect->setMarginGroup(QCP::msLeft | QCP::msRight, energyCountMarginGroup);
+        Spec909_residualAxisRect->setMarginGroup(QCP::msLeft | QCP::msRight, energyCountMarginGroup);
+    }
+
+    // 布局
+    QCPLayoutGrid *energyCountLayout = new QCPLayoutGrid;
+    {
+        energyCountLayout->setRowSpacing(0);
+        energyCountLayout->addElement(0, 0, spec909_AxisRect);
+        energyCountLayout->addElement(1, 0, Spec909_residualAxisRect);
+        energyCountLayout->setRowStretchFactor(0, 2);
+        energyCountLayout->setRowStretchFactor(1, 1);
+    }
+
+
+    // 关联信号槽函数
+    {
+        connect(spec909_AxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), spec909_AxisRect->axis(QCPAxis::AxisType::atTop), SLOT(setRange(QCPRange)));
+        connect(spec909_AxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), spec909_AxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
+        connect(spec909_AxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
+        connect(Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), Spec909_residualAxisRect->axis(QCPAxis::AxisType::atTop), SLOT(setRange(QCPRange)));
+        connect(Spec909_residualAxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), Spec909_residualAxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
+        connect(Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), spec909_AxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
+
+        connect(timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountAxisRect->axis(QCPAxis::AxisType::atTop), SLOT(setRange(QCPRange)));
+        connect(timeCountAxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), timeCountAxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
+        connect(timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
+        connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atTop), SLOT(setRange(QCPRange)));
+        connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
+        connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
+
+        connect(customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(slotPlotClick(QCPAbstractPlottable*,int,QMouseEvent*)));
+    }
+
+    QList<QCPAxis*> allAxes;
+    allAxes << timeCountAxisRect->axes() << timeCountRemainAxisRect->axes() <<  spec909_AxisRect->axes() << Spec909_residualAxisRect->axes();
+    foreach (QCPAxis *axis, allAxes)
+    {
+        axis->setLayer("axes");
+        axis->grid()->setLayer("grid");
+    }
+
+    customPlot->plotLayout()->addElement(0, 0, timeCountLayout);//上面显示计数
+    customPlot->plotLayout()->addElement(1, 0, energyCountLayout);//下面显示能量
+
+    customPlot->replot();
+    connect(customPlot->xAxis, SIGNAL(rangeChanged(const QCPRange &)), customPlot->xAxis2, SLOT(setRange(const QCPRange &)));
+    connect(customPlot->yAxis, SIGNAL(rangeChanged(const QCPRange &)), customPlot->yAxis2, SLOT(setRange(const QCPRange &)));
+    connect(customPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(slotShowTracer(QMouseEvent*)));
+    connect(customPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(slotRestorePlot(QMouseEvent*)));
+}
+
 
 #include "H5Cpp.h"
 void NeutronYieldStatisticsWindow::on_action_open_triggered()
@@ -633,187 +813,32 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
 {
     emit reporWriteLog(tr("开始解析..."));
 
-    ui->spectorMeter->graph(0)->data()->clear();
-    ui->spectorMeter->graph(1)->data()->clear();
-    ui->spectorMeter->replot(QCustomPlot::rpQueuedReplot);
-    int index = 1;
-    if (ui->tableWidget->selectedItems().count() > 0)
-        index = ui->tableWidget->selectedItems()[0]->row() - 1;
+    // 获取测量的起始时刻，以打靶时刻为零时刻
+    // 获取两个时间的时间戳（秒）
+    qint64 seconds1 = ui->line_measure_endT->text().toUInt();
+    qint64 seconds2 = ui->line_measure_startT->text().toUInt();
+    qint64 measureTime = seconds1 - seconds2;
 
-    if (mMapSpectrum.contains(index))
+    // 设定待分析的时间区间以及步长
+    int startTime = ui->spinBox_timeStart->value(); //单位：s
+    int endTime = ui->spinBox_timeEnd->value(); //单位：s
+    int timeStep = ui->spinBox_step->value();//单位：s
+
+    if(startTime >= endTime)
     {
-        QVector<double> spectrumTotal(8192, 0); // 8192道完整数据
-        QVector<double> spectrumTotalAdjust(8192, 0); // 8192道完整数据
-        QVector<double> keys;
-        for (int i=0; i<8192; ++i)
-        {
-            keys << i;
-            spectrumTotal[i] = mMapSpectrum[index][i];
-            spectrumTotalAdjust[i] = mMapSpectrumAdjust[index][i];
-        }
-
-        ui->spectorMeter->graph(0)->setData(keys, spectrumTotal);
-        ui->spectorMeter->graph(1)->setData(keys, spectrumTotalAdjust);
-        ui->spectorMeter->replot(QCustomPlot::rpQueuedReplot);
+        qDebug().nospace() << tr("退出解析！输入的解析时间起点>=解析时间终点。");
         return;
     }
 
-    qApp->setOverrideCursor(QCursor(Qt::WaitCursor));
-    quint32 tmStart = ui->spinBox_timeStart->value();
-    quint32 tmEnd = ui->spinBox_timeEnd->value();
+    if(!dealFile) delete dealFile;
+    dealFile = new ParseData();
+
+    dealFile->setStartTime(measureTime);
     QString filePath = ui->textBrowser_filepath->toPlainText();
+    dealFile->parseH5File(filePath);
+    //dealFile->getResult_offline(timeStep, startTime, endTime);
 
-    // 1. 打开文件
-    H5::H5File file(filePath.toStdString(), H5F_ACC_RDONLY);
-
-
-    //for (int index = 1; index <= DET_NUM; ++index)
-    {
-        // 2. 打开分组核数据集
-        H5::Group group = file.openGroup(QString("Detector#%1").arg(index).toStdString().c_str());
-        H5::DataSet dataset = group.openDataSet("Spectrum");
-
-        // 3. 确认数据类型匹配（可选，用于错误检查）
-        H5::CompType fileType = dataset.getCompType();
-        if (fileType != H5::PredType::NATIVE_UINT)
-        {
-            file.close();
-            qApp->restoreOverrideCursor();
-            return;
-        }
-
-        // 4. 初始文件空间
-        H5::DataSpace file_space = dataset.getSpace();
-        hsize_t current_dims[2];
-        file_space.getSimpleExtentDims(current_dims, NULL);
-        hsize_t rows = current_dims[0];
-        hsize_t cols = current_dims[1];
-        if (rows<=0)
-        {
-            file.close();
-            qApp->restoreOverrideCursor();
-            return;
-        }
-
-        // 5. 内存空间：每次读取一行
-        hsize_t mem_dims[2] = {1, cols};
-        H5::DataSpace mem_space(2, mem_dims);
-        uint32_t* row_data = new uint32_t[cols];
-        quint64 minV = quint32(-1);
-        quint64 maxV = 0;
-        double minVAdjust = quint32(-1);
-        double maxVAdjust = 0;
-        double minVDeathTime = quint32(-1);
-        double maxVDeathTime = 0;
-        quint32 ref = 0;
-        quint64 total = 0;
-        double totalDeathTime = 0;
-        quint32 measureTime = 0;
-        double totalAdjust = 0;// 修正后
-        QVector<double> spectrumTotal(8192, 0); // 8192道完整数据
-        QVector<double> spectrumTotalAdjust(8192, 0); // 8192道完整数据
-
-        for (hsize_t i = 0; i < rows;/* ++i*/) {
-            if (mInterrupted)
-            {
-                emit reporWriteLog(tr("解析被中断！"));
-                break;
-            }
-
-            // 6. 指定数据读取位置
-            hsize_t start[2] = {i, 0};
-            hsize_t count[2] = {1, cols};
-            file_space.selectHyperslab(H5S_SELECT_SET, count, start);
-
-            // 7. 读取数据
-            dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, file_space);
-            FullSpectrum* data = reinterpret_cast<FullSpectrum*>(row_data);
-            if (data->sequence >= tmStart && data->sequence <= tmEnd)
-            {
-                // 8. 对数据按秒进行重新分类
-                quint64 totalTemp = 0;//计数
-                double totalTempDeathT = 0;//死时间
-                quint8 step = 1000 / data->measureTime;
-                QVector<quint32> spectrum(8192, 0);// 能谱/s
-                quint32 deathTime = 0;// 死时间/s
-                for (int t = 0; t < step; ++t)
-                {
-                    for (int j=0; j<8192; ++j)
-                    {
-                        spectrum[j] += data->spectrum[j];
-
-                    }
-
-                    deathTime += data->deathTime;
-                }
-                i += step;
-
-                // 9. 能谱统计
-                for (int j=0; j<8192; ++j)
-                {
-                    // 9. 对数据进行累加，计数计数率
-                    totalTemp += spectrum[j];
-                    spectrumTotal[j] += spectrum[j];
-                    spectrumTotalAdjust[j] += (double)spectrum[j] * data->measureTime * 10e6 / (data->measureTime*10e6 - data->deathTime*10);
-                }
-
-                // 死时间率统计
-                totalTempDeathT = (double)deathTime*10 / (data->measureTime*10e6);
-                minVDeathTime = qMin(minVDeathTime, (double)totalTempDeathT);
-                maxVDeathTime = qMax(maxVDeathTime, (double)totalTempDeathT);
-                totalDeathTime += totalTempDeathT;
-
-                // 9. 修正后10e6
-                double totalSAdjust = 0;
-                totalSAdjust = (double)totalTemp * data->measureTime * 10e6 / (data->measureTime*10e6 - data->deathTime*10);
-
-                ++ref;
-                minV = qMin(minV, (quint64)totalTemp);
-                maxV = qMax(maxV, (quint64)totalTemp);
-                total += (quint64)totalTemp;
-
-                minVAdjust = qMin((double)minVAdjust, (double)totalSAdjust);
-                maxVAdjust = qMax((double)maxVAdjust, (double)totalSAdjust);
-                totalAdjust += totalSAdjust;
-            }
-            else{
-                ++i;
-            }
-
-            measureTime = data->measureTime;
-
-            // 释放文件空间
-            file_space.selectNone();
-        }
-
-        QVector<double> keys;
-        for (int j=0; j<8192; ++j)
-            keys << j;
-
-        ui->spectorMeter->graph(0)->setData(keys, spectrumTotal);
-        ui->spectorMeter->graph(1)->setData(keys, spectrumTotalAdjust);
-        ui->tableWidget->item(index + 1, 1)->setText(QString::number(minV));
-        ui->tableWidget->item(index + 1, 2)->setText(QString::number(minVAdjust));
-        ui->tableWidget->item(index + 1, 3)->setText(QString::number(maxV));
-        ui->tableWidget->item(index + 1, 4)->setText(QString::number(maxVAdjust));
-        ui->tableWidget->item(index + 1, 5)->setText(QString::number(total / ref));
-        ui->tableWidget->item(index + 1, 6)->setText(QString::number(totalAdjust / ref));
-
-        ui->tableWidget->item(index + 1, 7)->setText(QString::number(minVDeathTime, 'e', 2));
-        ui->tableWidget->item(index + 1, 8)->setText(QString::number(maxVDeathTime, 'e', 2));
-        ui->tableWidget->item(index + 1, 9)->setText(QString::number(totalDeathTime * 100 / ref, 'e', 2));
-
-        mMapSpectrum[index] = spectrumTotal;
-        mMapSpectrumAdjust[index] = spectrumTotalAdjust;
-        delete[] row_data;
-        dataset.close();
-        group.close();
-    }
-
-    file.close();
-    ui->spectorMeter->rescaleAxes(true);
-    ui->spectorMeter->replot(QCustomPlot::rpQueuedReplot);
-    qApp->restoreOverrideCursor();
+    emit sigSuccess();
 
     emit reporWriteLog(tr("解析结束"));
 }
@@ -835,18 +860,414 @@ void NeutronYieldStatisticsWindow::on_tableWidget_cellClicked(int row, int colum
     if (mMapSpectrum.contains(index))
     {
         QVector<double> spectrumTotal(8192, 0); // 8192道完整数据
-        QVector<double> spectrumTotalAdjust(8192, 0); // 8192道完整数据
         QVector<double> keys;
         for (int i=0; i<8192; ++i)
         {
             keys << i;
             spectrumTotal[i] = mMapSpectrum[index][i];
-            spectrumTotalAdjust[i] = mMapSpectrumAdjust[index][i];
         }
 
-        ui->spectorMeter->graph(0)->setData(keys, spectrumTotal);
-        ui->spectorMeter->graph(1)->setData(keys, spectrumTotalAdjust);
-        ui->spectorMeter->replot(QCustomPlot::rpQueuedReplot);
+        ui->spectorMeter_Spectrum->graph(0)->setData(keys, spectrumTotal);
+        ui->spectorMeter_Spectrum->replot(QCustomPlot::rpQueuedReplot);
     }
 }
 
+void NeutronYieldStatisticsWindow::slotFail()
+{
+    // QTimer::singleShot(1, this, [=](){
+    //     SplashWidget::instance()->hide();
+    // });
+    QMessageBox::information(this, tr("提示"), tr("文件解析失败！"));
+}
+
+void NeutronYieldStatisticsWindow::slotSuccess()
+{
+    //SplashWidget::instance()->setInfo(tr("开始数据分析，请等待..."));
+
+    //显示计数衰减曲线、显示计数率和残差%
+    std::vector<double> time;// x
+    std::vector<double> count;// y
+    std::vector<double> fitCount; // fity 拟合曲线
+    std::vector<double> residual; // 残差
+
+    QVector<specStripData> count909_picture = dealFile->GetCount909Data();
+    specStripData tempData;
+    for(int i=0; i<count909_picture.size(); i++)
+    {
+        time.push_back(count909_picture.at(i).x);
+        count.push_back(count909_picture.at(i).y);
+        fitCount.push_back(count909_picture.at(i).fit_y);
+        residual.push_back(count909_picture.at(i).residual_rate);
+    }
+    slotUpdate_Count909_time(time, count, fitCount, residual);
+
+    // 先默认绘制第一幅图
+    {
+        QVector<specStripData> allSpec = dealFile->GetStripData(0);
+        std::vector<double> energy; //能量
+        std::vector<double> specCount; // 能谱计数
+        std::vector<double> fitSpecCount; // 拟合曲线
+        std::vector<double> residual;// 残差
+        int num = energy.size();
+        energy.reserve(num);
+        for(auto data:allSpec)
+        {
+            energy.push_back(data.x);
+            specCount.push_back(data.y);
+            fitSpecCount.push_back(data.fit_y);
+            residual.push_back(data.residual_rate);
+        }
+
+        slotUpdateSpec_909keV(energy, specCount, fitSpecCount, residual);
+    }
+
+    // 绘制多段能谱
+    {
+        QVector<ParseData::mergeSpecData> allSpec = dealFile->GetMergeSpec();
+        std::vector<ParseData::mergeSpecData> allSpec_vec;
+        for(auto data:allSpec)
+        {
+            allSpec_vec.push_back(data);
+        }
+
+        slotUpdateMultiSegmentPlotDatas(allSpec_vec);
+    }
+
+    // QTimer::singleShot(1, this, [=](){
+    //     SplashWidget::instance()->hide();
+    // });
+
+    QMessageBox::information(this, tr("提示"), tr("文件解析已顺利完成！"));
+}
+
+//更新多段能谱数据
+void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<ParseData::mergeSpecData> allSpectrum)
+{
+    QCustomPlot *customPlot = ui->spectorMeter_Spectrum;
+    customPlot->clearGraphs();
+
+    std::default_random_engine e;
+    std::uniform_real_distribution<double> random(0,1);
+
+    //清空布局内所有的控件
+    QFlowLayout *flowLayout = this->findChild<QFlowLayout*>("flowLayout");
+    QWidget* flowLayoutContainer = this->findChild<QWidget*>("flowLayoutContainer");
+    while (QLayoutItem* item = flowLayout->takeAt(0)) {
+        if (QWidget* widget = item->widget()) {
+            widget->deleteLater();
+        }
+        if (QLayout* childLayout = item->layout()) {
+            delete childLayout;
+        }
+        delete item;
+    }
+
+    QList<QColor> color ={ Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::darkCyan};
+    //根据能谱个数重新生成控件
+    QCheckBox *checkBoxAll = new QCheckBox(flowLayoutContainer);
+    checkBoxAll->setObjectName("checkBoxAll");
+    checkBoxAll->setVisible(true);
+    checkBoxAll->setProperty("checkedCount", allSpectrum.size());
+    checkBoxAll->setText("显示所有曲线");
+    checkBoxAll->setFixedWidth(80);
+    checkBoxAll->setChecked(true);
+    flowLayout->addWidget(checkBoxAll);
+    for (size_t i=0; i<allSpectrum.size(); ++i){
+        //用横向布局包裹起来
+        QWidget* w = new QWidget(flowLayoutContainer);
+        w->setContentsMargins(0,0,0,0);
+        QHBoxLayout * hBoxLayout = new QHBoxLayout(flowLayoutContainer);
+        //hBoxLayout->setSpacing(9);
+        hBoxLayout->setMargin(0);
+        w->setLayout(hBoxLayout);
+        w->setFixedWidth(80);
+
+        QCheckBox *checkBox = new QCheckBox(flowLayoutContainer);
+        checkBox->setProperty("index", i+1);
+        checkBox->setVisible(true);
+        checkBox->setChecked(true);
+        QLabel *labelColor = new QLabel(flowLayoutContainer);
+        labelColor->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        labelColor->setFixedWidth(20);
+        labelColor->setFixedHeight(20);
+        labelColor->setVisible(true);
+        labelColor->setStyleSheet(QString("background-color:rgb(%1,%2,%3)").arg(color[i%5].red()).arg(color[i%5].green()).arg(color[i%5].blue()));
+        QLabel *label = new QLabel(flowLayoutContainer);
+        label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+        label->setText(QString("#%1").arg(i+1));
+        label->setVisible(true);
+        //label->setFixedWidth(50);
+        hBoxLayout->addWidget(checkBox);
+        hBoxLayout->addWidget(labelColor);
+        hBoxLayout->addWidget(label);
+        hBoxLayout->addStretch();
+        flowLayout->addWidget(w);
+        connect(checkBox, &QCheckBox::stateChanged, this, [=](int state){
+            int index = checkBox->property("index").toInt();
+            QCPGraph *graph = customPlot->graph(QString("energyGraph#%1").arg(index));
+            if (graph){
+                if (state == Qt::CheckState::Checked && !graph->visible()){
+                    graph->setVisible(state == Qt::CheckState::Checked ? true : false);
+                    customPlot->replot(QCustomPlot::rpQueuedReplot);
+                } else if (state == Qt::CheckState::Unchecked && graph->visible()) {
+                    graph->setVisible(state == Qt::CheckState::Checked ? true : false);
+                    customPlot->replot(QCustomPlot::rpQueuedReplot);
+                }
+            }
+        });
+    }
+    connect(checkBoxAll, &QCheckBox::stateChanged, this, [=](int state){
+        QList<QCheckBox *>checkBoxs = flowLayoutContainer->findChildren<QCheckBox*>();
+        for (auto checkBox : checkBoxs){
+            checkBox->setChecked(state == Qt::CheckState::Checked ? true : false);
+        }
+        // checkBoxAll->blockSignals(false);
+    });
+
+    //能谱
+    {
+        for (size_t i=0; i<allSpectrum.size(); ++i){
+            //QCPGraph *graph = customPlot->addGraph(customPlot->xAxis, customPlot->yAxis);
+            QCPGraph *graph = customPlot->addGraph();
+
+            graph->setName(QString("energyGraph#%1").arg(i+1));
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(color[i%5]), 2, Qt::SolidLine));
+            //graph->setSelectable(QCP::SelectionType::stNone);
+            graph->setLineStyle(QCPGraph::lsLine);
+            //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+            graph->setVisible(true);
+
+            QVector<double> keys, values;
+            for (int j=0; j<8192; ++j){
+                keys << j + 1;
+                values << allSpectrum[i].spectrum[j] * 1.0;
+            }
+            graph->setData(keys, values);
+        }
+    }
+
+    customPlot->rescaleAxes(true);
+    customPlot->replot();
+}
+
+void NeutronYieldStatisticsWindow::slotUpdate_Count909_time(std::vector<double> time/*时刻*/, std::vector<double> count/*散点*/,
+                              std::vector<double> fitcount/*拟合曲线*/, std::vector<double> residual/*残差*/)
+{
+    QCustomPlot *customPlot = ui->spectorMeter_Count;
+
+    //计数随时间变化的散点
+    {
+        QCPAxisRect *timeCountAxisRect = this->findChild<QCPAxisRect*>("timeCountAxisRect");
+        QCPAxis *keyAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("timeCountGraph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("timeCountGraph"));
+            graph->setProperty("isTimeCountGraph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(Qt::black), 2, Qt::SolidLine));
+            //graph->setSelectable(QCP::SelectionType::stSingleData);
+            graph->setLineStyle(QCPGraph::lsNone);
+            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+            graph->setVisible(true);
+        }
+        QVector<double> keys, values;
+        double minY = count[0], maxY=0.0;
+        for (int i=0; i<time.size(); ++i){
+            keys << time[i];
+            values << count[i];
+            minY = qMin(minY, count[i]);
+            maxY = qMax(maxY, count[i]);
+        }
+        graph->setData(keys, values);
+        keyAxis->rescale(true);
+
+        //设置留白区域，1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+        valueAxis->setRange(minY*0.95, maxY*1.05);
+        // valueAxis->scaleRange(1.05, valueAxis->range().center());
+    }
+
+    //计数拟合曲线
+    {
+        QCPAxisRect *timeCountAxisRect = this->findChild<QCPAxisRect*>("timeCountAxisRect");
+        QCPAxis *keyAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = timeCountAxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("timeCountFitGraph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("timeCountFitGraph"));
+            graph->setProperty("isTimeCountFitGraph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(Qt::red), 2, Qt::SolidLine));
+            //graph->setSelectable(QCP::SelectionType::stNone);
+            graph->setLineStyle(QCPGraph::lsLine);
+            graph->setSmooth(true);
+            graph->setVisible(true);
+        }
+
+        QVector<double> keys, values;
+        for (int i=0; i<time.size(); ++i){
+            keys << time[i];
+            values << fitcount[i];
+        }
+
+        //拟合
+        graph->setData(keys, values);
+        keyAxis->rescale(true);
+        // valueAxis->rescale(true);
+        //设置留白区域，1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+        // valueAxis->scaleRange(1.05, valueAxis->range().center());
+    }
+
+    //909峰位计数残差散点
+    {
+        QCPAxisRect *timeCountRemainAxisRect = this->findChild<QCPAxisRect*>("timeCountRemainAxisRect");
+        QCPAxis *keyAxis = timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("timeCountRemainGraph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("timeCountRemainGraph"));
+            graph->setProperty("isTimeCountRemainGraph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(QColor(0,0,0)), 2, Qt::SolidLine));
+            graph->setLineStyle(QCPGraph::lsNone);
+            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));//显示散点图
+            graph->setVisible(true);
+        }
+
+        QVector<double> keys, values;
+        double maxAbs = 0.0;
+        for (int i=0; i<time.size(); ++i){
+            keys << time[i];
+            values << residual[i];
+            maxAbs = qMax(maxAbs, qAbs(residual[i]));
+        }
+        graph->setData(keys, values);
+
+        keyAxis->rescale(true);
+        //设置留白区域，如1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+        if (maxAbs < 1e-12) maxAbs = 1.0;
+        maxAbs *= 1.05;
+        valueAxis->setRange(-maxAbs, maxAbs);
+
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+    }
+
+    //customPlot->rescaleAxes(true);
+    customPlot->replot();
+}
+
+void NeutronYieldStatisticsWindow::slotUpdateSpec_909keV(std::vector<double> channel, std::vector<double> count, std::vector<double> fitcount, std::vector<double>residual)
+{
+    QCustomPlot *customPlot = ui->spectorMeter_Count;
+
+    //909段原始能谱
+    {
+        QCPAxisRect *spec909_AxisRect = this->findChild<QCPAxisRect*>("spec909_AxisRect");
+        QCPAxis *keyAxis = spec909_AxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = spec909_AxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("Spec909_Graph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("Spec909_Graph"));
+            graph->setProperty("isSpec909_Graph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(Qt::black), 1, Qt::SolidLine));
+            graph->setLineStyle(QCPGraph::lsStepCenter);
+            //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+            graph->setVisible(true);
+        }
+        QVector<double> keys, values;
+        for (int i=0; i<channel.size(); ++i){
+            keys << channel[i];
+            values << count[i];
+        }
+        graph->setData(keys, values);
+        keyAxis->rescale(true);
+        valueAxis->rescale(true);
+        //设置留白区域，1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+        valueAxis->scaleRange(1.05, valueAxis->range().center());
+    }
+
+    { // 909段拟合能谱
+        QCPAxisRect *spec909_AxisRect = this->findChild<QCPAxisRect*>("spec909_AxisRect");
+        QCPAxis *keyAxis = spec909_AxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = spec909_AxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("spec909_FitGraph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("spec909_FitGraph"));
+            graph->setProperty("isSpec909_FitGraph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(Qt::red), 1, Qt::SolidLine));
+            graph->setLineStyle(QCPGraph::lsLine);
+            graph->setSmooth(true);
+            //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+            graph->setVisible(true);
+        }
+        QVector<double> keys, values;
+        for (int i=0; i<channel.size(); ++i){
+            keys << channel[i];
+            values << fitcount[i];
+        }
+
+        //拟合
+        graph->setData(keys, values);
+        keyAxis->rescale(true);
+        valueAxis->rescale(true);
+        //设置留白区域，1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+        valueAxis->scaleRange(1.05, valueAxis->range().center());
+    }
+
+    { //909段能谱拟合残差，相对残差
+        QCPAxisRect *Spec909_residualAxisRect = this->findChild<QCPAxisRect*>("Spec909_residualAxisRect");
+        QCPAxis *keyAxis = Spec909_residualAxisRect->axis(QCPAxis::AxisType::atBottom);
+        QCPAxis *valueAxis = Spec909_residualAxisRect->axis(QCPAxis::AxisType::atLeft);
+        QCPGraph *graph = customPlot->graph("Spec909_residualGraph");
+        if (!graph){
+            graph = customPlot->addGraph(keyAxis, valueAxis);
+
+            graph->setName(QString("Spec909_residualGraph"));
+            graph->setProperty("isSpec909_residualGraph", true);
+            graph->setAntialiased(true);
+            graph->setPen(QPen(QBrush(Qt::black), 1, Qt::SolidLine));
+            graph->setLineStyle(QCPGraph::lsNone);
+            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));//显示散点图
+            graph->setVisible(true);
+        }
+
+        double maxAbs = 0.0;
+        QVector<double> keys, values;
+        for (int i=0; i<channel.size(); ++i){
+            keys << channel[i];
+            values << residual[i];
+            maxAbs = qMax(maxAbs, qAbs(residual[i]));
+        }
+        graph->setData(keys, values);
+
+        keyAxis->rescale(true);
+        //设置留白区域，1.1则表示左右各留白10%
+        keyAxis->scaleRange(1.05, keyAxis->range().center());
+
+        // 让 y 轴关于 0 对称
+        if (maxAbs < 1e-12) maxAbs = 1.0;          // 避免全 0 时范围塌缩
+        maxAbs *= 1.05;                            // 上下留 5% 空白
+        valueAxis->setRange(-maxAbs, maxAbs);
+    }
+
+    //customPlot->rescaleAxes(true);
+    customPlot->replot(QCustomPlot::rpQueuedReplot);
+}

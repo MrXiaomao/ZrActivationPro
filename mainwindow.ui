@@ -1870,6 +1870,7 @@
     </property>
     <addaction name="action_waveformMode"/>
     <addaction name="action_spectrumMode"/>
+    <addaction name="separator"/>
     <addaction name="action_partical"/>
    </widget>
    <addaction name="menu_File"/>

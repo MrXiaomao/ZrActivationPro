@@ -143,8 +143,7 @@ void HDF5Settings::sync()
         hsize_t dims[1] = {DET_NUM};
         H5::DataSpace dataspace(1, dims);
         H5::Group cfgGroup = mfH5Setting->openGroup("Config");
-        H5::DataSet dataset = cfgGroup.openDataSet("Detector");//, mCompDataType, dataspace);
-        //writeDetParStrAttr(dataset);
+        H5::DataSet dataset = cfgGroup.openDataSet("Detector");//, mCompDataType, dataspace);        
         dataset.write(data.data(), mCompDataType);        
     } catch (H5::FileIException& error) {
         error.printErrorStack();
@@ -304,8 +303,13 @@ void HDF5Settings::createH5Config()
                 dataset.write(data.data(), mCompDataType);
                 //H5Dflush(dataset.getId());
                 //H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
+
+                // 写字段属性
+                writeDetParStrAttr(dataset);
+
                 H5Fflush(mfH5Setting->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
-            }
+            }                    
+
             // 创建表格数组
             if (0)
             {

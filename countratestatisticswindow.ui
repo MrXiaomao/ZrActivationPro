@@ -588,7 +588,7 @@
       </property>
       <widget class="QWidget" name="leftHboxTabWidgetPage1">
        <attribute name="icon">
-        <iconset>
+        <iconset resource="../3rdParty/resource/resource.qrc">
          <normaloff>:/line.png</normaloff>:/line.png</iconset>
        </attribute>
        <attribute name="title">
@@ -721,6 +721,18 @@
           </sizepolicy>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
            <widget class="QGroupBox" name="groupBox_2">
             <property name="sizePolicy">
@@ -906,7 +918,10 @@
              <item row="1" column="0" rowspan="2">
               <widget class="QLabel" name="label_8">
                <property name="text">
-                <string>时间终点/s:</string>
+                <string>解析时间终点/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
@@ -936,14 +951,20 @@
              <item row="0" column="0">
               <widget class="QLabel" name="label_6">
                <property name="text">
-                <string>时间起点/s:</string>
+                <string>解析时间起点/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label">
                <property name="text">
-                <string>步长/s:</string>
+                <string>时间步长/s：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
@@ -1009,7 +1030,7 @@
                 <string>开始解析</string>
                </property>
                <property name="icon">
-                <iconset resource="../ZrActivation/resource.qrc">
+                <iconset>
                  <normaloff>:/resource/analyze.png</normaloff>:/resource/analyze.png</iconset>
                </property>
                <property name="checkable">
@@ -1205,7 +1226,7 @@
   </widget>
   <action name="action_open">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/open.png</normaloff>:/open.png</iconset>
    </property>
    <property name="text">
@@ -1226,7 +1247,7 @@
   </action>
   <action name="action_exit">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/exit.png</normaloff>:/exit.png</iconset>
    </property>
    <property name="text">
@@ -1247,7 +1268,7 @@
   </action>
   <action name="action_about">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/logo.png</normaloff>:/logo.png</iconset>
    </property>
    <property name="text">
@@ -1265,7 +1286,7 @@
   </action>
   <action name="action_startMeasure">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/work-on.png</normaloff>:/work-on.png</iconset>
    </property>
    <property name="text">
@@ -1280,7 +1301,7 @@
   </action>
   <action name="action_stopMeasure">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/work-off.png</normaloff>:/work-off.png</iconset>
    </property>
    <property name="text">
@@ -1337,7 +1358,7 @@
   </action>
   <action name="action_aboutQt">
    <property name="icon">
-    <iconset>
+    <iconset resource="../3rdParty/resource/resource.qrc">
      <normaloff>:/aboutqt.png</normaloff>:/aboutqt.png</iconset>
    </property>
    <property name="text">
@@ -1353,7 +1374,10 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../3rdParty/resource/resource.qrc"/>
+  <include location="../3rdParty/resource/resource.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>pushButton_start</sender>
