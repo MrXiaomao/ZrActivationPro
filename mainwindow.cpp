@@ -1093,23 +1093,6 @@ void MainWindow::on_action_exit_triggered()
 }
 
 
-void MainWindow::on_action_open_triggered()
-{
-    QString program = QCoreApplication::applicationFilePath();
-    QStringList arguments;
-    arguments.append("-m");
-    arguments.append("offline");
-
-    static int num = 0;
-    arguments.append("-num");
-    arguments.append(QString::number(num));
-    num++;
-    QProcess::startDetached(program, arguments);
-
-    qInfo().noquote() << tr("打开离线数据分析程序");
-}
-
-
 void MainWindow::on_action_startServer_triggered()
 {
     // 连接网络
@@ -2353,5 +2336,39 @@ void MainWindow::on_action_partical_triggered()
     w->setWindowFlags(Qt::WindowCloseButtonHint|Qt::Dialog); // 只显示关闭按钮
     w->setWindowModality(Qt::ApplicationModal);//模态属性，NonModal=非模态，ApplicationModal=应用程序模态（阻塞本程序所有窗口），WindowModal=窗口模态（阻塞父窗口）
     w->show();
+}
+
+
+void MainWindow::on_action_countRateStatistics_triggered()
+{
+    QString program = QCoreApplication::applicationFilePath();
+    QStringList arguments;
+    arguments.append("-m");
+    arguments.append("countRateStatistics");
+
+    static int num = 0;
+    arguments.append("-num");
+    arguments.append(QString::number(num));
+    num++;
+    QProcess::startDetached(program, arguments);
+
+    qInfo().noquote() << tr("打开离线数据分析程序-计数率统计");
+}
+
+
+void MainWindow::on_action_neutronYieldStatistics_triggered()
+{
+    QString program = QCoreApplication::applicationFilePath();
+    QStringList arguments;
+    arguments.append("-m");
+    arguments.append("neutronYieldStatistics");
+
+    static int num = 0;
+    arguments.append("-num");
+    arguments.append(QString::number(num));
+    num++;
+    QProcess::startDetached(program, arguments);
+
+    qInfo().noquote() << tr("打开离线数据分析程序-中子产额统计");
 }
 

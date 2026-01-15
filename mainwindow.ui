@@ -1858,7 +1858,9 @@
     <addaction name="action_energycalibration"/>
     <addaction name="action_yieldCalibration"/>
     <addaction name="separator"/>
-    <addaction name="action_count"/>
+    <addaction name="action_countRateStatistics"/>
+    <addaction name="action_neutronYieldStatistics"/>
+    <addaction name="separator"/>
     <addaction name="action_OTA"/>
     <addaction name="menu_Fpga"/>
    </widget>
@@ -2296,9 +2298,17 @@
     <enum>QAction::NoRole</enum>
    </property>
   </action>
-  <action name="action_count">
+  <action name="action_countRateStatistics">
    <property name="text">
-    <string>计数率分析</string>
+    <string>计数率统计</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="action_neutronYieldStatistics">
+   <property name="text">
+    <string>中子产额统计</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

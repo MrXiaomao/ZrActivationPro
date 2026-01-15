@@ -107,8 +107,6 @@ private slots:
     void on_action_cfgParam_triggered();
     // 退出程序
     void on_action_exit_triggered();
-    //打开文件
-    void on_action_open_triggered();
     // 触发模式
     void onTriggerModelChanged(int index);
     // 全通道开始测量
@@ -164,6 +162,10 @@ private slots:
     void on_cbb_measureMode_activated(int index);
     void on_cbb_energyCalibration_toggled(bool checked);
     void on_action_partical_triggered();
+    // 计数率统计
+    void on_action_countRateStatistics_triggered();
+
+    void on_action_neutronYieldStatistics_triggered();
 
 private:
     QString increaseShotNumSuffix(QString shotNumStr);

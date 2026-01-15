@@ -1,4 +1,4 @@
-/*
+﻿/*
  * @Author: MrPan
  * @Date: 2025-11-13 11:36:00
  * @LastEditors: Maoxiaoqing
@@ -60,6 +60,7 @@ public:
 
 public slots:
     void readyRead();
+    void replyTemperatureCheckTimeout();
 
 signals:   
     void relayConnected();// 继电器
@@ -73,6 +74,8 @@ signals:
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
     Q_SIGNAL void reportFullSpectrum(quint8 index, const FullSpectrum& fullSpectrum); // 发送完整的能谱数据
+
+    Q_SIGNAL void reportTemperatureCheckTimeout();
 
 private:
     quint8 mIndex;//探测器索引

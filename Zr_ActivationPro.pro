@@ -14,6 +14,7 @@ SOURCES += \
     clientpeerswindow.cpp \
     commandadapter.cpp \
     commhelper.cpp \
+    countratestatisticswindow.cpp \
     dataprocessor.cpp \
     detsettingwindow.cpp \
     energycalibration.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     neutronyieldcalibration.cpp \
+    neutronyieldstatisticswindow.cpp \
     offlinewindow.cpp \
     parsedata.cpp \
     particalwindow.cpp \
@@ -35,11 +37,13 @@ HEADERS += \
     TcpAgentServer.h \
     clientpeerswindow.h \
     commandadapter.h \
+    countratestatisticswindow.h \
     dataprocessor.h \
     detsettingwindow.h \
     energycalibration.h \
     localsettingwindow.h \
     neutronyieldcalibration.h \
+    neutronyieldstatisticswindow.h \
     offlinewindow.h \
     parsedata.h \
     particalwindow.h \
@@ -54,11 +58,13 @@ HEADERS += \
 
 FORMS += \
     clientpeerswindow.ui \
+    countratestatisticswindow.ui \
     detsettingwindow.ui \
     energycalibration.ui \
     localsettingwindow.ui \
     mainwindow.ui \
     neutronyieldcalibration.ui \
+    neutronyieldstatisticswindow.ui \
     offlinewindow.ui \
     particalwindow.ui
 

@@ -1,12 +1,12 @@
 ﻿/*
  * @Author: MrPan
- * @Date: 2025-04-20 09:21:28
+ * @Date: 2026-01-14 09:21:28
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-08-01 16:50:56
- * @Description: 离线数据分析
+ * @LastEditTime: 2026-01-15 16:50:56
+ * @Description: 计数率统计
  */
-#include "offlinewindow.h"
-#include "ui_offlinewindow.h"
+#include "countratestatisticswindow.h"
+#include "ui_countratestatisticswindow.h"
 #include "globalsettings.h"
 
 #include <QButtonGroup>
@@ -19,9 +19,9 @@
 #include <QJsonDocument>
 #include <math.h>
 
-OfflineWindow::OfflineWindow(bool isDarkTheme, QWidget *parent)
+CountRateStatisticsWindow::CountRateStatisticsWindow(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::OfflineWindow)
+    , ui(new Ui::CountRateStatisticsWindow)
     , mIsDarkTheme(isDarkTheme)
     , mainWindow(static_cast<QGoodWindowHelper*>(parent))
 {
@@ -46,12 +46,12 @@ OfflineWindow::OfflineWindow(bool isDarkTheme, QWidget *parent)
 }
 
 
-OfflineWindow::~OfflineWindow()
+CountRateStatisticsWindow::~CountRateStatisticsWindow()
 {
     delete ui;
 }
 
-void OfflineWindow::initUi()
+void CountRateStatisticsWindow::initUi()
 {
     // 任务栏时钟信息
     {
@@ -294,7 +294,7 @@ void OfflineWindow::initUi()
     }
 }
 
-void OfflineWindow::on_action_lightTheme_triggered()
+void CountRateStatisticsWindow::on_action_lightTheme_triggered()
 {
     if(!mIsDarkTheme) return;
     mIsDarkTheme = false;
@@ -306,7 +306,7 @@ void OfflineWindow::on_action_lightTheme_triggered()
 }
 
 
-void OfflineWindow::on_action_darkTheme_triggered()
+void CountRateStatisticsWindow::on_action_darkTheme_triggered()
 {
     if(mIsDarkTheme) return;
     mIsDarkTheme = true;
@@ -318,7 +318,7 @@ void OfflineWindow::on_action_darkTheme_triggered()
 }
 
 
-void OfflineWindow::on_action_colorTheme_triggered()
+void CountRateStatisticsWindow::on_action_colorTheme_triggered()
 {
     GlobalSettings settings;
     QColor color = QColorDialog::getColor(mThemeColor, this, tr("选择颜色"));
@@ -336,7 +336,7 @@ void OfflineWindow::on_action_colorTheme_triggered()
     applyColorTheme();
 }
 
-void OfflineWindow::applyColorTheme()
+void CountRateStatisticsWindow::applyColorTheme()
 {
     QList<QCustomPlot*> customPlots = this->findChildren<QCustomPlot*>();
     for (auto customPlot : customPlots){
@@ -441,7 +441,7 @@ void OfflineWindow::applyColorTheme()
     }
 }
 
-void OfflineWindow::restoreSettings()
+void CountRateStatisticsWindow::restoreSettings()
 {
     GlobalSettings settings;
     if(mainWindow) {
@@ -461,7 +461,7 @@ void OfflineWindow::restoreSettings()
     }
 }
 
-void OfflineWindow::replyWriteLog(const QString &msg, QtMsgType msgType)
+void CountRateStatisticsWindow::replyWriteLog(const QString &msg, QtMsgType msgType)
 {
     // 创建一个 QTextCursor
     QTextCursor cursor = ui->textEdit_log->textCursor();
@@ -502,7 +502,7 @@ void OfflineWindow::replyWriteLog(const QString &msg, QtMsgType msgType)
     }
 }
 
-void OfflineWindow::initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel)
+void CountRateStatisticsWindow::initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel)
 {
     QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
     customPlot->setAntialiasedElements(QCP::aeAll);
@@ -548,7 +548,7 @@ void OfflineWindow::initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, 
 }
 
 #include "H5Cpp.h"
-void OfflineWindow::on_action_open_triggered()
+void CountRateStatisticsWindow::on_action_open_triggered()
 {
     // 打开历史测量数据文件...
     GlobalSettings settings;
@@ -623,13 +623,13 @@ void OfflineWindow::on_action_open_triggered()
 }
 
 
-void OfflineWindow::on_action_exit_triggered()
+void CountRateStatisticsWindow::on_action_exit_triggered()
 {
     mainWindow->close();
 }
 
 
-void OfflineWindow::on_action_startMeasure_triggered()
+void CountRateStatisticsWindow::on_action_startMeasure_triggered()
 {
     emit reporWriteLog(tr("开始解析..."));
 
@@ -819,14 +819,14 @@ void OfflineWindow::on_action_startMeasure_triggered()
 }
 
 
-void OfflineWindow::on_action_stopMeasure_triggered()
+void CountRateStatisticsWindow::on_action_stopMeasure_triggered()
 {
     emit reporWriteLog(tr("中断解析"));
     mInterrupted = true;
 }
 
 
-void OfflineWindow::on_tableWidget_cellClicked(int row, int column)
+void CountRateStatisticsWindow::on_tableWidget_cellClicked(int row, int column)
 {
     if (row <= 1 || column != 0)
         return;

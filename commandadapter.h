@@ -1,4 +1,4 @@
-#ifndef COMMANDADAPTER_H
+﻿#ifndef COMMANDADAPTER_H
 #define COMMANDADAPTER_H
 
 #include <QObject>
@@ -37,7 +37,7 @@ public:
 
 // signals:
 public slots:
-    void restartTempTimeout();   // 收到温度时调用
+    void restartTempTimeout(quint32 timeout = 10000);   // 收到温度时调用
 
 public:
     /*********************************************************

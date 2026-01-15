@@ -1,8 +1,8 @@
 ﻿#include "mainwindow.h"
 #include "globalsettings.h"
 #include "commhelper.h"
-#include "offlinewindow.h"
-
+#include "countratestatisticswindow.h"
+#include "neutronyieldstatisticswindow.h"
 #include "lightstyle.h"
 #include "darkstyle.h"
 #include "customcolorstyle.h"
@@ -187,9 +187,13 @@ int main(int argc, char *argv[])
 
     QTextCodec::setCodecForLocale(QTextCodec::codecForMib(106));/* Utf8 */
     QGoodWindowHelper w;
-    if (args.contains("-m") && args.contains("offline")){
+    if (args.contains("-m") && args.contains("countRateStatistics")){
         QApplication::setApplicationName("锆活化工程离线数据分析-计数率统计");
-        mMainWindow = new OfflineWindow(isDarkTheme, &w);
+        mMainWindow = new CountRateStatisticsWindow(isDarkTheme, &w);
+    }
+    else if (args.contains("-m") && args.contains("neutronYieldStatistics")){
+        QApplication::setApplicationName("锆活化工程离线数据分析-中子产额统计");
+        mMainWindow = new NeutronYieldStatisticsWindow(isDarkTheme, &w);
     }
     else
         mMainWindow = new MainWindow(isDarkTheme, &w);

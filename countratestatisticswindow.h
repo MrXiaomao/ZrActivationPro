@@ -1,22 +1,22 @@
-﻿#ifndef OFFLINEWINDOW_H
-#define OFFLINEWINDOW_H
+﻿#ifndef COUNTRATESTATISTICSWINDOW_H
+#define COUNTRATESTATISTICSWINDOW_H
 
 #include <QWidget>
 #include "QGoodWindowHelper"
 #include "qcustomplothelper.h"
 
 namespace Ui {
-class OfflineWindow;
+class CountRateStatisticsWindow;
 }
 
 class QCustomPlot;
-class OfflineWindow : public QMainWindow
+class CountRateStatisticsWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit OfflineWindow(bool isDarkTheme = true, QWidget *parent = nullptr);
-    ~OfflineWindow();
+    explicit CountRateStatisticsWindow(bool isDarkTheme = true, QWidget *parent = nullptr);
+    ~CountRateStatisticsWindow();
 
     void initUi();
     void initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel);
@@ -42,7 +42,7 @@ private slots:
     void on_tableWidget_cellClicked(int row, int column);
 
 private:
-    Ui::OfflineWindow *ui;
+    Ui::CountRateStatisticsWindow *ui;
     bool mIsDarkTheme = true;
     bool mThemeColorEnable = true;
     QColor mThemeColor = QColor(255,255,255);
@@ -55,4 +55,4 @@ private:
     QMap<quint8, QVector<double>> mMapSpectrumAdjust;
 };
 
-#endif // OFFLINEWINDOW_H
+#endif // COUNTRATESTATISTICSWINDOW_H

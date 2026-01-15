@@ -40,7 +40,7 @@ CommandAdapter::CommandAdapter(QObject *parent)
 
     mTempTimeoutTimer.setSingleShot(true);
     connect(&mTempTimeoutTimer, &QTimer::timeout, this, [this](){
-        qWarning().noquote() << "超过10秒未收到温度数据，触发报警！";
+        qWarning().noquote() << tr("超过%1秒未收到温度数据，触发报警！").arg(mTempTimeoutTimer.interval() / 1000);
         reportTemperatureTimeout(); // 直接调用（同线程）更稳
     });
 }
@@ -81,8 +81,8 @@ void CommandAdapter::clear()
     cmdPool.clear();
 }
 
-void CommandAdapter::restartTempTimeout() {
-    mTempTimeoutTimer.start(10000);
+void CommandAdapter::restartTempTimeout(quint32 timeout) {
+    mTempTimeoutTimer.start(timeout);
 }
 
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)
@@ -109,7 +109,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             QMetaObject::invokeMethod(this, "reportTemperatureData", Qt::QueuedConnection, Q_ARG(float, temperature));
 
             //超时监测，每次超过10s没收到温度则报警
-            QMetaObject::invokeMethod(this, "restartTempTimeout", Qt::QueuedConnection);
+            //QMetaObject::invokeMethod(this, "restartTempTimeout", Qt::QueuedConnection);
+            QMetaObject::invokeMethod(this, "reportTemperatureCheckTimeout", Qt::QueuedConnection);
         }
 
         //增益指令
@@ -598,6 +599,9 @@ void CommandAdapter::sendStartMeasure(){
     
     pushCmd({QString("开始测量指令"), askCurrentCmd});
     mIsMeasuring = true;
+
+    //启动心跳超时检测
+    restartTempTimeout();
 
     //通知发送指令
     this->notifySendNextCmd();

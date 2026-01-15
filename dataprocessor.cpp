@@ -41,6 +41,8 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
 
     if (mTcpSocket)
         connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+
+    connect(this, &DataProcessor::reportTemperatureCheckTimeout, this, &DataProcessor::replyTemperatureCheckTimeout);
 }
 
 
@@ -319,4 +321,12 @@ bool DataProcessor::extractSpectrumData(const QByteArray& packetData, SubSpectru
     //          << "subSquenceID:" << packet.spectrumSubNo;
 
     return true;
+}
+
+void DataProcessor::replyTemperatureCheckTimeout()
+{
+    HDF5Settings *settings = HDF5Settings::instance();
+    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+    DetParameter& detParameter = detParameters[mIndex];
+    restartTempTimeout(detParameter.pluseCheckTime*1000);
 }
