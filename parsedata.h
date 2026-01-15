@@ -69,6 +69,14 @@ public:
     QVector<specStripData> GetCount909Data();
 
     /**
+     * @brief mergeSpecTime 提取目标时间段能谱数据，根据时间道宽合并能谱，用于离线分析
+     * @param timeBin 时间宽度,单位s
+     * @param start_time 起始时间,单位s
+     * @param end_time 结束时间,单位s
+     */
+    void mergeSpecTime_offline(quint64 timeBin, quint64 start_time, quint64 end_time);
+
+    /**
      * @brief mergeSpecTime_online
      *
      */
@@ -93,6 +101,8 @@ public:
 
     // 解析H5文件
     void parseH5File(QString filePath);
+    // 获取指定时间段内的能谱
+    bool getResult_offline(quint64 timeBin, quint64 start_time, quint64 end_time);
 
 private:
     bool getResult(QVector<mergeSpecData> mergeSpec);
@@ -100,6 +110,7 @@ private:
     void clearFitResult();
 
     QVector<mergeSpecData> m_mergeSpec; //对原始数据汇总后的各时段能谱，对丢包带来的死时间做了相应记录
+    QVector<FullSpectrum> m_allSpec;// 总能谱
 
     QVector<int> allSpecTime; //每一个计数点对应的时刻，考虑到可能丢包，所以时刻并不是连续的。
     QVector<int> allSpecCount; //每秒能谱总计数随时间的变化
@@ -107,7 +118,7 @@ private:
     const double m_energyCalibration[2] = {511.0, 909.0}; //用于能量刻度的特征峰
     const double energyRange[2] = {800.0, 1150.0};//设定剥谱能量范围
 
-    const int G_CHANNEL = 2048; //能谱的道数
+    const int G_CHANNEL = 8192; //能谱的道数
     qint32 T0_beforeShot = 0; //能谱开测时刻相对于打靶零时刻的时间（单位s，可正数可负数)T0_beforeShot = 开测时刻 - 打靶时刻
 
     // 用来存放剥谱处理结果的图像数据，结合GetStripData()
@@ -130,8 +141,6 @@ private:
     int timeBin_online = 300*60; //解析能谱的时间宽度，单位s.分时能谱的单个能谱测量时间
 
     QVector<int> specStrip_rightCH; //存放所有剥谱图形的右端点下标
-
-
 };
 
 #endif // PARSEDATA_H

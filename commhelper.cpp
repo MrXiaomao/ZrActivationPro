@@ -173,16 +173,16 @@ void CommHelper::initDataProcessor()
             stopMeasure(detID);
             //先停止测量
             int stopDelay = 30; //min
-            qInfo().noquote() << "探测器" << detID 
-                    << QString("温度心跳超时报警！停止测量并断电%1min后重新打开供电!").arg(stopDelay);
+            qInfo().nospace() << "谱仪[#" << detID
+                    << QString("]温度心跳超时报警！停止测量并断电%1min后重新打开供电!").arg(stopDelay);
             //断电
             closeSwitcherPOEPower(detID);
             //定时30min后重新打开供电
             QTimer::singleShot(stopDelay*60*1000, this, [=](){
                 if (openSwitcherPOEPower(detID))
-                    qInfo().noquote() << "探测器" << detID << "重启供电";
+                    qInfo().nospace() << "谱仪[#" << detID << "]重启供电";
                 else
-                    qInfo().noquote() << "探测器" << detID << "重启供电失败";
+                    qInfo().nospace() << "谱仪[#" << detID << "]重启供电失败";
             });
         });
 
@@ -208,7 +208,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+                    qInfo().nospace() << "谱仪[#"<< processor->index() << "]创建存储文件：" << filePath;
 
                     filePath = QString("%1/%2/%3_%4.H5").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     HDF5Settings::instance()->createH5Spectrum(filePath);
@@ -252,7 +252,7 @@ void CommHelper::initDataProcessor()
                         mFileFlushInfo[processor->index()] = FileFlushInfo();
                     }
 
-                    qInfo().noquote() << "[谱仪#"<< processor->index() << "]创建存储文件：" << filePath;
+                    qInfo().nospace() << "谱仪[#"<< processor->index() << "]创建存储文件：" << filePath;
                 }
 
                 if (mDetectorFileProcessor[processor->index()]->isOpen()){
@@ -853,7 +853,7 @@ void CommHelper::handleDetectorDisconnection(quint8 index)
             connection->deleteLater();
             it = mConnectionPeers.erase(it);
             
-            qInfo() << "探测器" << index << "心跳超时，已执行断开连接处理";
+            qInfo().nospace() << "谱仪[#" << index << "]心跳超时，已执行断开连接处理";
             return; // 找到并处理完成，退出
         } else {
             ++it;
@@ -861,7 +861,7 @@ void CommHelper::handleDetectorDisconnection(quint8 index)
     }
     
     // 如果没有找到对应的连接，仍然触发 offline 信号（可能连接已经断开）
-    qWarning() << "探测器" << index << "心跳超时，但未找到对应的TCP连接";
+    qWarning().nospace() << "谱仪[#" << index << "]心跳超时，但未找到对应的TCP连接";
     QMetaObject::invokeMethod(this, "detectorOffline", 
         Qt::QueuedConnection, 
         Q_ARG(quint8, index));

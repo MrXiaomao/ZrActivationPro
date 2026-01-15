@@ -33,6 +33,10 @@ NeutronYieldStatisticsWindow::NeutronYieldStatisticsWindow(bool isDarkTheme, QWi
     restoreSettings();
     applyColorTheme();
     connect(this, SIGNAL(reporWriteLog(const QString&,QtMsgType)), this, SLOT(replyWriteLog(const QString&,QtMsgType)));
+    qRegisterMetaType<std::vector<FullSpectrum>>("std::vector<FullSpectrum>");
+    connect(this, SIGNAL(sigStart()), this, SLOT(slotStart()));
+    connect(this, SIGNAL(sigFail()), this, SLOT(slotFail()));//, Qt::QueuedConnection);
+    connect(this, SIGNAL(sigSuccess()), this, SLOT(slotSuccess()));//, Qt::QueuedConnection);
 
     QTimer::singleShot(0, this, [&](){
         qGoodStateHolder->setCurrentThemeDark(mIsDarkTheme);
@@ -229,8 +233,8 @@ void NeutronYieldStatisticsWindow::initUi()
 
     // 显示计数/能谱
     QButtonGroup *grp = new QButtonGroup(this);
-    grp->addButton(ui->radioButton_count, 0);
-    grp->addButton(ui->radioButton_spectrum, 1);
+    grp->addButton(ui->radioButton_spectrum, 0);
+    grp->addButton(ui->radioButton_count, 1);
     grp->addButton(ui->radioButton_neutronYield, 2);
     connect(grp, QOverload<int>::of(&QButtonGroup::idClicked), this, [=](int index){
         ui->stackedWidget->setCurrentIndex(index);
@@ -381,35 +385,35 @@ void NeutronYieldStatisticsWindow::applyColorTheme()
         customPlot->axisRect()->setupFullAxesBox();
         customPlot->axisRect()->setBackground(QBrush(mIsDarkTheme ? palette.color(QPalette::Dark) : Qt::white));
         // 坐标轴线颜色
-        customPlot->xAxis->setBasePen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->xAxis2->setBasePen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis->setBasePen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis2->setBasePen(QPen(palette.color(QPalette::WindowText)));
-        // 刻度线颜色
-        customPlot->xAxis->setTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->xAxis2->setTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis->setTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis2->setTickPen(QPen(palette.color(QPalette::WindowText)));
-        // 子刻度线颜色
-        customPlot->xAxis->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->xAxis2->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
-        customPlot->yAxis2->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
-        // 坐标轴文本标签颜色
-        customPlot->xAxis->setLabelColor(palette.color(QPalette::WindowText));
-        customPlot->xAxis2->setLabelColor(palette.color(QPalette::WindowText));
-        customPlot->yAxis->setLabelColor(palette.color(QPalette::WindowText));
-        customPlot->yAxis2->setLabelColor(palette.color(QPalette::WindowText));
-        // 坐标轴刻度文本标签颜色
-        customPlot->xAxis->setTickLabelColor(palette.color(QPalette::WindowText));
-        customPlot->xAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
-        customPlot->yAxis->setTickLabelColor(palette.color(QPalette::WindowText));
-        customPlot->yAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
-        // 隐藏x2、y2刻度线
-        customPlot->xAxis2->setTicks(false);
-        customPlot->yAxis2->setTicks(false);
-        customPlot->xAxis2->setSubTicks(false);
-        customPlot->yAxis2->setSubTicks(false);
+        // customPlot->xAxis->setBasePen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->xAxis2->setBasePen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis->setBasePen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis2->setBasePen(QPen(palette.color(QPalette::WindowText)));
+        // // 刻度线颜色
+        // customPlot->xAxis->setTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->xAxis2->setTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis->setTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis2->setTickPen(QPen(palette.color(QPalette::WindowText)));
+        // // 子刻度线颜色
+        // customPlot->xAxis->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->xAxis2->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
+        // customPlot->yAxis2->setSubTickPen(QPen(palette.color(QPalette::WindowText)));
+        // // 坐标轴文本标签颜色
+        // customPlot->xAxis->setLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->xAxis2->setLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->yAxis->setLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->yAxis2->setLabelColor(palette.color(QPalette::WindowText));
+        // // 坐标轴刻度文本标签颜色
+        // customPlot->xAxis->setTickLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->xAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->yAxis->setTickLabelColor(palette.color(QPalette::WindowText));
+        // customPlot->yAxis2->setTickLabelColor(palette.color(QPalette::WindowText));
+        // // 隐藏x2、y2刻度线
+        // customPlot->xAxis2->setTicks(false);
+        // customPlot->yAxis2->setTicks(false);
+        // customPlot->xAxis2->setSubTicks(false);
+        // customPlot->yAxis2->setSubTicks(false);
 
         customPlot->replot();
     }
@@ -524,6 +528,7 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     customPlot->xAxis->rescale(true);
     customPlot->yAxis->rescale(true);
+    customPlot->plotLayout()->clear();
 
     // 909全能峰计数随时间变化曲线
     QCPAxisRect *timeCountAxisRect = new QCPAxisRect(customPlot);
@@ -539,7 +544,6 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
         timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(790, 1150);
         timeCountAxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(0, 1000);
         timeCountAxisRect->axis(QCPAxis::AxisType::atBottom)->grid()->setZeroLinePen(Qt::NoPen);
-
     }
 
     // 909计数随时间变化的拟合曲线
@@ -739,6 +743,18 @@ void NeutronYieldStatisticsWindow::on_action_open_triggered()
     if (filePath.isEmpty() || !QFileInfo::exists(filePath))
         return;
 
+    // 判断一下文件名有效性，提取测量时间
+    QString timePart = QFileInfo(filePath).baseName().left(17).replace('_', ' ');
+    QDateTime datetime = QDateTime::fromString(timePart, "yyyy-MM-dd HHmmss");
+    if (datetime.isValid()) {
+        ui->messureDateTime->setDateTime(datetime);
+        ui->fusionDateTime->setDateTime(datetime);
+    } else {
+        qDebug().nospace() << "文件名解析到的时间格式无效";
+        QMessageBox::information(this, tr("提示"), tr("文件名解析到的时间格式无效。"));
+        return;
+    }
+
     emit reporWriteLog(tr("选择测量文件：%1").arg(filePath));
 
     settings.setValue("mainWindow/LastFilePath", filePath);
@@ -746,8 +762,6 @@ void NeutronYieldStatisticsWindow::on_action_open_triggered()
 
     // 解析文件，获取能谱范围时长
     {
-        QString filePath = ui->textBrowser_filepath->toPlainText();
-
         // 1. 打开文件
         H5::H5File file(filePath.toStdString(), H5F_ACC_RDONLY);
 
@@ -790,8 +804,8 @@ void NeutronYieldStatisticsWindow::on_action_open_triggered()
         dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, file_space);
         FullSpectrum* data = reinterpret_cast<FullSpectrum*>(row_data);
 
-        ui->line_measure_endT->setText(QString::number(rows * data->measureTime / 1000));
-        emit reporWriteLog(tr("测量时长/s：%1").arg(ui->line_measure_endT->text()));
+        quint32 measureTimelength = rows * data->measureTime / 1000;
+        emit reporWriteLog(tr("测量时长/s：%1").arg(measureTimelength));
 
         delete[] row_data;
         row_data = nullptr;
@@ -815,14 +829,14 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
 
     // 获取测量的起始时刻，以打靶时刻为零时刻
     // 获取两个时间的时间戳（秒）
-    qint64 seconds1 = ui->line_measure_endT->text().toUInt();
-    qint64 seconds2 = ui->line_measure_startT->text().toUInt();
+    qint64 seconds1 = ui->messureDateTime->dateTime().toSecsSinceEpoch();
+    qint64 seconds2 = ui->fusionDateTime->dateTime().toSecsSinceEpoch();
     qint64 measureTime = seconds1 - seconds2;
 
     // 设定待分析的时间区间以及步长
-    int startTime = ui->spinBox_timeStart->value(); //单位：s
-    int endTime = ui->spinBox_timeEnd->value(); //单位：s
-    int timeStep = ui->spinBox_step->value();//单位：s
+    int startTime = ui->spinBox_timeStart->value() * 60; //单位：s
+    int endTime = ui->spinBox_timeEnd->value() * 60; //单位：s
+    int timeStep = ui->spinBox_step->value() * 60;//单位：s
 
     if(startTime >= endTime)
     {
@@ -836,9 +850,10 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
     dealFile->setStartTime(measureTime);
     QString filePath = ui->textBrowser_filepath->toPlainText();
     dealFile->parseH5File(filePath);
-    //dealFile->getResult_offline(timeStep, startTime, endTime);
-
-    emit sigSuccess();
+    if (dealFile->getResult_offline(timeStep, startTime, endTime))
+        emit sigSuccess();
+    else
+        emit sigFail();
 
     emit reporWriteLog(tr("解析结束"));
 }

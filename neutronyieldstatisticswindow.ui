@@ -398,7 +398,7 @@
        <item>
         <widget class="QStackedWidget" name="stackedWidget">
          <property name="currentIndex">
-          <number>2</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="page_spectrum">
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -432,28 +432,6 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="page_yield">
-          <layout class="QGridLayout" name="gridLayout_3">
-           <property name="leftMargin">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>0</number>
-           </property>
-           <property name="rightMargin">
-            <number>0</number>
-           </property>
-           <property name="bottomMargin">
-            <number>0</number>
-           </property>
-           <property name="horizontalSpacing">
-            <number>0</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QCustomPlot" name="spectorMeter_Yield" native="true"/>
-           </item>
-          </layout>
-         </widget>
          <widget class="QWidget" name="page_count">
           <layout class="QGridLayout" name="gridLayout">
            <property name="leftMargin">
@@ -473,6 +451,28 @@
            </property>
            <item row="0" column="0">
             <widget class="QCustomPlot" name="spectorMeter_Count" native="true"/>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="page_yield">
+          <layout class="QGridLayout" name="gridLayout_3">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="horizontalSpacing">
+            <number>0</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QCustomPlot" name="spectorMeter_Yield" native="true"/>
            </item>
           </layout>
          </widget>
@@ -642,7 +642,7 @@
                  <height>30</height>
                 </size>
                </property>
-               <layout class="QHBoxLayout" name="horizontalLayout">
+               <layout class="QGridLayout" name="gridLayout_2">
                 <property name="leftMargin">
                  <number>0</number>
                 </property>
@@ -655,7 +655,24 @@
                 <property name="bottomMargin">
                  <number>0</number>
                 </property>
-                <item>
+                <item row="1" column="1">
+                 <widget class="QDateTimeEdit" name="fusionDateTime">
+                  <property name="displayFormat">
+                   <string>yyyy/M/d H:mm:ss</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QDateTimeEdit" name="messureDateTime">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="displayFormat">
+                   <string>yyyy/M/d H:mm:ss</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0" rowspan="2">
                  <widget class="QLabel" name="label_7">
                   <property name="minimumSize">
                    <size>
@@ -664,67 +681,20 @@
                    </size>
                   </property>
                   <property name="text">
-                   <string>测量时间范围（s）：</string>
+                   <string>打靶时刻：</string>
                   </property>
                   <property name="alignment">
-                   <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QLineEdit" name="line_measure_startT">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>40</width>
-                    <height>0</height>
-                   </size>
-                  </property>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_2">
                   <property name="text">
-                   <string>0</string>
+                   <string>开测时刻：</string>
                   </property>
-                  <property name="readOnly">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLabel" name="label_9">
-                  <property name="text">
-                   <string>-</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QLineEdit" name="line_measure_endT">
-                  <property name="enabled">
-                   <bool>true</bool>
-                  </property>
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>40</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>100</string>
-                  </property>
-                  <property name="readOnly">
-                   <bool>true</bool>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                   </property>
                  </widget>
                 </item>
@@ -740,82 +710,53 @@
              <string>解析参数</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_4">
-             <item row="1" column="1" rowspan="2">
-              <widget class="QSpinBox" name="spinBox_timeEnd">
-               <property name="minimumSize">
-                <size>
-                 <width>50</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximum">
-                <number>999999</number>
-               </property>
-               <property name="value">
-                <number>100</number>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2" rowspan="2">
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>316</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item row="1" column="0" rowspan="2">
-              <widget class="QLabel" name="label_8">
+             <item row="3" column="0">
+              <widget class="QLabel" name="label">
                <property name="text">
-                <string>解析时间终点/s：</string>
+                <string>时间步长/min：</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1" rowspan="2">
+              <widget class="QSpinBox" name="spinBox_timeEnd">
+               <property name="minimum">
+                <number>2000</number>
+               </property>
+               <property name="maximum">
+                <number>99999999</number>
+               </property>
+               <property name="value">
+                <number>2000</number>
                </property>
               </widget>
              </item>
              <item row="0" column="1">
               <widget class="QSpinBox" name="spinBox_timeStart">
-               <property name="minimumSize">
-                <size>
-                 <width>50</width>
-                 <height>0</height>
-                </size>
+               <property name="minimum">
+                <number>240</number>
+               </property>
+               <property name="maximum">
+                <number>99999999</number>
                </property>
               </widget>
-             </item>
-             <item row="2" column="2">
-              <spacer name="horizontalSpacer_5">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>316</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
              </item>
              <item row="0" column="0">
               <widget class="QLabel" name="label_6">
                <property name="text">
-                <string>解析时间起点/s：</string>
+                <string>解析时间起点/min：</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label">
+             <item row="1" column="0" rowspan="2">
+              <widget class="QLabel" name="label_8">
                <property name="text">
-                <string>时间步长/s：</string>
+                <string>解析时间终点/min：</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -825,92 +766,14 @@
              <item row="3" column="1">
               <widget class="QSpinBox" name="spinBox_step">
                <property name="minimum">
-                <number>1</number>
+                <number>300</number>
                </property>
                <property name="maximum">
-                <number>9999</number>
+                <number>99999999</number>
                </property>
               </widget>
              </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="groupBox">
-            <property name="title">
-             <string>分析数据另存为</string>
-            </property>
-            <layout class="QGridLayout" name="gridLayout_5">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_24">
-               <property name="text">
-                <string>存储路径：</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="lineEdit_savepath"/>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_55">
-               <property name="minimumSize">
-                <size>
-                 <width>60</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>文件名(.txt)：</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLineEdit" name="lineEdit_fileName"/>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="widget_6" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>23</height>
-             </size>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <property name="leftMargin">
-              <number>5</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>255</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
+             <item row="4" column="2">
               <widget class="QPushButton" name="pushButton_start">
                <property name="enabled">
                 <bool>true</bool>
@@ -932,6 +795,80 @@
                 <bool>false</bool>
                </property>
               </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>255</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox">
+            <property name="title">
+             <string>分析数据另存为</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_5">
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_55">
+               <property name="minimumSize">
+                <size>
+                 <width>60</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>文件名(.txt)：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_24">
+               <property name="text">
+                <string>存储路径：</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QPushButton" name="pushButton">
+               <property name="text">
+                <string>保存数据</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1" colspan="2">
+              <widget class="QLineEdit" name="lineEdit_fileName"/>
+             </item>
+             <item row="0" column="1" colspan="2">
+              <widget class="QLineEdit" name="lineEdit_savepath"/>
+             </item>
+             <item row="2" column="0" colspan="2">
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
              </item>
             </layout>
            </widget>

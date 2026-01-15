@@ -1,4 +1,4 @@
-#include "qcomboboxdelegate.h"
+﻿#include "qcomboboxdelegate.h"
 #include <QComboBox>
 
 QComboBoxDelegate::QComboBoxDelegate(QObject *parent)
@@ -15,10 +15,15 @@ QComboBoxDelegate::~QComboBoxDelegate() {
 }
 
 // 创建编辑器
+#include <QLineEdit>
 QWidget *QComboBoxDelegate::createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const {
     // 创建自己需要的控件进行返回
     QComboBox *editor = new QComboBox(parent);
     editor->setEditable(true);
+    QRegExp regExp(R"(^((25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)(:\d{1,5})?$)");
+    regExp.setPatternSyntax(QRegExp::RegExp2); // 启用Perl兼容语法（支持\d等元字符.exactMatch(str);）
+
+    editor->lineEdit()->setValidator(new QRegExpValidator(regExp, editor->lineEdit()));
 
     return editor;
 }

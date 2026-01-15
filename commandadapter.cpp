@@ -82,7 +82,8 @@ void CommandAdapter::clear()
 }
 
 void CommandAdapter::restartTempTimeout(quint32 timeout) {
-    mTempTimeoutTimer.start(timeout);
+    qDebug() << "暂时屏蔽掉温度超时监测功能";
+    //mTempTimeoutTimer.start(timeout);
 }
 
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)

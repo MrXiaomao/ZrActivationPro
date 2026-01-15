@@ -294,6 +294,8 @@ void MainWindow::initUi()
         ui->checkBox_autoIncrease->setChecked(settings.value("ShotNumIsAutoIncrease", true).toBool());
         ui->lineEdit_shotNum->setText(settings.value("ShotNumStr", "000").toString());
         ui->lineEdit_filePath->setText(settings.value("ShotDir", "./cache").toString());
+        if (!QDir(ui->lineEdit_filePath->text()).exists())
+            ui->lineEdit_filePath->setText("./cache");
         ui->spinBox_measureTime->setValue(settings.value("MeasureTime", 10).toInt());
         // 触发模式
         int triggerMode = settings.value("TriggerMode", 0).toInt();
@@ -334,19 +336,6 @@ void MainWindow::initUi()
             actions << ui->action_histroyData << ui->action_analyzeData << ui->action_managerData;
             actions[index-1]->setChecked(false);
         }
-    });
-
-    QActionGroup *actGroup = new QActionGroup(this);
-    actGroup->addAction(ui->action_histroyData);
-    actGroup->addAction(ui->action_analyzeData);
-    actGroup->addAction(ui->action_managerData);
-    connect(actGroup, &QActionGroup::triggered, this, [=](QAction *action){
-        if (action == ui->action_histroyData)
-            ui->centralHboxTabWidget->setTabVisible(1, true);
-        else if (action == ui->action_analyzeData)
-            ui->centralHboxTabWidget->setTabVisible(2, true);
-        else if (action == ui->action_managerData)
-            ui->centralHboxTabWidget->setTabVisible(3, true);
     });
 
     /*设置关闭按钮图标尺寸，QSS设置无效，所以只能在这里修改*/
@@ -688,11 +677,19 @@ void MainWindow::initUi()
             checkBox->setChecked(true);
             connect(checkBox, &QCheckBox::stateChanged, this, [=](int state){
                 int index = checkBox->property("index").toInt();
-                QCPGraph *graph = getGraph((index-1) % 12);
+
+                // 能谱
+                QCPGraph *graph = getGraph(index % 12);
                 if (graph){
                     graph->setVisible(Qt::CheckState::Checked == state ? true : false);
-                    getCustomPlot((index-1) % 12)->replot();
-                    getCustomPlot((index-1) % 12, false)->replot();
+                    getCustomPlot(index % 12)->replot();
+                }
+
+                // 计数率
+                graph = getGraph(index % 12, false);
+                if (graph){
+                    graph->setVisible(Qt::CheckState::Checked == state ? true : false);
+                    getCustomPlot(index % 12, false)->replot();
                 }
             });
 

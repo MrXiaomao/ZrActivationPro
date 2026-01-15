@@ -1,4 +1,4 @@
-#include "detsettingwindow.h"
+﻿#include "detsettingwindow.h"
 #include "ui_detsettingwindow.h"
 #include "qcomboboxdelegate.h"
 #include "globalsettings.h"
@@ -19,16 +19,20 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     // QStandardItemModel model(24, 2);
     // for (int i = 0; i < model.rowCount(); ++i) {
     //     model.setData(model.index(i, 0), QString("谱仪#%1").arg(i));
-    //     model.setData(model.index(i, 1), "0.0.0.0:8000");
+    //     model.setData(model.index(i, 1), "0.0.0.0");
     // }
     // ui->tableWidget->setModel(&model);
 
     QComboBoxDelegate *delegate = new QComboBoxDelegate(this);
-    delegate->insertItem(QString("0.0.0.0:8000"));
+    delegate->insertItem(QString("0.0.0.0"));
     ui->tableWidget->setItemDelegateForColumn(1, delegate); // 将委托应用到特定列
     connect(this, &DetSettingWindow::connectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
-        delegate->insertItem(QString("%1:%2").arg(peerAddress).arg(peerPort));
+        delegate->insertItem(QString("%1").arg(peerAddress));
     });
+
+    QRegExp regExp(R"(^((25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$)");
+    regExp.setPatternSyntax(QRegExp::RegExp2); // 启用Perl兼容语法（支持\d等元字符.exactMatch(str);）
+    ui->lineEdit_timerSrvIp->setValidator(new QRegExpValidator(regExp, ui->lineEdit_timerSrvIp));
 
     connect(this, &DetSettingWindow::disconnectPeerConnection, this, [=](QString peerAddress, quint16 peerPort){
         delegate->removeItem(QString("%1:%2").arg(peerAddress).arg(peerPort));
@@ -49,10 +53,10 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
                 QString peerAddress2 = ui->tableWidget->item(i, 1)->text();
                 if (peerAddress == peerAddress2 && i != row){
                     if (i < row){
-                        ui->tableWidget->item(row, 1)->setText("0.0.0.0:8000");
+                        ui->tableWidget->item(row, 1)->setText("0.0.0.0");
                     }
                     else {
-                        ui->tableWidget->item(i, 1)->setText("0.0.0.0:8000");
+                        ui->tableWidget->item(i, 1)->setText("0.0.0.0");
                     }
                 }
             }

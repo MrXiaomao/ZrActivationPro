@@ -294,6 +294,7 @@ void CountRateStatisticsWindow::initUi()
     }
 }
 
+
 void CountRateStatisticsWindow::on_action_lightTheme_triggered()
 {
     if(!mIsDarkTheme) return;
@@ -335,6 +336,7 @@ void CountRateStatisticsWindow::on_action_colorTheme_triggered()
     settings.setValue("Global/Startup/themeColorEnable",mThemeColorEnable);
     applyColorTheme();
 }
+
 
 void CountRateStatisticsWindow::applyColorTheme()
 {
@@ -441,6 +443,7 @@ void CountRateStatisticsWindow::applyColorTheme()
     }
 }
 
+
 void CountRateStatisticsWindow::restoreSettings()
 {
     GlobalSettings settings;
@@ -460,6 +463,7 @@ void CountRateStatisticsWindow::restoreSettings()
         });
     }
 }
+
 
 void CountRateStatisticsWindow::replyWriteLog(const QString &msg, QtMsgType msgType)
 {
@@ -501,6 +505,7 @@ void CountRateStatisticsWindow::replyWriteLog(const QString &msg, QtMsgType msgT
         cursor.removeSelectedText();//删除选择的文本
     }
 }
+
 
 void CountRateStatisticsWindow::initCustomPlot(QCustomPlot* customPlot, QString axisXLabel, QString axisYLabel)
 {
@@ -547,6 +552,7 @@ void CountRateStatisticsWindow::initCustomPlot(QCustomPlot* customPlot, QString 
     connect(customPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(slotRestorePlot(QMouseEvent*)));
 }
 
+
 #include "H5Cpp.h"
 void CountRateStatisticsWindow::on_action_open_triggered()
 {
@@ -566,8 +572,6 @@ void CountRateStatisticsWindow::on_action_open_triggered()
 
     // 解析文件，获取能谱范围时长
     {
-        QString filePath = ui->textBrowser_filepath->toPlainText();
-
         // 1. 打开文件
         H5::H5File file(filePath.toStdString(), H5F_ACC_RDONLY);
 

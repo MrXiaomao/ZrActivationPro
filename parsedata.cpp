@@ -121,12 +121,15 @@ bool ParseData::getResult(QVector<mergeSpecData> mergeSpec)
         qDebug()<<"specID: "<<spec_id;
         qint64 nowtime = spec.currentTime;
         double* singleSpectrum = new double[G_CHANNEL];
-        for(int i=0; i<2045; i++)
+        for(int i=0; i<G_CHANNEL/*2045*/; i++)
         {
             singleSpectrum[i] = spec.spectrum[i]*1.0;
         }
 
-        if(!PeakFind(singleSpectrum, fit_c_2)) return false; //注意，这里的fit_c_2每次调用后发生了更新
+        if(!PeakFind(singleSpectrum, fit_c_2)) {
+            delete[] singleSpectrum;
+            return false; //注意，这里的fit_c_2每次调用后发生了更新
+        }
 
         //峰位漂移矫正 利用511keV 909keV做能量刻度
         double peak_calibration[2];
@@ -996,7 +999,7 @@ QVector<specStripData> ParseData::GetCount909Data()
 {
     QVector<specStripData> pictureData;
     specStripData tempData;
-    for(int i=0; i<count909_time.size(); i++)
+    for(int i=0; i<count909_time.size() && i<count909_fitcount.size() && i<count909_residual.size(); i++)
     {
         tempData.x = count909_time.at(i);
         tempData.y = count909_count.at(i);
@@ -1023,7 +1026,136 @@ void ParseData::clearFitResult()
     specStripData_residualRate.clear(); //残差
 }
 
+
+#include "H5Cpp.h"
 void ParseData::parseH5File(QString filePath)
 {
+    if (filePath.isEmpty() || !QFileInfo::exists(filePath))
+        return;
 
+    // 解析文件，获取能谱范围时长
+    {
+        // 1. 打开文件
+        H5::H5File file(filePath.toStdString(), H5F_ACC_RDONLY);
+
+        // 2. 打开分组核数据集
+        H5::Group group = file.openGroup("Detector#1");
+        H5::DataSet dataset = group.openDataSet("Spectrum");
+
+        // 3. 确认数据类型匹配（可选，用于错误检查）
+        H5::CompType fileType = dataset.getCompType();
+        if (fileType != H5::PredType::NATIVE_UINT) {
+            file.close();
+            return;
+        }
+
+        // 4. 初始文件空间
+        H5::DataSpace file_space = dataset.getSpace();
+        hsize_t current_dims[2];
+        file_space.getSimpleExtentDims(current_dims, NULL);
+        hsize_t rows = current_dims[0];
+        hsize_t cols = current_dims[1];
+        if (rows<=0){
+            group.close();
+            dataset.close();
+            file_space.close();
+            file.close();
+            return;
+        }
+
+        // 5. 内存空间：只读取一行
+        hsize_t mem_dims[2] = {1, cols};
+        H5::DataSpace mem_space(2, mem_dims);
+        uint32_t* row_data = new uint32_t[cols];
+
+        // 6. 指定数据读取位置
+        hsize_t start[2] = {0, 0};
+        hsize_t count[2] = {1, cols};
+        file_space.selectHyperslab(H5S_SELECT_SET, count, start);
+
+        // 7. 读取数据
+        for (hsize_t i = 0; i < rows; ++i) {
+            dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, file_space);
+            FullSpectrum* data = reinterpret_cast<FullSpectrum*>(row_data);
+            m_allSpec.push_back(*data);
+        }
+
+        delete[] row_data;
+        row_data = nullptr;
+
+        group.close();
+        dataset.close();
+        file_space.close();
+    }
+}
+
+/**
+    * mergeSpecTime_offline：提取目标时间段能谱数据，根据时间道宽合并能谱。需要处理丢包，
+    * 程序使用范围：用于离线数据处理，单个能谱的测量时间必须大于1s，否则对丢包的修正处理无效。
+    * quint64 timeBin, 时间宽度,单位s
+    * quint64 start_time, 起始时间,单位s
+    * quint64 end_time, 结束时间,单位s
+**/
+void ParseData::mergeSpecTime_offline(quint64 timeBin, quint64 start_time, quint64 end_time)
+{
+    quint32 spectrumNum = (end_time - start_time+1)/timeBin; //整除，给出合并后的能谱个数，对于最后一段时间不满timeBin宽度的能谱直接丢弃。
+    if(spectrumNum == 0) return;
+
+    //初始化合并能谱
+    m_mergeSpec.resize(spectrumNum);
+    for(auto it = m_mergeSpec.begin(); it!=m_mergeSpec.end(); ++it)
+    {
+        it->specTime = timeBin*1000;
+    }
+
+    quint64 spectDeltaT = m_allSpec.at(0).measureTime; //单个能量测量时间，单位ms. 室假设所有的能谱时间间隔都一样，如果不一样需要重新采取其他算法。
+    quint64 lossTime = 0; //死时间，单位ns。
+    int lastSpecID = 0; //上一个能谱的编号。
+    qint64 currentTime = T0_beforeShot *1000; //当前能谱对应时刻，应是能谱结束时刻，单位ms
+    qint64 accumulateTime = 0; //计算自start_time开始到当前能谱的时间。单位ms
+    for(auto spec:m_allSpec)
+    {
+        // if(T0_beforeShot + spec.)
+        //计算丢包带来的死时间
+        qint64 lossTimeTemp = (spec.sequence - lastSpecID - 1)*spectDeltaT; //单位ms
+        currentTime += spectDeltaT + lossTimeTemp; //ms
+        lossTime = lossTimeTemp * 1000000 + spec.deathTime*10; //ns
+        if(currentTime >= start_time*1000)
+        {
+            accumulateTime += lossTimeTemp + spectDeltaT;//ms
+
+            //对于最后一段时间数据，由于时间宽度不满一个timeBin，直接舍弃。
+            if(accumulateTime > spectrumNum*timeBin*1000) break;
+
+            //给出当前所属的合并能谱序次号
+            int mergeID = accumulateTime/1000/timeBin;
+
+            //对每组合并能谱中最后一个子能谱，归并到上一能谱中。
+            if( accumulateTime % (timeBin*1000) == 0)  {
+                mergeID--;
+                qDebug()<<QString("The last sub-energy spectrum in the %1s merged time channel ").arg(mergeID);
+            }
+
+            if(mergeID >=spectrumNum) {
+                qDebug()<<"---------计算异常------------";
+                break;
+            }
+
+            //更新合并能谱的数值
+            m_mergeSpec[mergeID].currentTime = currentTime;
+            m_mergeSpec[mergeID].deathTime += lossTime;
+            for(int i=0; i<G_CHANNEL; i++)
+            {
+                m_mergeSpec[mergeID].spectrum[i] += spec.spectrum[i];
+            }
+        }
+        lastSpecID = spec.sequence;
+    }
+}
+
+bool ParseData::getResult_offline(quint64 timeBin, quint64 start_time, quint64 end_time)
+{
+    mergeSpecTime_offline(timeBin, start_time, end_time);
+    bool flag = getResult(m_mergeSpec);
+    return flag;
 }
