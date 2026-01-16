@@ -134,6 +134,16 @@ void HDF5Settings::sync()
 {
     QMutexLocker locker(&mWrite_mutex);
     try {
+        // 1 打开文件（不清空）
+        // H5::H5File fH5Setting(DEFAULT_HDF5_FILENAME, H5F_ACC_RDWR);
+        // 2 打开或创建 Config group
+        H5::Group cfg;
+        if (H5Lexists(mfH5Setting->getId(), "Config", H5P_DEFAULT) > 0) {
+            cfg = mfH5Setting->openGroup("Config");
+        } else {
+            cfg = mfH5Setting->createGroup("Config");
+        }
+        // 3 准备数据
         QVector<DetParameter> data;
         for (auto &pair : mMapDetParameter.toStdMap())
         {
@@ -142,9 +152,18 @@ void HDF5Settings::sync()
 
         hsize_t dims[1] = {DET_NUM};
         H5::DataSpace dataspace(1, dims);
-        H5::Group cfgGroup = mfH5Setting->openGroup("Config");
-        H5::DataSet dataset = cfgGroup.openDataSet("Detector");//, mCompDataType, dataspace);        
-        dataset.write(data.data(), mCompDataType);        
+        // 4 dataset 存在 → 打开并写
+        if (H5Lexists(cfg.getId(), "Detector", H5P_DEFAULT) > 0) {
+            H5::DataSet ds = cfg.openDataSet("Detector");
+            ds.write(data.data(), mCompDataType);
+        }
+        else {
+            // 5 dataset 不存在 → 创建并写
+            H5::DataSet dataset = cfg.createDataSet("Detector", mCompDataType, dataspace);
+            dataset.write(data.data(), mCompDataType, dataspace);
+            writeDetParStrAttr(dataset);
+        }
+        // mfH5Setting->close();
     } catch (H5::FileIException& error) {
         error.printErrorStack();
         return ;
@@ -229,49 +248,25 @@ void HDF5Settings::writeBytes(quint8 index, QByteArray& data)
 void HDF5Settings::createH5Config()
 {
     if (QFileInfo::exists(DEFAULT_HDF5_FILENAME))
-    //if (H5::H5File::isHdf5(DEFAULT_HDF5_FILENAME))
     {
-        try {
-            mfH5Setting = new H5::H5File(DEFAULT_HDF5_FILENAME, H5F_ACC_RDWR);
-            H5::Group cfgGroup = mfH5Setting->openGroup("Config");
-            H5::DataSet globalDataset = cfgGroup.openDataSet("Detector");
-            H5::DataSpace file_space = globalDataset.getSpace();
+        mfH5Setting = new H5::H5File(DEFAULT_HDF5_FILENAME, H5F_ACC_RDWR);
+        H5::Group cfgGroup = mfH5Setting->openGroup("Config");
+        H5::DataSet globalDataset = cfgGroup.openDataSet("Detector");
+        H5::DataSpace file_space = globalDataset.getSpace();
 
-            // 获取数据集维度(行)
-            int ndims = file_space.getSimpleExtentNdims();
-            std::vector<hsize_t> dims(ndims);
-            file_space.getSimpleExtentDims(dims.data());
+        // 获取数据集维度(行)
+        int ndims = file_space.getSimpleExtentNdims();
+        std::vector<hsize_t> dims(ndims);
+        file_space.getSimpleExtentDims(dims.data());
 
-            // 读取数据
-            //一次性读取所有数据
-            QVector<DetParameter> read_data(dims[0]);
-            globalDataset.read(read_data.data(), mCompDataType);
-            for (const auto& item : read_data) {
-                mMapDetParameter[item.id] = item;
-            }
-
-            //逐行读取数据
-            // size_t chunkSize = 1;//一次读1行数据
-            // for (int i=0; i<dims[0]; ++i){
-            //     hsize_t offset[1] = {(hsize_t)i};
-            //     hsize_t chunkDims[1] = {chunkSize};
-
-            //     // 准备内存空间
-            //     H5::DataSpace mem_space(1, chunkDims);
-
-            //     // 文件定位
-            //     file_space.selectHyperslab(H5S_SELECT_SET, chunkDims, offset);
-
-            //     QVector<DetParameter> chunkData(chunkSize);
-            //     globalDataset.read(chunkData.data(), mCompDataType, mem_space, file_space);
-            //     for (const auto& item : chunkData) {
-            //         mMapDetParameter[item.id] = item;
-            //     }
-            // }
-        } catch (const H5::FileIException& error) {
-            // 数据集不存在，创建新数据集
-            error.printErrorStack();
+        // 读取数据
+        //一次性读取所有数据
+        QVector<DetParameter> read_data(dims[0]);
+        globalDataset.read(read_data.data(), mCompDataType);
+        for (const auto& item : read_data) {
+            mMapDetParameter[item.id] = item;
         }
+        // mfH5Setting->close();
     }
     else
     {
@@ -301,15 +296,14 @@ void HDF5Settings::createH5Config()
                 H5::Group cfgGroup = mfH5Setting->createGroup("Config");
                 H5::DataSet dataset = cfgGroup.createDataSet("Detector", mCompDataType, dataspace);
                 dataset.write(data.data(), mCompDataType);
-                //H5Dflush(dataset.getId());
-                //H5Fflush(dataset.getId(), H5F_SCOPE_GLOBAL);
 
                 // 写字段属性
                 writeDetParStrAttr(dataset);
 
                 H5Fflush(mfH5Setting->getId(), H5F_SCOPE_GLOBAL);  // 同步文件元数据
             }                    
-
+            // mfH5Setting->close();
+            
             // 创建表格数组
             if (0)
             {

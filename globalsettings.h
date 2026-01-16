@@ -652,6 +652,7 @@ private:
 #define MAC_LENGTH 18
 #define DEFAULT_HDF5_FILENAME "./Config/Settings.H5"
 //参数结构定义
+#pragma pack(push, 1)  // 确保字节对齐
 typedef struct _DetParameter{
     //探测器ID
     quint8 id;
@@ -760,25 +761,26 @@ typedef struct _DetParameter{
 
         //梯形成型
         //是否启用
-        trapShapeEnable = false;
+        trapShapeEnable = true;
         //时间常数D1
-        trapShapeTimeConstD1 = 0;
+        trapShapeTimeConstD1 = 59310;
         //时间常数D2
-        trapShapeTimeConstD2 = 0;
+        trapShapeTimeConstD2 = 24111;
         //上升沿
-        trapShapeRisePoint = 15;
+        trapShapeRisePoint = 10;
         //平顶
         trapShapePeakPoint = 15;
         //下降沿
-        trapShapeFallPoint = 15;
+        trapShapeFallPoint = 10;
 
         //高压电源
         //是否启用
-        highVoltageEnable = false;
+        highVoltageEnable = true;
         //DAC高压输出电平
-        highVoltageOutLevel = 0;
+        highVoltageOutLevel = 800;
     }
 }DetParameter;
+#pragma pack(pop)
 
 #include "H5Cpp.h"
 class HDF5Settings: public QObject

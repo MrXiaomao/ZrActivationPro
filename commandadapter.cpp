@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QtEndian>
 #include <QTimer>
+#include "globalsettings.h"
 
 CommandAdapter::CommandAdapter(QObject *parent)
     : QObject{parent}
@@ -36,12 +37,6 @@ CommandAdapter::CommandAdapter(QObject *parent)
     connect(this, &CommandAdapter::destroyed, [=]() {
         mCmdProcessThread->exit(0);
         mCmdProcessThread->wait(500);
-    });
-
-    mTempTimeoutTimer.setSingleShot(true);
-    connect(&mTempTimeoutTimer, &QTimer::timeout, this, [this](){
-        qWarning().noquote() << tr("超过%1秒未收到温度数据，触发报警！").arg(mTempTimeoutTimer.interval() / 1000);
-        reportTemperatureTimeout(); // 直接调用（同线程）更稳
     });
 }
 
@@ -81,11 +76,6 @@ void CommandAdapter::clear()
     cmdPool.clear();
 }
 
-void CommandAdapter::restartTempTimeout(quint32 timeout) {
-    qDebug() << "暂时屏蔽掉温度超时监测功能";
-    //mTempTimeoutTimer.start(timeout);
-}
-
 void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 {
     while(1){
@@ -100,7 +90,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             QByteArray data = cachePool.mid(6, 4);
             qint32 t = qFromBigEndian<qint32>(data.constData());
             float temperature = t * 0.0001;// 换算系数
-
             // qDebug().noquote() << "temp：" << temperature;
 
             findNaul = true;
@@ -108,10 +97,6 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
             //上传温度数据
             QMetaObject::invokeMethod(this, "reportTemperatureData", Qt::QueuedConnection, Q_ARG(float, temperature));
-
-            //超时监测，每次超过10s没收到温度则报警
-            //QMetaObject::invokeMethod(this, "restartTempTimeout", Qt::QueuedConnection);
-            QMetaObject::invokeMethod(this, "reportTemperatureCheckTimeout", Qt::QueuedConnection);
         }
 
         //增益指令
@@ -600,9 +585,6 @@ void CommandAdapter::sendStartMeasure(){
     
     pushCmd({QString("开始测量指令"), askCurrentCmd});
     mIsMeasuring = true;
-
-    //启动心跳超时检测
-    restartTempTimeout();
 
     //通知发送指令
     this->notifySendNextCmd();

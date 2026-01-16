@@ -42,7 +42,16 @@ DataProcessor::DataProcessor(quint8 index, QTcpSocket* socket, QObject *parent)
     if (mTcpSocket)
         connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
 
-    connect(this, &DataProcessor::reportTemperatureCheckTimeout, this, &DataProcessor::replyTemperatureCheckTimeout);
+    mTempTimeoutTimer.setSingleShot(true);
+    connect(&mTempTimeoutTimer, &QTimer::timeout, this, [this](){
+        qWarning().noquote() << tr("超过%1秒未收到温度数据，触发报警！").arg(mTempTimeoutTimer.interval() / 1000);
+        reportTemperatureTimeout();
+    });
+
+    // 温度刷新，重启心跳定时器
+    connect(this, &DataProcessor::reportTemperatureTimeout, this, [this](){
+        restartTempTimeout();
+    });
 }
 
 
@@ -205,6 +214,17 @@ void DataProcessor::inputData(const QByteArray& data)
     mDataCondition.wakeAll();
 }
 
+
+void DataProcessor::restartTempTimeout() {
+    //心跳超时时间应该是一个全局信息，不需要单独存放，暂时采用通道1的心跳时间进行存储。
+    //从HDF5加载配置信息
+    HDF5Settings *settings = HDF5Settings::instance();
+    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+    DetParameter& detParameter = detParameters[mIndex];
+
+    mTempTimeoutTimer.start(detParameter.pluseCheckTime*1000);
+}
+
 /**
  * @brief DataProcessor::inputSpectrumData
  * @param no 探测器通道编号
@@ -287,7 +307,7 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
                      << ", specMeasureTime(ms):" << fullSpectrum->measureTime
                      << ", deathTime(*10ns):" << fullSpectrum->deathTime;
             }
-            m_parseData->mergeSpecTime_online(*fullSpectrum);
+            // m_parseData->mergeSpecTime_online(*fullSpectrum);
 
             // 7. 清理已完成的能谱数据（释放内存，可选：若需保留历史数据可注释）
             mFullSpectrums.remove(spectrumSeq);
@@ -321,12 +341,4 @@ bool DataProcessor::extractSpectrumData(const QByteArray& packetData, SubSpectru
     //          << "subSquenceID:" << packet.spectrumSubNo;
 
     return true;
-}
-
-void DataProcessor::replyTemperatureCheckTimeout()
-{
-    HDF5Settings *settings = HDF5Settings::instance();
-    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-    DetParameter& detParameter = detParameters[mIndex];
-    restartTempTimeout(detParameter.pluseCheckTime*1000);
 }

@@ -33,11 +33,10 @@ public:
     Q_SIGNAL void reportWaveformData(QByteArray&);
     Q_SIGNAL void reportParticleData(QByteArray&);
     Q_SIGNAL void reportTemperatureData(float temperature);
-    Q_SIGNAL void reportTemperatureTimeout();
 
 // signals:
-public slots:
-    void restartTempTimeout(quint32 timeout = 10000);   // 收到温度时调用
+// public slots:
+//     void restartTempTimeout();   // 收到温度时调用
 
 public:
     /*********************************************************
@@ -161,7 +160,6 @@ protected:
     void analyzeCommands(QByteArray &cachePool);
 
 private:
-    QTimer mTempTimeoutTimer;
     bool mAskStopMeasure = false; //是否请求结束测量(如果已经请求了结束测量，那么就有必要解析结束测量指令)
     QVector<CommandItem> cmdPool;//发送指令等候区
 

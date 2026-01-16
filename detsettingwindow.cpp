@@ -194,7 +194,7 @@ void DetSettingWindow::saveAt(quint8 detId)
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
     DetParameter& detParameter = detParameters[detId];
 
-    detParameter.pluseCheckTime = ui->spinBox_pluseCheckTime->value();
+    detParameter.pluseCheckTime = static_cast<quint32>(ui->spinBox_pluseCheckTime->value());
 
     //时间服务器
     //IP地址
@@ -218,15 +218,15 @@ void DetSettingWindow::saveAt(quint8 detId)
 
     //能谱设置
     //能谱刷新时间（毫秒）
-    detParameter.spectrumRefreshTime = ui->spinBox_spectrumRefreshTime->value();
+    detParameter.spectrumRefreshTime = static_cast<quint32>(ui->spinBox_spectrumRefreshTime->value());
     //能谱长度
-    detParameter.spectrumLength = ui->comboBox_spectrumLength->currentText().toUInt();
+    detParameter.spectrumLength = static_cast<quint32>(ui->comboBox_spectrumLength->currentText().toUInt());
 
     //波形设置
     //触发模式
-    detParameter.waveformTriggerMode = ui->comboBox_waveformTriggerMode->currentIndex();
+    detParameter.waveformTriggerMode = static_cast<quint8>(ui->comboBox_waveformTriggerMode->currentIndex());
     //波形长度
-    detParameter.waveformLength = ui->comboBox_waveformLength->currentText().toUInt();
+    detParameter.waveformLength = static_cast<quint32>(ui->comboBox_waveformLength->currentText().toUInt());
 
     //梯形成型
     //是否启用
@@ -245,7 +245,7 @@ void DetSettingWindow::saveAt(quint8 detId)
     //是否启用
     detParameter.highVoltageEnable = ui->highVoltageEnable->isChecked();
     //输出高压，单位：V
-    detParameter.highVoltageOutLevel = ui->spinBox_highVoltageOutLevel->value();
+    detParameter.highVoltageOutLevel = static_cast<quint16>(ui->spinBox_highVoltageOutLevel->value());
 
     settings->sync();
 }
