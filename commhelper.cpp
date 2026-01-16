@@ -15,13 +15,13 @@ CommHelper::CommHelper(QObject *parent)
 
     connect(this, &CommHelper::settingfinished, this, [=](){
         //更改了设置，这里需要重新对数据处理器进行关联
-        // auto it = this->mConnectionPeers.begin();
-        // while (it != this->mConnectionPeers.end()) {
-        //     QTcpSocket* connection = *it;
-        //     allocDataProcessor(connection);
+        auto it = this->mConnectionPeers.begin();
+        while (it != this->mConnectionPeers.end()) {
+            QTcpSocket* connection = *it;
+            allocDataProcessor(connection);
 
-        //     ++it;
-        // }
+            ++it;
+        }
     });
 }
 
@@ -307,8 +307,19 @@ quint8 CommHelper::indexOfPort(int index)
 
 quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
 {
+    if (socket->property("detectorIndex").isValid())
+    {
+        qint8 index = socket->property("detectorIndex").isValid();
+        if (index >= 1 && index <= DET_NUM){
+            HDF5Settings *settings = HDF5Settings::instance();
+            QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+            DetParameter& detParameter = detParameters[index];
+            mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
+            return index;
+        }
+    }
+
     QString peerAddress = socket->peerAddress().toString();
-    quint16 peerPort = socket->peerPort();
     HDF5Settings *settings = HDF5Settings::instance();
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
 
