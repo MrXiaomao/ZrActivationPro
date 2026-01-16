@@ -58,6 +58,8 @@ NeutronYieldStatisticsWindow::~NeutronYieldStatisticsWindow()
 
 void NeutronYieldStatisticsWindow::initUi()
 {
+    ui->widget_flowLayoutContainer->hide();
+
     // 任务栏时钟信息
     {
         // 设置任务栏信息 - 系统时间
@@ -111,7 +113,7 @@ void NeutronYieldStatisticsWindow::initUi()
     QPushButton* detectorStatusButton = nullptr;
     {
         detectorStatusButton = new QPushButton();
-        detectorStatusButton->setText(tr("设备信息-计数率"));
+        detectorStatusButton->setText(tr("设备信息"));
         detectorStatusButton->setFixedSize(250,29);
         detectorStatusButton->setCheckable(true);
 
@@ -849,7 +851,15 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
 
     dealFile->setStartTime(measureTime);
     QString filePath = ui->textBrowser_filepath->toPlainText();
-    dealFile->parseH5File(filePath);
+    if (QFileInfo(filePath).suffix() == ".H5")
+    {
+        int index = 1;
+        if (ui->tableWidget->selectedItems().count() > 0)
+            index = ui->tableWidget->selectedItems()[0]->row() + 1;
+        dealFile->parseH5File(filePath, index);
+    }
+    else
+        dealFile->parseDatFile(filePath);
     if (dealFile->getResult_offline(timeStep, startTime, endTime))
         emit sigSuccess();
     else
@@ -1030,6 +1040,8 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
                 }
             }
         });
+
+        ui->widget_flowLayoutContainer->show();
     }
     connect(checkBoxAll, &QCheckBox::stateChanged, this, [=](int state){
         QList<QCheckBox *>checkBoxs = flowLayoutContainer->findChildren<QCheckBox*>();

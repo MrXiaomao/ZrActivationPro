@@ -15,13 +15,13 @@ CommHelper::CommHelper(QObject *parent)
 
     connect(this, &CommHelper::settingfinished, this, [=](){
         //更改了设置，这里需要重新对数据处理器进行关联
-        auto it = this->mConnectionPeers.begin();
-        while (it != this->mConnectionPeers.end()) {
-            QTcpSocket* connection = *it;
-            allocDataProcessor(connection);
+        // auto it = this->mConnectionPeers.begin();
+        // while (it != this->mConnectionPeers.end()) {
+        //     QTcpSocket* connection = *it;
+        //     allocDataProcessor(connection);
 
-            ++it;
-        }
+        //     ++it;
+        // }
     });
 }
 
@@ -46,8 +46,16 @@ void CommHelper::initSocket()
         QMutexLocker locker(&mPeersMutex);
         QTcpSocket* connection = new QTcpSocket(this);
         connection->setSocketDescriptor(socketDescriptor);
-
         connection->setSocketOption(QAbstractSocket::KeepAliveOption, QVariant(true)); // 启用保活
+        //给新上线客户端分配数据处理器
+        quint8 index = allocDataProcessor(connection);
+        if (index == 0)
+        {
+            connection->close();
+            delete connection;
+            return;
+        }
+
         // 构造保活参数结构体
         tcp_keepalive keepAlive = {0};
         keepAlive.onoff = TRUE;               // 启用保活
@@ -74,36 +82,12 @@ void CommHelper::initSocket()
 
         this->mConnectionPeers.push_back(connection);
 
-        //网络异常（与下面disconnected信号会重复）
-        // connect(connection, &QAbstractSocket::errorOccurred, this, [=](QAbstractSocket::SocketError){
-        //     QString peerAddress = connection->property("peerAddress").toString();
-        //     quint16 peerPort = connection->property("peerPort").toUInt();
-        //     QMetaObject::invokeMethod(this, "disconnectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
-
-        //     //根据配置解析是哪一路探测器下线了
-        //     qint8 index = indexOfAddress(peerAddress, peerPort);
-        //     if (index > 0)
-        //         QMetaObject::invokeMethod(this, "detectorOffline", Qt::QueuedConnection, Q_ARG(quint8, index));
-
-        //     auto it = this->mConnectionPeers.begin();
-        //     while (it != this->mConnectionPeers.end()) {
-        //         if (*it == connection) {
-        //             //网络掉线了，取消数据处理器关联
-        //             freeDataProcessor(connection);
-
-        //             connection->deleteLater();
-        //             it = this->mConnectionPeers.erase(it);
-        //         } else {
-        //             ++it;
-        //         }
-        //     }
-        // });
         connect(connection, &QAbstractSocket::disconnected, this, [=](){
             QString peerAddress = connection->property("peerAddress").toString();
             quint16 peerPort = connection->property("peerPort").toUInt();
 
             //根据配置解析是哪一路探测器下线了
-            qint8 index = indexOfAddress(peerAddress, peerPort);
+            qint8 index = indexOfAddress(connection->socketDescriptor());// peerAddress, peerPort);
             if (index > 0)
             {
                 handleDetectorDisconnection(index);
@@ -114,15 +98,11 @@ void CommHelper::initSocket()
         quint16 peerPort = connection->peerPort();
         connection->setProperty("peerAddress", peerAddress);
         connection->setProperty("peerPort", peerPort);
+        connection->setProperty("socketDescriptor", socketDescriptor);
+        connection->setProperty("detectorIndex", index);
 
-        //给新上线客户端分配数据处理器
-        allocDataProcessor(connection);
         QMetaObject::invokeMethod(this, "connectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
-
-        //根据配置解析是哪一路探测器上线了
-        qint8 index = indexOfAddress(peerAddress, peerPort);
-        if (index > 0)
-            QMetaObject::invokeMethod(this, "detectorOnline", Qt::QueuedConnection, Q_ARG(quint8, index));
+        QMetaObject::invokeMethod(this, "detectorOnline", Qt::QueuedConnection, Q_ARG(quint8, index));
     });
 
     GlobalSettings settings(CONFIG_FILENAME);
@@ -325,30 +305,12 @@ quint8 CommHelper::indexOfPort(int index)
     return 0x00;
 }
 
-void CommHelper::allocDataProcessor(QTcpSocket *socket)
+quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
 {
     QString peerAddress = socket->peerAddress().toString();
     quint16 peerPort = socket->peerPort();
     HDF5Settings *settings = HDF5Settings::instance();
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-    QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
-
-    // IP+Port全匹配
-    {
-        auto it = this->mConnectionPeers.begin();
-        while (it != this->mConnectionPeers.end()) {
-            for (int index = 1; index <= DET_NUM; ++index){
-                DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-                if (addr1 == addr2){
-                    mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-                    return;
-                }
-            }
-
-            ++it;
-        }
-    }
 
     // IP匹配
     {
@@ -356,10 +318,10 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         while (it != this->mConnectionPeers.end()) {
             for (int index = 1; index <= DET_NUM; ++index){
                 DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-                if (addr2 == peerAddress){
+                QString detectorAddress = QString::fromStdString(detParameter.det_Ip_port);
+                if (detectorAddress == peerAddress && mDetectorDataProcessor[index]->isFreeSocket()){
                     mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-                    return;
+                    return index;
                 }
             }
 
@@ -367,54 +329,30 @@ void CommHelper::allocDataProcessor(QTcpSocket *socket)
         }
     }
 
-    //重新分配一个之前从没绑定过的数据处理器
-    for (int index = 1; index <= DET_NUM; ++index){
-        if (mDetectorDataProcessor[index]->isFreeSocket()){
-            DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-            if (addr2 == "0.0.0.0:6000"){//0.0.0.0:6000是数据库默认初始化值
-                //给新上线网络连接分配一个空闲的探测器
-                qstrcpy(detParameter.det_Ip_port, addr1.toStdString().c_str());
-                settings->sync();
-                mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-                return;
-            }
-        }
-    }
-
     //重新分配空闲的数据处理器
     for (int index = 1; index <= DET_NUM; ++index){
         if (mDetectorDataProcessor[index]->isFreeSocket()){
             DetParameter& detParameter = detParameters[index];
-            qstrcpy(detParameter.det_Ip_port, addr1.toStdString().c_str());
+            qstrcpy(detParameter.det_Ip_port, peerAddress.toStdString().c_str());
             settings->sync();
             mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-            return;
+            return index;
         }
     }
+
+    return 0;
 }
 
 void CommHelper::freeDataProcessor(QTcpSocket *socket)
 {
-    QString peerAddress = socket->property("peerAddress").toString();
-    quint16 peerPort = socket->property("peerPort").toUInt();
+    quint8 index = indexOfAddress(socket->socketDescriptor());
+    if (index <= 0)
+        return;
+
     HDF5Settings *settings = HDF5Settings::instance();
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-    QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
-
-    auto it = this->mConnectionPeers.begin();
-    while (it != this->mConnectionPeers.end()) {
-        for (int index = 1; index <= DET_NUM; ++index){
-            DetParameter& detParameter = detParameters[index];
-            QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-            if (addr2 == addr1){
-                mDetectorDataProcessor[index]->reallocSocket(nullptr, detParameter);
-                break;
-            }
-        }
-
-        ++it;
-    }
+    DetParameter& detParameter = detParameters[index];
+    mDetectorDataProcessor[index]->reallocSocket(nullptr, detParameter);
 }
 /*
  打开交换机POE口输出电源
@@ -771,42 +709,14 @@ bool CommHelper::saveAs(QString dstPath)
     return copyDir(srcPath, dstPath);
 }
 
-qint8 CommHelper::indexOfAddress(QString peerAddress, quint16 peerPort)
+qint8 CommHelper::indexOfAddress(qintptr socketDescriptor/*QString peerAddress, quint16 peerPort*/)
 {
-    HDF5Settings *settings = HDF5Settings::instance();
-    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-
-    //IP和端口全匹配
+    for (const auto& iter : this->mConnectionPeers)
     {
-        QString addr1 = QString("%1:%2").arg(peerAddress).arg(peerPort);
-        auto it = this->mConnectionPeers.begin();
-        while (it != this->mConnectionPeers.end()) {
-            for (int index = 1; index <= DET_NUM; ++index){
-                DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-                if (addr2 == addr1 || addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
-                    return index;
-                }
-            }
+        if (iter->socketDescriptor() != socketDescriptor)
+            continue;
 
-            ++it;
-        }
-    }
-
-    //仅IP匹配
-    {
-        auto it = this->mConnectionPeers.begin();
-        while (it != this->mConnectionPeers.end()) {
-            for (int index = 1; index <= DET_NUM; ++index){
-                DetParameter& detParameter = detParameters[index];
-                QString addr2 = QString::fromStdString(detParameter.det_Ip_port);
-                if (addr2 == peerAddress){// 匹配IP和端口 或 仅匹配IP也可以
-                    return index;
-                }
-            }
-
-            ++it;
-        }
+        return iter->property("detectorIndex").toInt();
     }
 
     return -1;
@@ -827,37 +737,35 @@ void CommHelper::handleDetectorDisconnection(quint8 index)
     auto it = mConnectionPeers.begin();
     while (it != mConnectionPeers.end()) {
         QTcpSocket* connection = *it;
+        quint8 detectorIndex = connection->property("detectorIndex").toUInt();
+        if (index != detectorIndex) {
+            ++it;
+            continue;
+        }
+
         QString peerAddress = connection->property("peerAddress").toString();
         quint16 peerPort = connection->property("peerPort").toUInt();
-        QString addr = QString("%1:%2").arg(peerAddress).arg(peerPort);
-        
-        // 匹配探测器地址
-        if (addr == expectedAddr || peerAddress == expectedAddr.split(":")[0]) {
-            // 找到对应的连接，执行与 disconnected 信号相同的处理
-            
-            // 1. 触发 disconnectPeerConnection 信号
-            QMetaObject::invokeMethod(this, "disconnectPeerConnection", 
-                Qt::QueuedConnection, 
-                Q_ARG(QString, peerAddress), 
-                Q_ARG(quint16, peerPort));
-            
-            // 2. 触发 detectorOffline 信号
-            QMetaObject::invokeMethod(this, "detectorOffline", 
-                Qt::QueuedConnection, 
-                Q_ARG(quint8, index));
-            
-            // 3. 取消数据处理器关联
-            freeDataProcessor(connection);
-            
-            // 4. 删除连接并从列表中移除
-            connection->deleteLater();
-            it = mConnectionPeers.erase(it);
-            
-            qInfo().nospace() << "谱仪[#" << index << "]心跳超时，已执行断开连接处理";
-            return; // 找到并处理完成，退出
-        } else {
-            ++it;
-        }
+
+        // 1. 触发 disconnectPeerConnection 信号
+        QMetaObject::invokeMethod(this, "disconnectPeerConnection",
+            Qt::QueuedConnection,
+            Q_ARG(QString, peerAddress),
+            Q_ARG(quint16, peerPort));
+
+        // 2. 触发 detectorOffline 信号
+        QMetaObject::invokeMethod(this, "detectorOffline",
+            Qt::QueuedConnection,
+            Q_ARG(quint8, index));
+
+        // 3. 取消数据处理器关联
+        freeDataProcessor(connection);
+
+        // 4. 删除连接并从列表中移除
+        connection->deleteLater();
+        it = mConnectionPeers.erase(it);
+
+        qInfo().nospace() << "谱仪[#" << index << "]心跳超时，已执行断开连接处理";
+        return; // 找到并处理完成，退出
     }
     
     // 如果没有找到对应的连接，仍然触发 offline 信号（可能连接已经断开）

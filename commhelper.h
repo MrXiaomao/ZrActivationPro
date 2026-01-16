@@ -195,13 +195,13 @@ private:
     /*
      分配数据处理器
     */
-    void allocDataProcessor(QTcpSocket *socket);
+    quint8 allocDataProcessor(QTcpSocket *socket);
     void freeDataProcessor(QTcpSocket *socket);
 
     /*
      根据IP和端口号，解析探测器编号
     */
-    qint8 indexOfAddress(QString, quint16);
+    qint8 indexOfAddress(qintptr socketDescriptor/*QString, quint16*/);
 };
 
 #endif // COMMHELPER_H

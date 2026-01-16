@@ -11,6 +11,43 @@
 #include <QNetworkInterface>
 #include "globalsettings.h"
 
+#include <QStyledItemDelegate>
+#include <QApplication>
+#include <QStyleOptionButton>
+
+class CheckBoxDelegate : public QStyledItemDelegate {
+protected:
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+        QStyleOptionButton checkBoxOption;
+        QRect checkBoxRect = QApplication::style()->subElementRect(
+            QStyle::SE_CheckBoxIndicator, &checkBoxOption, nullptr);
+
+        // 计算居中位置
+        checkBoxOption.rect = QRect(
+            option.rect.center().x() - checkBoxRect.width()/2,
+            option.rect.center().y() - checkBoxRect.height()/2,
+            checkBoxRect.width(),
+            checkBoxRect.height()
+            );
+        checkBoxOption.state = index.data(Qt::CheckStateRole) == Qt::Checked
+                                   ? QStyle::State_On : QStyle::State_Off;
+
+        QApplication::style()->drawControl(QStyle::CE_CheckBox, &checkBoxOption, painter);
+    }
+
+    bool editorEvent(QEvent *event, QAbstractItemModel *model,
+                                       const QStyleOptionViewItem &option, const QModelIndex &index) {
+        if (event->type() == QEvent::MouseButtonRelease) {
+            // 切换勾选状态
+            Qt::CheckState currentState = static_cast<Qt::CheckState>(model->data(index, Qt::CheckStateRole).toInt());
+            model->setData(index, currentState == Qt::Checked ? Qt::Unchecked : Qt::Checked, Qt::CheckStateRole);
+            return true; // 拦截事件，避免触发默认编辑
+        }
+
+        return QStyledItemDelegate::editorEvent(event, model, option, index);
+    }
+};
+
 LocalSettingWindow::LocalSettingWindow(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::LocalSettingWindow)
@@ -41,7 +78,79 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
     GlobalSettings settings(CONFIG_FILENAME);
     ui->comboBox_ip->setCurrentText(settings.value("Local/ServerIp", "0.0.0.0").toString());
     ui->spinBox_port->setValue(settings.value("Local/ServerPort", 6000).toUInt());
-    ui->lineEdit_switcherIp->setText(settings.value("Switcher/1/ip", "172.18.41.94").toString());
+
+    ui->tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    for (int column = 0; column < 24; ++column)
+    {
+        // 使用委托
+        ui->tableWidget->setItemDelegateForColumn(column, new CheckBoxDelegate()); // 为第0列设置
+        ui->tableWidget->setColumnWidth(column, 14);
+        for (int row = 0; row < 3; ++row)
+        {
+            QTableWidgetItem* item = new QTableWidgetItem();
+            item->setCheckState(Qt::CheckState::Unchecked);
+            item->setTextAlignment(Qt::AlignCenter);
+            ui->tableWidget->setItem(row, column, item);
+        }
+    }
+    connect(ui->tableWidget, &QTableWidget::itemChanged, this, [=](QTableWidgetItem *item) {
+        qDebug() << item->row() << item->column() << item->checkState();
+        if (item->checkState() == Qt::Checked)
+        {
+            ui->tableWidget->blockSignals(true);
+
+            for (int i = 0; i < ui->tableWidget->rowCount(); ++i)
+            {
+                if (i != item->row())
+                {
+                    ui->tableWidget->item(i, item->column())->setCheckState(Qt::Unchecked);
+                }
+                else
+                {
+                    ui->tableWidget->item(item->row(), item->column())->setCheckState(Qt::Checked);
+                }
+            }
+
+            ui->tableWidget->blockSignals(false);
+        }
+        else {
+            ui->tableWidget->item(item->row(), item->column())->setCheckState(Qt::Unchecked);
+        }
+
+        updateData();
+    });
+
+    // 加载配置文件
+    ui->lineEdit_switcherIp_1->setText(settings.value("Switcher/1/ip", "172.18.41.94").toString());
+    ui->lineEdit_switcherIp_2->setText(settings.value("Switcher/2/ip").toString());
+    ui->lineEdit_switcherIp_3->setText(settings.value("Switcher/3/ip").toString());
+
+    for (int row = 0; row < 3; ++row)
+    {
+        QString S1 = settings.value(QString("Switcher/%1/detector").arg(row+1), "").toString();
+        QStringList det1S = S1.split(",");
+        for (auto& det : det1S)
+        {
+            int column = det.toInt();
+            if (column > 0 && column < 24)
+            {
+                auto *item = ui->tableWidget->item(row, column);
+                if (item)
+                {
+                    item->setCheckState(Qt::Checked);
+                }
+            }
+        }
+    }
+
+    connect(ui->comboBox_ip, &QComboBox::currentTextChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->spinBox_port, &QSpinBox::textChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->checkBox, &QCheckBox::stateChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->checkBox_2, &QCheckBox::stateChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->lineEdit_switcherIp_1, &QLineEdit::textChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->lineEdit_switcherIp_2, &QLineEdit::textChanged, this, &LocalSettingWindow::updateData);
+    connect(ui->lineEdit_switcherIp_3, &QLineEdit::textChanged, this, &LocalSettingWindow::updateData);
 }
 
 LocalSettingWindow::~LocalSettingWindow()
@@ -49,15 +158,54 @@ LocalSettingWindow::~LocalSettingWindow()
     delete ui;
 }
 
-void LocalSettingWindow::on_pushButton_ok_clicked()
+void LocalSettingWindow::updateData()
 {
     GlobalSettings settings(CONFIG_FILENAME);
     //本地服务配置
     settings.setValue("Local/ServerIp", ui->comboBox_ip->currentText());
     settings.setValue("Local/ServerPort", ui->spinBox_port->text());
     //交换机Telnet配置
-    settings.setValue("Switcher/1/ip", ui->lineEdit_switcherIp->text());
+    settings.setValue("Switcher/count", ui->checkBox->isChecked() ? (ui->checkBox_2->isChecked() ? 3 : 2) : 1);
+    settings.remove("Switcher/2/ip");
+    settings.remove("Switcher/3/ip");
+    QCheckBox* checkBoxs[] = {nullptr, ui->checkBox, ui->checkBox_2};
+    for (auto checkBox : checkBoxs)
+    {
+        int index = (checkBox == nullptr) ? 1 : ((checkBox == ui->checkBox) ? 2 : 3);
+        QLineEdit* lineEdit = this->findChild<QLineEdit*>(QString("lineEdit_switcherIp_%1").arg(index));
+        if (lineEdit)
+        {
+            settings.setValue(QString("Switcher/%1/ip").arg(index), lineEdit->text());
+        }
 
+        if (index!=1 && !checkBox->isChecked())
+        {
+            //settings.remove(QString("Switcher/%1/detector").arg(index));
+            settings.remove(QString("Switcher/%1/ip").arg(index));
+        }
+        else
+        {
+            QString dets;
+            for (int column = 0; column < 24; ++column)
+            {
+                auto *item = ui->tableWidget->item(index-1, column);
+                if (item)
+                {
+                    if (item->checkState() == Qt::Checked)
+                    {
+                        dets += QString("%1,").arg(column+1);
+                    }
+                }
+
+                settings.setValue(QString("Switcher/%1/detector").arg(index), dets);
+            }
+        }
+    }
+}
+
+void LocalSettingWindow::on_pushButton_ok_clicked()
+{
+    updateData();
     this->close();
 }
 

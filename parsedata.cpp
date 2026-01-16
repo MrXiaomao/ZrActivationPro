@@ -34,7 +34,7 @@ void ParseData::mergeSpecTime_online(const FullSpectrum& specPack)
     // -------- 1. 统计计数率：用压缩后的谱 --------
     int sumCount = 0;
     //最后三道计数可能比较高，暂时不考虑它
-    for (int i = 0; i < 2045; ++i) {
+    for (int i = 0; i < G_CHANNEL - 3; ++i) {
         sumCount += compressedSpec[i];
     }
 
@@ -121,7 +121,7 @@ bool ParseData::getResult(QVector<mergeSpecData> mergeSpec)
         qDebug()<<"specID: "<<spec_id;
         qint64 nowtime = spec.currentTime;
         double* singleSpectrum = new double[G_CHANNEL];
-        for(int i=0; i<G_CHANNEL/*2045*/; i++)
+        for(int i=0; i<G_CHANNEL - 3; i++)
         {
             singleSpectrum[i] = spec.spectrum[i]*1.0;
         }
@@ -550,7 +550,7 @@ bool lsqcurvefit4(QVector<double> fit_x, QVector<double> fit_y, double* fit_c, Q
 
 /**
  * @brief ParseData::initial_PeakFind 寻峰，在能量刻度的前提下，对511keV 909keV两个峰进行寻找，修正峰飘问题，给出准确的峰位。
- * @param spectrum 能谱数组，起始道址设定为1，数组长固定2045
+ * @param spectrum 能谱数组，起始道址设定为1，数组长固定G_CHANNEL-3
  * @param energy_scale 能量刻度系数y=ax+b。energy_scale = {a，b};
  * @param fit_c_2 拟合参数初值，拟合成功后，更新拟合参数
  * @return bool 寻峰是否成功
@@ -701,7 +701,7 @@ bool ParseData::initial_PeakFind(double* spectrum, double energy_scale[], QVecto
 
 /**
  * @brief ParseData::PeakFind
- * @param double* spectrum 能谱数组，起始道址设定为1，数组长固定2045
+ * @param double* spectrum 能谱数组，起始道址设定为1，数组长固定G_CHANNEL-3
  * @param init_c 来自于上次initial_PeakFind拟合的结果。fit_type = c0*exp(-0.5*pow((x-c1)/c2,2)) + c3*x + c4;
  * @return bool 寻峰是否成功
  */
@@ -854,7 +854,7 @@ bool ParseData::PeakFind(double* spectrum, QVector<fit_result>& init_c)
 
 /**
  * @brief ParseData::SpecStripping 剥谱
- * @param spectrum 能谱数组，起始道址设定为1，数组长固定2045
+ * @param spectrum 能谱数组，起始道址设定为1，数组长固定G_CHANNEL-3
  * @param energy_scale，能量刻度系数, E = ax+b, energy_scale =[a,b]
  * @param fit_c 拟合系数,8个参数 {p0,p1,p2,p3,p4,p5,p6,p7} fit_type = p(0).*exp(-1/2*((x-p(1))./p(2)).^2) + p(3).*x.^4 + p(4).*x.^3 + p(5).*x.^2 + p(6).*x + p(7);
  * 拟合成功后，fit_c更新为拟合结果
@@ -1028,7 +1028,7 @@ void ParseData::clearFitResult()
 
 
 #include "H5Cpp.h"
-void ParseData::parseH5File(QString filePath)
+void ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
 {
     if (filePath.isEmpty() || !QFileInfo::exists(filePath))
         return;
@@ -1039,7 +1039,7 @@ void ParseData::parseH5File(QString filePath)
         H5::H5File file(filePath.toStdString(), H5F_ACC_RDONLY);
 
         // 2. 打开分组核数据集
-        H5::Group group = file.openGroup("Detector#1");
+        H5::Group group = file.openGroup(QString("Detector#%1").arg(detectorId).toStdString());
         H5::DataSet dataset = group.openDataSet("Spectrum");
 
         // 3. 确认数据类型匹配（可选，用于错误检查）
@@ -1089,6 +1089,298 @@ void ParseData::parseH5File(QString filePath)
     }
 }
 
+// 解析大文件中的网络数据包（流式读取）
+int ParseData::parseDatFile(const QString &filePath)
+{
+    quint64 bufferSize = 10*1024*1024;
+
+    //重新初始化相关参数
+    totalPackets = 0;
+    bytesProcessed = 0;
+    m_parasemode = offlineMode;
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "无法打开文件:" << filePath;
+        return -1;
+    }
+
+    qint64 fileSize = file.size();
+    qDebug() << "开始解析文件，大小:" << fileSize << "字节";
+
+    QElapsedTimer timer;
+    timer.start();
+
+    QByteArray readBuffer;
+    readBuffer.reserve(bufferSize);
+
+    qint64 bytesRead = 0;
+    int packetsFound = 0;
+
+    //先估算能谱的总个数，这里预分配内存
+    int packSize = (1 + 2050 + 5) *4 + 13;
+    m_allSpec.clear();
+    m_allSpec.reserve(fileSize/packSize);
+
+    processingBuffer.clear();
+    processingBuffer.reserve(bufferSize);
+
+    while (bytesRead < fileSize) {
+        // 读取一块数据
+        QByteArray chunk = file.read(bufferSize);
+        if (chunk.isEmpty()) {
+            break;
+        }
+
+        bytesRead += chunk.size();
+
+        // 将新数据添加到处理缓冲区
+        processingBuffer.append(chunk);
+
+        // 处理缓冲区中的数据
+        packetsFound += processBuffer(false);
+
+        // 显示进度
+        if (bytesRead % (100 * 1024 * 1024) == 0 || bytesRead == fileSize) {
+            double progress = (double)bytesRead / fileSize * 100;
+            qDebug() << QString("preocess: %1% (%2/%3 MB), found package: %4")
+                            .arg(progress, 0, 'f', 1)
+                            .arg(bytesRead / (1024 * 1024))
+                            .arg(fileSize / (1024 * 1024))
+                            .arg(packetsFound);
+        }
+    }
+
+    // 处理缓冲区中剩余的数据
+    packetsFound += processBuffer(true);
+
+    qDebug() << "Analysis completed! elapsed time:" << timer.elapsed() / 1000.0 << "seconds";
+    qDebug() << "Total package:" << packetsFound;
+    qDebug() << "Total number of bytes processed:" << bytesProcessed;
+
+    file.close();
+
+    return packetsFound;
+}
+
+// 处理缓冲区中的数据
+int ParseData::processBuffer(bool isFinal)
+{
+    int packetsFound = 0;
+    int searchPosition = 0;
+
+    while (searchPosition <= processingBuffer.size()) {
+        // 查找包头 (0x55)
+        int headerPos = findPacketHeader(searchPosition);
+        if (headerPos == -1) {
+            break; // 没有找到更多包头
+        }
+
+        // 查找下一个包头
+        // if(packetsFound> 1) searchPosition = headerPos + specPackLen; //这种使用方式适用于网络数据不丢字节。一旦丢字节，该方式会引起更多的数据帧丢失。进过检验，运算与原方式几乎相同
+        // else searchPosition = headerPos + 1;
+        searchPosition = headerPos + 1;
+
+        int nextHeaderPos = findPacketHeader(searchPosition);
+        if (nextHeaderPos == -1) {
+            searchPosition--; //回退一个位置，此时已经是缓存区最后一个包
+            break; // 没有找到更多包头
+        }
+
+        // 提取和处理数据包
+        if(processSinglePacket(headerPos, nextHeaderPos, m_parasemode)){
+            packetsFound++;
+        }
+
+        // 移动到下一个包
+        searchPosition = nextHeaderPos;
+    }
+
+    // 清理已处理的缓冲区数据
+    cleanupBuffer(searchPosition);
+    bytesProcessed += searchPosition;
+
+    return packetsFound;
+}
+
+// 处理单个数据包
+bool ParseData::processSinglePacket(int headerPos, int nextHeaderPos, paraseMode mode)
+{
+    int packLen = nextHeaderPos - headerPos;
+    // 提取数据部分
+    QByteArray packetData = processingBuffer.mid(headerPos, packLen);
+
+    // 接收方转码
+    QByteArray uncodedMsg = encode(packetData, m_receiverFrom1, m_receiverTo1, m_receiverFrom2, m_receiverTo2);
+
+    // 检查报文完整性
+    if (!checkFrame(uncodedMsg)) {
+        qDebug() << Q_FUNC_INFO << u8"报文不完整";
+        return 0;
+    }
+
+    //检查是否为能谱数据
+    if(!isSpecData(uncodedMsg)) return 0;
+
+    totalPackets++;
+    qDebug() << "找到第" << totalPackets << "个数据包, 数据长度:" << uncodedMsg.size();
+    // if (totalPackets % 1000 == 0) {
+    // qDebug() << "找到第" << totalPackets << "个数据包, 数据长度:" << uncodedMsg.size();
+
+    // 可以在这里进行更复杂的数据解析
+    // }
+    // 这里添加您的数据解析逻辑
+    QByteArray validData = uncodedMsg.mid(19, 2048*4);
+    FullSpectrum tempSpecdata;
+    if(getDataFromQByte(validData, tempSpecdata))
+    {
+        FullSpectrum sepc_16byte; // 目标结构体
+
+        // 复制基本字段
+        sepc_16byte.sequence = tempSpecdata.sequence;
+        sepc_16byte.measureTime = tempSpecdata.measureTime;
+        sepc_16byte.deathTime = tempSpecdata.deathTime;
+
+        // 转换能谱数据，舍弃高位（只保留低16位）
+        for (int i = 0; i < G_CHANNEL - 3; ++i) {
+            // 将32位数值截断为16位（舍弃高16位）
+            sepc_16byte.spectrum[i+3] = static_cast<quint16>(tempSpecdata.spectrum[i]);
+        }
+        m_allSpec.push_back(sepc_16byte);
+
+        //在线测量数据处理
+        if(mode == onlineMode){
+            mergeSpecTime_online(tempSpecdata);
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
+// 转码
+// #include <emmintrin.h> // _MM_HINT_T0
+QByteArray ParseData::encode(const QByteArray &data, const QByteArray &from1, const QByteArray &to1, const QByteArray &from2, const QByteArray &to2) {
+
+    // 数据为空或者转码规则为空 直接返回
+    if (data.isEmpty() || from1.isEmpty() || from2.isEmpty()) {
+        return QByteArray();
+    }
+
+    // 记录报文头
+    QByteArray result;
+    // 预计算转码后的数据大小，避免多次扩容
+    result.reserve(specPackLen);
+    result.append(data.at(0));
+
+    // 从第二位开始进行转码
+    int i = 1;
+    const char* d = data.constData();
+    const int from1Size = from1.size();
+    const int from2Size = from2.size();
+    const int dataSize = data.size();
+    const char* f1 = from1.constData();
+    const char* f2 = from2.constData();
+
+    // memcmp比较可以极大地提高速度，提速33倍
+    while (i < dataSize) {
+        bool matched = false;
+        if (i + from1Size <= dataSize && memcmp(d + i, f1, from1Size) == 0) {
+            result.append(to1);
+            i += from1Size;
+            matched = true;
+        } else if (i + from2Size <= dataSize && memcmp(d + i, f2, from2Size) == 0) {
+            result.append(to2);
+            i += from2Size;
+            matched = true;
+        }
+
+        if (!matched) {
+            result.append(d[i]);
+            i++;
+        }
+    }
+
+    // 返回转码后的报文
+    return result;
+}
+
+// 报文完整性检查
+bool ParseData::checkFrame(const QByteArray &data)
+{
+    // 检查报文是否完整 是否以0x55开头 是否以0x00 0x23 结尾
+    if (data.isEmpty() || static_cast<quint8>(data.at(0)) != 0x55 ||
+        static_cast<quint8>(data.at(data.size() - 2)) != 0x00 || static_cast<quint8>(data.at(data.size() - 1)) != 0x23) {
+        qDebug() << Q_FUNC_INFO << u8"报文不完整或格式错误: 当前报文开头为" << data.at(0) << " 结尾为" << data.at(data.size() - 2) << data.at(data.size() - 1);
+        return false;
+    }
+    // 检查帧长度是否正确
+    int frameLength = static_cast<quint32>((data.at(1) << 8)) | static_cast<quint32>(data.at(2));
+    int dataLength = data.size();
+
+    if (frameLength != data.size()) {
+        qDebug() << Q_FUNC_INFO << u8"帧长度错误: frameLength=" << frameLength << " data.size()=" << data.size();
+        return false;
+    }
+    return true;
+}
+
+//检查是否是能谱数据
+bool ParseData::isSpecData(const QByteArray &data)
+{
+    // 检查报文是否完整 是否以0x55开头 是否以0x00 0x23 结尾
+    if (data.isEmpty() || static_cast<quint8>(data.at(8)) != 0xD2) {
+        QByteArray codeType;
+        codeType.push_back(data.at(8));
+        qDebug() << Q_FUNC_INFO << u8"is not a spectrum package, comman code is :" << codeType.toHex(' ').toUpper();
+        return false;
+    }
+
+    return true;
+}
+
+// 使用reinterpret_cast直接转换
+bool ParseData::getDataFromQByte(const QByteArray &byteArray, FullSpectrum &DataPacket) {
+    if (byteArray.size() != offsetof(FullSpectrum, receivedMask)) {
+        qWarning() <<Q_FUNC_INFO<< "数据大小不匹配";
+        return false;
+    }
+
+    memcpy(&DataPacket, byteArray.constData(), byteArray.size());
+
+    // 字节序问题：由于x86 是小端序，网络数据QByteArray通常是大端序，这里必须转化一次才正常
+    DataPacket.convertNetworkToHost();
+    return true;
+}
+
+// 清理已处理的缓冲区数据
+void ParseData::cleanupBuffer(int bytesToKeep)
+{
+    if (bytesToKeep > 0) {
+        // 保留未处理的数据
+        processingBuffer = processingBuffer.mid(bytesToKeep);
+    }
+
+    // 限制缓冲区大小，防止内存占用过大
+    if (processingBuffer.capacity() > 10 * 1024 * 1024) {
+        processingBuffer.squeeze(); // 释放未使用的内存
+    }
+}
+
+// 查找包头
+int ParseData::findPacketHeader(int startPos) {
+    const char* data = processingBuffer.constData();
+    int size = processingBuffer.size();
+    const char target = 0x55;
+
+    // 使用指针直接操作，减少边界检查开销
+    for (int i = startPos; i < size; ++i) {
+        if (data[i] == target) {
+            return i;
+        }
+    }
+    return -1;
+}
 /**
     * mergeSpecTime_offline：提取目标时间段能谱数据，根据时间道宽合并能谱。需要处理丢包，
     * 程序使用范围：用于离线数据处理，单个能谱的测量时间必须大于1s，否则对丢包的修正处理无效。

@@ -1,4 +1,4 @@
-#ifndef LOCALSETTINGWINDOW_H
+﻿#ifndef LOCALSETTINGWINDOW_H
 #define LOCALSETTINGWINDOW_H
 
 #include <QWidget>
@@ -14,6 +14,8 @@ class LocalSettingWindow : public QWidget
 public:
     explicit LocalSettingWindow(QWidget *parent = nullptr);
     ~LocalSettingWindow();
+
+    Q_SLOT void updateData();
 
 private slots:
     void on_pushButton_ok_clicked();

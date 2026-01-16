@@ -41,7 +41,7 @@ struct SubSpectrumPacket {
 
     // 添加字节序转换成员函数
     // 字节序问题：x86 是小端序，网络数据通常是大端序
-    void convertNetworkToHost() {
+    void convertNetworkToHost() {        // 添加字节序转换成员函数
         // 处理字节序（Windows是小端序，网络数据通常是大端序）
         header = qFromBigEndian<quint32>(header);
         dataType = qFromBigEndian<quint16>(dataType);
@@ -96,6 +96,19 @@ struct FullSpectrum {
             memcpy(spectrum, other.spectrum, sizeof(spectrum));
         }
         return *this;
+    }
+
+    // 添加字节序转换成员函数
+    // 字节序问题：x86 是小端序，网络数据通常是大端序
+    void convertNetworkToHost() {
+        sequence = qFromBigEndian<quint32>(sequence);
+        measureTime = qFromBigEndian<quint32>(measureTime);
+        deathTime = qFromBigEndian<quint32>(deathTime);
+
+        // 转换能谱数据数组
+        for (int i = 0; i < 8192; ++i) {
+            spectrum[i] = qFromBigEndian<quint32>(spectrum[i]);
+        }
     }
 };
 #pragma pack(pop)

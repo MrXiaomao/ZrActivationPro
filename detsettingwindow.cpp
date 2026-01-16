@@ -46,7 +46,7 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     });*/
 
     connect(ui->tableWidget, &QTableWidget::cellChanged, this, [=](int row, int column){
-        //方式IP关联重复
+        //防止IP关联重复
         if (column == 1){
             QString peerAddress = ui->tableWidget->item(row, 1)->text();
             for (int i = 0; i < ui->tableWidget->rowCount(); ++i){

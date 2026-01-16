@@ -100,7 +100,32 @@ public:
     }
 
     // 解析H5文件
-    void parseH5File(QString filePath);
+    void parseH5File(const QString& filePath, const quint32 detectorId);
+    // 解析大文件中的网络数据包（流式读取）
+    int parseDatFile(const QString &filePath);
+    // 处理缓冲区中的数据
+    int processBuffer(bool isFinal);
+    // 查找包头
+    int findPacketHeader(int startPos);
+    // 清理已处理的缓冲区数据
+    void cleanupBuffer(int bytesToKeep);
+    // 转码
+    QByteArray encode(const QByteArray &data, const QByteArray &from1, const QByteArray &to1, const QByteArray &from2, const QByteArray &to2);
+    // 报文完整性检查
+    bool checkFrame(const QByteArray &data);
+    //检查是否是能谱数据
+    bool isSpecData(const QByteArray &data);
+    //直接将网口数据赋值给结构体
+    static bool getDataFromQByte(const QByteArray &byteArray, FullSpectrum &DataPacket);
+    // 处理单个数据包
+    /**
+     * @brief processSinglePacket 处理单个数据包
+     * @param headerPos 包头位置
+     * @param nextHeaderPos 下一个包头位置
+     * @param isOnline 是否为在线测量数据
+     * @return
+     */
+    bool processSinglePacket(int headerPos, int nextHeaderPos, paraseMode mode = offlineMode);
     // 获取指定时间段内的能谱
     bool getResult_offline(quint64 timeBin, quint64 start_time, quint64 end_time);
 
@@ -119,7 +144,22 @@ private:
     const double energyRange[2] = {800.0, 1150.0};//设定剥谱能量范围
 
     const int G_CHANNEL = 8192; //能谱的道数
+    const int specPackLen = 8237;//2050*4 + 9 +13 + 1 + 3*4+2 %完整数据包的长度（解码后长度），1是包头，9是时间信息以及空白，13是大包的帧内容
     qint32 T0_beforeShot = 0; //能谱开测时刻相对于打靶零时刻的时间（单位s，可正数可负数)T0_beforeShot = 开测时刻 - 打靶时刻
+
+    int totalPackets = 0; //读取到的有效数据包长度
+    QByteArray processingBuffer;
+    qint64 bytesProcessed = 0;
+    // 发送方转码
+    const QByteArray m_senderFrom = QByteArray::fromHex("55");                      // 发送方转码前
+    const QByteArray m_senderFrom2 = QByteArray::fromHex("FF");                     // 发送方转码前
+    const QByteArray m_senderTo1 = QByteArray::fromHex("FF 00");                    // 发送方转码后
+    const QByteArray m_senderTo2 = QByteArray::fromHex("FF FF");                    // 发送方转码后
+    // 接收方转码
+    const QByteArray m_receiverFrom1 = m_senderTo1;                                 // 接收方转码前
+    const QByteArray m_receiverFrom2 = m_senderTo2;                                 // 接收方转码前
+    const QByteArray m_receiverTo1 = m_senderFrom;                                  // 接收方转码后
+    const QByteArray m_receiverTo2 = m_senderFrom2;                                 // 接收方转码后
 
     // 用来存放剥谱处理结果的图像数据，结合GetStripData()
     // 所有的拟合数据依次压入specStripData数据中

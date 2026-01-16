@@ -1795,13 +1795,7 @@
     <property name="title">
      <string>配置(&amp;T)</string>
     </property>
-    <widget class="QMenu" name="menu_remote">
-     <property name="title">
-      <string>远程配置</string>
-     </property>
-     <addaction name="action_cfgParam"/>
-    </widget>
-    <addaction name="menu_remote"/>
+    <addaction name="action_cfgParam"/>
     <addaction name="action_localService"/>
    </widget>
    <widget class="QMenu" name="menu_theme">

@@ -106,7 +106,7 @@ void CountRateStatisticsWindow::initUi()
     QPushButton* detectorStatusButton = nullptr;
     {
         detectorStatusButton = new QPushButton();
-        detectorStatusButton->setText(tr("设备信息-计数率"));
+        detectorStatusButton->setText(tr("设备信息"));
         detectorStatusButton->setFixedSize(250,29);
         detectorStatusButton->setCheckable(true);
 
