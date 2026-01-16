@@ -1811,21 +1811,11 @@
     <property name="title">
      <string>工具(&amp;T)</string>
     </property>
-    <widget class="QMenu" name="menu_Fpga">
-     <property name="title">
-      <string>重加载程序</string>
-     </property>
-     <addaction name="action_mainApp"/>
-     <addaction name="action_subApp"/>
-    </widget>
     <addaction name="action_energycalibration"/>
     <addaction name="action_yieldCalibration"/>
     <addaction name="separator"/>
     <addaction name="action_countRateStatistics"/>
     <addaction name="action_neutronYieldStatistics"/>
-    <addaction name="separator"/>
-    <addaction name="action_OTA"/>
-    <addaction name="menu_Fpga"/>
    </widget>
    <widget class="QMenu" name="menu_W">
     <property name="title">

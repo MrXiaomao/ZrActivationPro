@@ -151,10 +151,10 @@ void DataProcessor::startMeasure(WorkMode workMode)
     m_parseData = new ParseData();
 
     //测量前下发配置
-    HDF5Settings *settings = HDF5Settings::instance();
-    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-    DetParameter& detParameter = detParameters[mIndex];
-    this->updateSetting(detParameter);
+    //HDF5Settings *settings = HDF5Settings::instance();
+    //QMap<quint8, DetParameter>& detParameters = settings->detParameters();
+    //DetParameter& detParameter = detParameters[mIndex];
+    //this->updateSetting(detParameter); 参数设置在上线时候已经发过了，这里就不用重复发送了
 
     //#12 波形工作模式=1|0|22|1234000FFF1000000000ABCD
     //#13 能谱工作模式=1|0|23|1234000FFF1000000001ABCD

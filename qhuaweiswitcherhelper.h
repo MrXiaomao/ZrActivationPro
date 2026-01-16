@@ -92,7 +92,7 @@ private:
     bool mDisconnect = false;//关闭网络
     QString mCurrentCommand;
     QByteArray mRespondString;
-    QMap<quint8/*port-POE端口号*/, quint8/*index-谱仪编号*/> mMapAssociatedDetector;
+    QVector<quint8/*index-谱仪编号*/> mMapAssociatedDetector;
     
     // 心跳检测相关
     QElapsedTimer mLastHeartbeatTime;  // 记录最后心跳响应时间

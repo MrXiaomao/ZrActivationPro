@@ -13,6 +13,17 @@ ParticalWindow::ParticalWindow(QWidget *parent)
     ui->setupUi(this);
 
     commHelper = CommHelper::instance();
+    connect(commHelper, &CommHelper::reportParticleCurveData, this, [=]{
+        if (!measuring){
+            measuring = true;
+            timerStart = QDateTime::currentDateTime();
+            timer->start(1000);
+            ui->pushButton_save->setEnabled(false);
+            ui->pushButton_start->setEnabled(false);
+            ui->pushButton_stop->setEnabled(true);
+            ui->label_2->setText(timerStart.toString("yyyy-MM-dd HH:mm:ss"));
+        }
+    });
 
     //波形路径
     {

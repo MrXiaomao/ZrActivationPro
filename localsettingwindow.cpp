@@ -167,6 +167,7 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
 
     ui->checkBox->setChecked(settings.value("Switcher/count").toInt() >= 2);
     ui->checkBox_2->setChecked(settings.value("Switcher/count").toInt() >= 3);
+    ui->checkBox_2->setEnabled(settings.value("Switcher/count").toInt() >= 3);
 }
 
 LocalSettingWindow::~LocalSettingWindow()

@@ -297,7 +297,7 @@ QHuaWeiSwitcherHelper::QHuaWeiSwitcherHelper(QString ip, QObject *parent)
         mSwitcherIsLoginOk = false;
         mSwitcherInSystemView = false;
         stopHeartbeatCheck();  // 停止心跳检测
-        qWarning().noquote() << "交换机[" << mIp << "]连接错误，错误码：" << socketError;
+        qDebug().noquote() << "交换机[" << mIp << "]连接错误，错误码：" << socketError;
         emit switcherDisconnected(mIp);
     });
     
@@ -322,19 +322,14 @@ bool QHuaWeiSwitcherHelper::contains(quint8 index)
     if (index == 0x00)
         return true;
     else
-    {
-        quint8 port = mMapAssociatedDetector.key(index, 0);
-        return port != 0x00;
-    }
-
-    return false;
+        return mMapAssociatedDetector.contains(index);
 }
 
 //根据谱仪编号找POE端口号
 qint8 QHuaWeiSwitcherHelper::portOfIndex(quint8 index)
 {
     if (mMapAssociatedDetector.contains(index))
-        return mMapAssociatedDetector[index];
+        return index;
     else
         return -1;
 }
@@ -346,8 +341,8 @@ qint8 QHuaWeiSwitcherHelper::indexOfPort(quint8 port)
         return 0x00;
     else
     {
-        quint8 index = mMapAssociatedDetector.key(port, 0);
-        return index;
+        if (mMapAssociatedDetector.contains(port))
+            return port;
     }
 
     return -1;
@@ -358,9 +353,9 @@ void QHuaWeiSwitcherHelper::setAssociatedDetector(QString text)
     QStringList lines = text.split(',');
     for (auto line : lines)
     {
-        QStringList values = line.split('-');
-        if (values.size() > 1)
-            mMapAssociatedDetector[values[0].trimmed().toUInt()] = values[1].trimmed().toUInt();
+        int detectorId = line.toInt();
+        if (detectorId >= 1 && detectorId<=DET_NUM)
+            mMapAssociatedDetector.push_back(detectorId);
     }
 }
 /*

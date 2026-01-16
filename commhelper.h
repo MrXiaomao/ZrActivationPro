@@ -104,7 +104,7 @@ public:
     Q_SIGNAL void reportTemperatureTimeout(quint8 index); //探测器温度超时报警
     Q_SIGNAL void reportFullSpectrum(quint8 index, const FullSpectrum& fullSpectrum); // 发送完整的能谱数据
     Q_SIGNAL void reportWaveformCurveData(quint8, QVector<quint16>& data);
-    Q_SIGNAL void reportParticleCurveData(quint8, QVector<quint32>& data);
+    Q_SIGNAL void reportParticleCurveData(quint8, quint32);
 
     Q_SIGNAL void reportPoePowerStatus(quint8, bool); //POE电源开关
 

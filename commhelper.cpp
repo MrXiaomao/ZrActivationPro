@@ -104,23 +104,6 @@ void CommHelper::initSocket()
         QMetaObject::invokeMethod(this, "connectPeerConnection", Qt::QueuedConnection, Q_ARG(QString, peerAddress), Q_ARG(quint16, peerPort));
         QMetaObject::invokeMethod(this, "detectorOnline", Qt::QueuedConnection, Q_ARG(quint8, index));
     });
-
-    GlobalSettings settings(CONFIG_FILENAME);
-    mHuaWeiSwitcherCount =  settings.value("Switcher/Count", 0).toUInt();
-    mHuaWeiSwitcherHelper.reserve(mHuaWeiSwitcherCount);
-    for (int i=0; i<mHuaWeiSwitcherCount; ++i){
-        QString ip = settings.value(QString("Switcher/%1/ip").arg(i+1), "").toString();
-        QString ass = settings.value(QString("Switcher/S%1").arg(i+1), "").toString();
-        QHuaWeiSwitcherHelper* huaWeiSwitcherHelper = new QHuaWeiSwitcherHelper(ip);
-        huaWeiSwitcherHelper->setAssociatedDetector(ass);
-
-        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherLogged, this, &CommHelper::switcherLogged);
-        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherConnected, this, &CommHelper::switcherConnected);
-        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherDisconnected, this, &CommHelper::switcherDisconnected);
-        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::reportPoePowerStatus, this, &CommHelper::reportPoePowerStatus);
-
-        mHuaWeiSwitcherHelper.push_back(huaWeiSwitcherHelper);
-    }
 }
 
 void CommHelper::initDataProcessor()
@@ -178,7 +161,7 @@ void CommHelper::initDataProcessor()
                 }
 
                 if (!mDetectorFileProcessor.contains(processor->index())){
-                    QString filePath = QString("%1/%2/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    QString filePath = QString("%1/%2/%3_%4_能谱.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly);
 
@@ -222,7 +205,7 @@ void CommHelper::initDataProcessor()
                 }
 
                 if (!mDetectorFileProcessor.contains(processor->index())){
-                    QString filePath = QString("%1/%2/%3_%4.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    QString filePath = QString("%1/%2/%3_%4_波形.dat").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
                     mDetectorFileProcessor[processor->index()] = new QFile(filePath);
                     mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly | QIODevice::Append); //覆盖式写入
 
@@ -268,14 +251,72 @@ void CommHelper::initDataProcessor()
 
         connect(detectorDataProcessor, &DataProcessor::reportParticleData, this, [=](QByteArray& data){
             DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
-            //emit reportParticleCurveData(index, data);
-            // 保存粒子数据
+
+            /*
+                保存粒子数据
+            */
+            quint8 detId = processor->index();
+            {
+                QMutexLocker locker(&mMutexTriggerTimer);
+                if (mTriggerTimer.isEmpty()){
+                    mTriggerTimer = QDateTime::currentDateTime().toString("yyyy-MM-dd_HHmmss");
+                }
+
+                if (!mDetectorFileProcessor.contains(processor->index())){
+                    QString filePath = QString("%1/%2/%3_%4_粒子.txt").arg(mShotDir).arg(mShotNum).arg(mTriggerTimer).arg(processor->index());
+                    mDetectorFileProcessor[processor->index()] = new QFile(filePath);
+                    mDetectorFileProcessor[processor->index()]->open(QIODevice::WriteOnly | QIODevice::Append); //覆盖式写入
+
+                    // 初始化flush信息
+                    {
+                        QMutexLocker flushLocker(&mMutexFileFlush);
+                        mFileFlushInfo[processor->index()] = FileFlushInfo();
+                    }
+
+                    qInfo().nospace() << "谱仪[#"<< processor->index() << "]创建存储文件：" << filePath;
+                }
+            }
+
+            data.remove(0, 6);//移除包头
+            data.chop(8);//移除包尾
+
+            // 解析数据
+            bool ok;
+            quint32 sequence = data.left(4).toHex().toUInt(&ok, 16); // 包序号
+            data.remove(0, 4);//移除序号
+
+            for (int i=0; i<90; ++i)
+            {
+                bool ok;
+                quint32 utc = data.mid(i*12, 4).toHex().toUInt(&ok, 16); // utc时间戳
+                quint32 second = data.mid(i*12+4, 4).toHex().toUInt(&ok, 16); // 小数秒
+                quint32 deathT = data.mid(i*12+8, 2).toHex().toUShort(&ok, 16); // 死时间
+                quint16 _type = data.mid(i*12+10, 2).toHex().toUShort(&ok, 16); // 粒子类型
+                quint16 typeFlag = (_type & 0x8000) >> 15;// 类型 （0：γ；1：α）
+                quint16 amplitude = _type & 0x7FFF; // 幅度
+
+                // 保存时间、能量、粒子类型
+                QDateTime tm = QDateTime::fromSecsSinceEpoch(utc, Qt::TimeSpec::UTC, second);
+
+                if (mDetectorFileProcessor[processor->index()]->isOpen()){
+                    QString line = QString("%1,%2,%3,%4\n")
+                                    .arg(sequence)
+                                    .arg(tm.toString("yyyy-MM-dd HH:mm:ss.zzz"))
+                                    .arg(amplitude)
+                                    .arg(typeFlag);
+                    QByteArray lineData = line.toUtf8();
+                    qint64 bytesWritten = mDetectorFileProcessor[processor->index()]->write((const char *)lineData.constData(), lineData.size());
+                    // 检查是否需要flush（每10秒或每1MB）
+                    checkAndFlushFile(processor->index(), bytesWritten);
+                }
+            }
 
             // 上报计数
-
+            emit reportParticleCurveData(index, sequence);
         });
     }
 }
+
 
 /**
  * 根据谱仪编号找到对应的交换机
@@ -421,6 +462,31 @@ bool CommHelper::isOpen()
 
 void CommHelper::connectSwitcher(bool query)
 {
+    for (auto switcherHelper : mHuaWeiSwitcherHelper)
+    {
+        switcherHelper->logout();
+        switcherHelper->deleteLater();
+        switcherHelper = nullptr;
+    }
+    mHuaWeiSwitcherHelper.clear();
+
+    GlobalSettings settings(CONFIG_FILENAME);
+    mHuaWeiSwitcherCount =  settings.value("Switcher/Count", 0).toUInt();
+    mHuaWeiSwitcherHelper.reserve(mHuaWeiSwitcherCount);
+    for (int i=0; i<mHuaWeiSwitcherCount; ++i){
+        QString ip = settings.value(QString("Switcher/%1/ip").arg(i+1), "").toString();
+        QString ass = settings.value(QString("Switcher/%1/detector").arg(i+1), "").toString();
+        QHuaWeiSwitcherHelper* huaWeiSwitcherHelper = new QHuaWeiSwitcherHelper(ip);
+        huaWeiSwitcherHelper->setAssociatedDetector(ass);
+
+        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherLogged, this, &CommHelper::switcherLogged);
+        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherConnected, this, &CommHelper::switcherConnected);
+        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::switcherDisconnected, this, &CommHelper::switcherDisconnected);
+        connect(huaWeiSwitcherHelper, &QHuaWeiSwitcherHelper::reportPoePowerStatus, this, &CommHelper::reportPoePowerStatus);
+
+        mHuaWeiSwitcherHelper.push_back(huaWeiSwitcherHelper);
+    }
+
     for (auto switcherHelper : mHuaWeiSwitcherHelper)
     {
         if (query)

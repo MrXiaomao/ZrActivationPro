@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>粒子数据采集</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
