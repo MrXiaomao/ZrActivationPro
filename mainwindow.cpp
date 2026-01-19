@@ -53,7 +53,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     connect(mConnectButtonDisableTimer, &QTimer::timeout, this, [=](){
         // 定时器超时后，根据连接状态决定是否启用按钮
         if (!mSwitcherConnected) {
-            qInfo().noquote() << tr("交换机连接失败");
+            qInfo().nospace() << tr("交换机连接失败");
             ui->action_connectSwitch->setEnabled(true);
         }
     });
@@ -87,7 +87,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     // 继电器
     connect(commHelper, &CommHelper::switcherConnected, this, [=](QString ip){
         mSwitcherConnected = true;
-        qInfo().noquote() << tr("交换机[ %1 ]已连通").arg(ip);
+        qInfo().nospace() << tr("交换机[ %1 ]已连通").arg(ip);
     });
 
     connect(commHelper, &CommHelper::switcherLogged, this, [=](QString ip){
@@ -98,7 +98,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         updateConnectButtonState(true);
         ui->action_powerOn->setEnabled(true);
         ui->action_powerOff->setEnabled(true);
-        qInfo().noquote() << tr("交换机[ %1 ]已登录").arg(ip);
+        qInfo().nospace() << tr("交换机[ %1 ]已登录").arg(ip);
 
         /// 再给设备上电
         if (mEnableAutoMeasure)
@@ -120,7 +120,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         updateConnectButtonState(false);
         ui->action_powerOn->setEnabled(false);
         ui->action_powerOff->setEnabled(false);
-        qCritical().noquote() << tr("交换机[ %1 ]连接已断开").arg(ip);
+        qCritical().nospace() << tr("交换机[ %1 ]连接已断开").arg(ip);
     });
 
     // 探测器
@@ -130,7 +130,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
         //记录联网的探测器ID
         mOnlineDetectors.append(index);
-        qInfo().noquote() << "谱仪#[" << index << "]在线";
+        qInfo().nospace() << "谱仪[#" << index << "]在线";
         //如果该探测器在温度超时报警列表中，则删除
         if (mTemperatureTimeoutDetectors.contains(index)){
             mTemperatureTimeoutDetectors.removeOne(index);
@@ -138,7 +138,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
             if (mDetectorMeasuring[index]){
                 commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
                 //打印日志
-                qInfo().noquote() << "谱仪#[" << index << "]自动重新开始测量";
+                qInfo().nospace() << "谱仪[#" << index << "]自动重新开始测量";
             }
         }
     });
@@ -156,7 +156,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         //清除联网的探测器ID
         if (mOnlineDetectors.contains(index)){
             mOnlineDetectors.removeOne(index);
-            qInfo().noquote() << "谱仪#[" << index << "]离线";
+            qInfo().nospace() << "谱仪[#" << index << "]离线";
         }
     });
 
@@ -172,7 +172,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         // 记录探测器正在测量
         mDetectorMeasuring[index] = true;
 
-        qInfo().noquote() << "谱仪#[" << index << "]测量已启动，准备接收数据";//开始实验，准备接收数据
+        qInfo().nospace() << "谱仪[#" << index << "]测量已启动，准备接收数据";//开始实验，准备接收数据
     });
 
     //测量结束
@@ -181,14 +181,14 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
-        qInfo().noquote() << "谱仪#[" << index << "]测量已停止";
+        qInfo().nospace() << "谱仪[#" << index << "]测量已停止";
     });
 
     //POE电源状态
     connect(commHelper, &CommHelper::reportPoePowerStatus, this, [=](quint8 index, bool on){
         int row = index - 1;
         SwitchButton* cell =  qobject_cast<SwitchButton*>(ui->tableWidget_detector->cellWidget(row, 0));
-        qInfo().noquote() << "谱仪#[" << index << "]POE电源状态: " << (on ? "开" : "关");
+        qInfo().nospace() << "谱仪[#" << index << "]POE电源状态: " << (on ? "开" : "关");
         cell->setChecked(on);
     });
 
@@ -534,7 +534,7 @@ void MainWindow::initUi()
                             commHelper->manualOpenSwitcherPOEPower(row+1);
                             cell->setChecked(true);
                             //打印日志
-                            qInfo().noquote() << "手动打开探测器" << row+1 << "的POE供电";
+                            qInfo().nospace() << "手动打开探测器" << row+1 << "的POE供电";
                         }
                     }
                     else{
@@ -543,7 +543,7 @@ void MainWindow::initUi()
                             commHelper->manualCloseSwitcherPOEPower(row+1);
                             cell->setChecked(false);
                             //打印日志
-                            qInfo().noquote() << "手动关闭探测器" << row+1 << "的POE供电";
+                            qInfo().nospace() << "手动关闭探测器" << row+1 << "的POE供电";
                         }
                     }
                 });
@@ -721,7 +721,7 @@ void MainWindow::initUi()
             return;
         }
         QTextStream temperatureStream(&temperatureFile);
-        temperatureStream << QString::number(temperature, 'f', 1) << " " << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << endl;
+        temperatureStream << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << "," << QString::number(temperature, 'f', 1) << endl;
         temperatureFile.close();
 
         if (temperature > 70.0) {
@@ -1189,11 +1189,11 @@ void MainWindow::on_action_startMeasure_triggered()
 
     if (mEnableAutoMeasure)
     {
-        qInfo().noquote() << tr("开启自动测量");
+        qInfo().nospace() << tr("开启自动测量");
     }
     else
     {
-        qInfo().noquote() << tr("开启手动测量");
+        qInfo().nospace() << tr("开启手动测量");
     }
 
     QVector<double> keys, values;
@@ -1245,6 +1245,11 @@ void MainWindow::on_pushButton_startMeasure_clicked()
     // 保存测量数据
     QString savePath = QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr);
     QDir dir(QString(tr("%1/%2")).arg(shotDir).arg(shotNumStr));
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    // 保存温度数据
+    dir.setPath(QDir::currentPath() + "/temperature");
     if (!dir.exists()) {
         dir.mkpath(".");
     }
@@ -1351,11 +1356,11 @@ void MainWindow::on_action_stopMeasure_triggered()
 
     if (mEnableAutoMeasure)
     {
-        qInfo().noquote() << tr("人工停止自动测量");
+        qInfo().nospace() << tr("人工停止自动测量");
     }
     else
     {
-        qInfo().noquote() << tr("停止手动测量");
+        qInfo().nospace() << tr("停止手动测量");
     }
 
     ui->action_startMeasure->setEnabled(true);
@@ -1377,7 +1382,7 @@ void MainWindow::onMeasureCountdownTimeout()
     
     if (mRemainingCountdown > 0) {
         // 倒计时进行中，可以在这里更新UI显示剩余时间
-        // qInfo().noquote() << QString("测量倒计时剩余：%1 秒").arg(mRemainingCountdown);
+        // qInfo().nospace() << QString("测量倒计时剩余：%1 秒").arg(mRemainingCountdown);
     } else {
         // 倒计时结束
         mMeasureCountdownTimer->stop();
@@ -1794,7 +1799,7 @@ void MainWindow::updateCountRateDisplay(int detectorId, double countRate) {
     // int currentTime = data.countRateHistory.size();
     // 添加新的数据点
     int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
-    // qDebug().noquote()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
+    // qDebug().nospace()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
     getGraph(detectorId, false)->addData(elapsedSeconds, countRate);
 
     // 显示最近300秒
@@ -2145,7 +2150,7 @@ void MainWindow::startMeasure()
             mMeasureCountdownTimer->start();
             // 初始化测量时长显示为 00:00:00
             ui->edit_measureTime->setText("00:00:00");
-            qInfo().noquote() << QString("开始测量，倒计时：%1 秒").arg(countdownSeconds);
+            qInfo().nospace() << QString("开始测量，倒计时：%1 秒").arg(countdownSeconds);
         }
     }
 
@@ -2349,7 +2354,7 @@ void MainWindow::on_action_countRateStatistics_triggered()
     num++;
     QProcess::startDetached(program, arguments);
 
-    qInfo().noquote() << tr("打开离线数据分析程序-计数率统计");
+    qInfo().nospace() << tr("打开离线数据分析程序-计数率统计");
 }
 
 
@@ -2366,6 +2371,6 @@ void MainWindow::on_action_neutronYieldStatistics_triggered()
     num++;
     QProcess::startDetached(program, arguments);
 
-    qInfo().noquote() << tr("打开离线数据分析程序-中子产额统计");
+    qInfo().nospace() << tr("打开离线数据分析程序-中子产额统计");
 }
 
