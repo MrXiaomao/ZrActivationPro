@@ -1793,7 +1793,7 @@
    </widget>
    <widget class="QMenu" name="menu_setup">
     <property name="title">
-     <string>配置(&amp;T)</string>
+     <string>配置(&amp;S)</string>
     </property>
     <addaction name="action_cfgParam"/>
     <addaction name="action_localService"/>

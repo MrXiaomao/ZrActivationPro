@@ -22,6 +22,7 @@ public:
     void initUi();
     void initSpectrumCustomPlot();
     void initCountCustomPlot();
+    void initPolorCustomPlot();
     void applyColorTheme();
     void restoreSettings();
 

@@ -340,5 +340,10 @@ bool DataProcessor::extractSpectrumData(const QByteArray& packetData, SubSpectru
     // qDebug() << "Get a subSpectrum Packets, spectrumSeq:" << packet.spectrumSeq
     //          << "subSquenceID:" << packet.spectrumSubNo;
 
+    // quint32 utc = packet.timeUTCs; // utc时间戳
+    // quint32 second = packet.timeUTCms; // 小数秒
+    // QDateTime tm = QDateTime::fromSecsSinceEpoch(utc, Qt::TimeSpec::UTC, second);
+    // qDebug() << tm.toString("yyyy-MM-dd HH:mm:ss.zzz");
+
     return true;
 }

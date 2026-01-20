@@ -366,18 +366,13 @@ quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
 
     // IP匹配
     {
-        auto it = this->mConnectionPeers.begin();
-        while (it != this->mConnectionPeers.end()) {
-            for (int index = 1; index <= DET_NUM; ++index){
-                DetParameter& detParameter = detParameters[index];
-                QString detectorAddress = QString::fromStdString(detParameter.det_Ip_port);
-                if (detectorAddress == peerAddress && mDetectorDataProcessor[index]->isFreeSocket()){
-                    mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
-                    return index;
-                }
+        for (int index = 1; index <= DET_NUM; ++index){
+            DetParameter& detParameter = detParameters[index];
+            QString detectorAddress = QString::fromStdString(detParameter.det_Ip_port);
+            if (detectorAddress == peerAddress && mDetectorDataProcessor[index]->isFreeSocket()){
+                mDetectorDataProcessor[index]->reallocSocket(socket, detParameter);
+                return index;
             }
-
-            ++it;
         }
     }
 

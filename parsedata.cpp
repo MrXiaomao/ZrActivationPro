@@ -1028,10 +1028,10 @@ void ParseData::clearFitResult()
 
 
 #include "H5Cpp.h"
-void ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
+int ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
 {
     if (filePath.isEmpty() || !QFileInfo::exists(filePath))
-        return;
+        return -1;
 
     // 解析文件，获取能谱范围时长
     {
@@ -1046,7 +1046,7 @@ void ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
         H5::CompType fileType = dataset.getCompType();
         if (fileType != H5::PredType::NATIVE_UINT) {
             file.close();
-            return;
+            return -1;
         }
 
         // 4. 初始文件空间
@@ -1060,7 +1060,7 @@ void ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
             dataset.close();
             file_space.close();
             file.close();
-            return;
+            return -1;
         }
 
         // 5. 内存空间：只读取一行
@@ -1087,6 +1087,8 @@ void ParseData::parseH5File(const QString& filePath, const quint32 detectorId)
         dataset.close();
         file_space.close();
     }
+
+    return m_allSpec.size();
 }
 
 // 解析大文件中的网络数据包（流式读取）

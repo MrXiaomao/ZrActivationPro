@@ -532,7 +532,7 @@
           <item>
            <widget class="QRadioButton" name="radioButton_neutronYield">
             <property name="text">
-             <string>显示中子产额</string>
+             <string>显示中子产额空间分布图</string>
             </property>
            </widget>
           </item>
@@ -674,12 +674,6 @@
                 </item>
                 <item row="0" column="0" rowspan="2">
                  <widget class="QLabel" name="label_7">
-                  <property name="minimumSize">
-                   <size>
-                    <width>157</width>
-                    <height>0</height>
-                   </size>
-                  </property>
                   <property name="text">
                    <string>打靶时刻：</string>
                   </property>

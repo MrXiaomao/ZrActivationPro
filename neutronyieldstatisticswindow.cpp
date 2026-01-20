@@ -232,6 +232,7 @@ void NeutronYieldStatisticsWindow::initUi()
 
     initSpectrumCustomPlot();
     initCountCustomPlot();
+    initPolorCustomPlot();
 
     // 显示计数/能谱
     QButtonGroup *grp = new QButtonGroup(this);
@@ -732,6 +733,14 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
     connect(customPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(slotRestorePlot(QMouseEvent*)));
 }
 
+void NeutronYieldStatisticsWindow::initPolorCustomPlot()
+{
+    QCustomPlot* customPlot = ui->spectorMeter_Yield;
+    QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
+
+    customPlot->rescaleAxes(true);
+    customPlot->replot();
+}
 
 #include "H5Cpp.h"
 void NeutronYieldStatisticsWindow::on_action_open_triggered()
@@ -827,8 +836,6 @@ void NeutronYieldStatisticsWindow::on_action_exit_triggered()
 
 void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
 {
-    emit reporWriteLog(tr("开始解析..."));
-
     // 获取测量的起始时刻，以打靶时刻为零时刻
     // 获取两个时间的时间戳（秒）
     qint64 seconds1 = ui->messureDateTime->dateTime().toSecsSinceEpoch();
@@ -842,28 +849,53 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
 
     if(startTime >= endTime)
     {
-        qDebug().nospace() << tr("退出解析！输入的解析时间起点>=解析时间终点。");
+        qInfo().nospace() << tr("退出解析！输入的解析时间起点>=解析时间终点。");
         return;
     }
+
+    QString tmStart = ui->fusionDateTime->dateTime().addSecs(ui->spinBox_timeStart->value()*60).toString("yyyy-MM-dd hh:mm:ss");
+    QString tmEnd = ui->fusionDateTime->dateTime().addSecs(ui->spinBox_timeEnd->value()*60).toString("yyyy-MM-dd hh:mm:ss");
+    QString step = QString::number(ui->spinBox_step->value());
+    QString step1 = QString::number((double)(ui->spinBox_timeEnd->value()-ui->spinBox_timeStart->value())/ui->spinBox_step->value(), 'f', 1);
+    QString step2 = QString::number((ui->spinBox_timeEnd->value()-ui->spinBox_timeStart->value())/ui->spinBox_step->value());
+    QString msgTip = QString("您选择的"
+                             "\n起点时间：%1"
+                             "\n结束时间：%2"
+                             "\n时间步长：%3分钟"
+                             "\n计算结果：%4条曲线，根据整除原则，将只显示%5条曲线"
+                             "\n\n点击[确认]开始解析"
+                             "\n点击[否]返回重新修改").arg(tmStart, tmEnd, step, step1, step2);
+    if (QMessageBox::question(this, tr("提示"), msgTip, QMessageBox::Yes, QMessageBox::No)!=QMessageBox::Yes)
+        return;
+
+    emit reporWriteLog(tr("开始解析..."));
 
     if(!dealFile) delete dealFile;
     dealFile = new ParseData();
 
+    quint32 specCount = 0;
     dealFile->setStartTime(measureTime);
     QString filePath = ui->textBrowser_filepath->toPlainText();
-    if (QFileInfo(filePath).suffix() == ".H5")
+    if (QFileInfo(filePath).suffix() == "H5")
     {
         int index = 1;
         if (ui->tableWidget->selectedItems().count() > 0)
             index = ui->tableWidget->selectedItems()[0]->row() + 1;
-        dealFile->parseH5File(filePath, index);
+        specCount = dealFile->parseH5File(filePath, index);
     }
     else
-        dealFile->parseDatFile(filePath);
-    if (dealFile->getResult_offline(timeStep, startTime, endTime))
-        emit sigSuccess();
-    else
-        emit sigFail();
+        specCount = dealFile->parseDatFile(filePath);
+
+    if (specCount <= 0)
+    {
+        qInfo().nospace() << tr("文件中未找到完整能谱数据。");
+    }
+    else {
+        if (dealFile->getResult_offline(timeStep, startTime, endTime))
+            emit sigSuccess();
+        else
+            emit sigFail();
+    }
 
     emit reporWriteLog(tr("解析结束"));
 }
@@ -1298,3 +1330,4 @@ void NeutronYieldStatisticsWindow::slotUpdateSpec_909keV(std::vector<double> cha
     //customPlot->rescaleAxes(true);
     customPlot->replot(QCustomPlot::rpQueuedReplot);
 }
+

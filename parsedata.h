@@ -100,7 +100,7 @@ public:
     }
 
     // 解析H5文件
-    void parseH5File(const QString& filePath, const quint32 detectorId);
+    int parseH5File(const QString& filePath, const quint32 detectorId);
     // 解析大文件中的网络数据包（流式读取）
     int parseDatFile(const QString &filePath);
     // 处理缓冲区中的数据

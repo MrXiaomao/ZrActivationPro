@@ -24,9 +24,9 @@ struct SubSpectrumPacket {
     quint32 deathTime;     // 死时间
     quint16 spectrumSubNo; // 能谱编号
     quint32 spectrum[256]; // 能谱数据 256*32bit
-    quint32 timeMs;        // 分秒-毫秒
-    quint32 reserved1;     // 保留位 0000 0000
-    quint32 reserved2;     // 保留位 0000 0000
+    quint32 timeUTCs;      // utc整数秒
+    quint32 timeUTCms;     // utc小数秒
+    quint32 reserved;      // 保留位 0000 0000
     quint32 tail;          // FFFF CCD1
 
     // 构造函数初始化
@@ -49,7 +49,8 @@ struct SubSpectrumPacket {
         measureTime = qFromBigEndian<quint32>(measureTime);
         deathTime = qFromBigEndian<quint32>(deathTime);
         spectrumSubNo = qFromBigEndian<quint16>(spectrumSubNo);
-        timeMs = qFromBigEndian<quint32>(timeMs);
+        timeUTCs = qFromBigEndian<quint32>(timeUTCs);
+        timeUTCms = qFromBigEndian<quint32>(timeUTCms);
         tail = qFromBigEndian<quint32>(tail);
 
         // 转换能谱数据数组

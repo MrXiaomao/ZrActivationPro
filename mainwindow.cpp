@@ -1053,7 +1053,7 @@ void MainWindow::slotWriteLog(const QString &msg, QtMsgType msgType)
     else if (msgType == QtCriticalMsg || msgType == QtFatalMsg)
         cursor.insertHtml(QString("<span style='color:#FF0000;'>%1</span>").arg(msg));
     else
-        cursor.insertHtml(QString("<span style='color:#FFFF00;'>%1</span>").arg(msg));
+        cursor.insertHtml(QString("<span style='color:#0000F0;'>%1</span>").arg(msg));
 
     // 最后插入换行符
     cursor.insertHtml("<br>");
