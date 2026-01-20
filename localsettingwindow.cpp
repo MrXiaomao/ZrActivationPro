@@ -158,6 +158,14 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
             ui->checkBox_2->setChecked(false);
         }
         ui->checkBox_2->setEnabled(ui->checkBox->isChecked());
+
+        if (mSwitcher2Enabled != ui->checkBox->isChecked() || mSwitcher3Enabled != ui->checkBox_2->isChecked())
+        {
+            ui->label_tip->show();
+        }
+        else{
+            ui->label_tip->hide();
+        }
     });
     connect(ui->checkBox, &QCheckBox::stateChanged, this, &LocalSettingWindow::updateData);
     connect(ui->checkBox_2, &QCheckBox::stateChanged, this, &LocalSettingWindow::updateData);
@@ -165,9 +173,13 @@ LocalSettingWindow::LocalSettingWindow(QWidget *parent)
     connect(ui->lineEdit_switcherIp_2, &QLineEdit::textChanged, this, &LocalSettingWindow::updateData);
     connect(ui->lineEdit_switcherIp_3, &QLineEdit::textChanged, this, &LocalSettingWindow::updateData);
 
+    ui->label_tip->hide();
     ui->checkBox->setChecked(settings.value("Switcher/count").toInt() >= 2);
     ui->checkBox_2->setChecked(settings.value("Switcher/count").toInt() >= 3);
     ui->checkBox_2->setEnabled(settings.value("Switcher/count").toInt() >= 3);
+
+    mSwitcher2Enabled = ui->checkBox->isChecked();
+    mSwitcher3Enabled = ui->checkBox_2->isChecked();
 }
 
 LocalSettingWindow::~LocalSettingWindow()

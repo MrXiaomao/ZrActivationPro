@@ -503,9 +503,18 @@ void CommHelper::disconnectSwitcher()
 */
 void CommHelper::openPower()
 {
-    for (auto switcherHelper : mHuaWeiSwitcherHelper)
-    {
-        switcherHelper->openSwitcherPOEPower(0x00);
+    GlobalSettings settings(CONFIG_FILENAME);
+    mHuaWeiSwitcherCount =  settings.value("Switcher/Count", 0).toUInt();
+    for (int i=0; i<mHuaWeiSwitcherCount; ++i){
+        QString ip = settings.value(QString("Switcher/%1/ip").arg(i+1), "").toString();
+        QString ass = settings.value(QString("Switcher/%1/detector").arg(i+1), "").toString();
+        for (auto switcherHelper : mHuaWeiSwitcherHelper)
+        {
+            if (switcherHelper->ip() == ip){
+                switcherHelper->setAssociatedDetector(ass);
+                switcherHelper->openSwitcherPOEPower(0x00);
+            }
+        }
     }
 }
 /*

@@ -24,6 +24,9 @@ private slots:
 
 private:
     Ui::LocalSettingWindow *ui;
+
+    bool mSwitcher2Enabled = false;
+    bool mSwitcher3Enabled = false;
 };
 
 #endif // LOCALSETTINGWINDOW_H

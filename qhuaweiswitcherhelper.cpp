@@ -350,6 +350,7 @@ qint8 QHuaWeiSwitcherHelper::indexOfPort(quint8 port)
 
 void QHuaWeiSwitcherHelper::setAssociatedDetector(QString text)
 {
+    mMapAssociatedDetector.clear();
     QStringList lines = text.split(',');
     for (auto line : lines)
     {

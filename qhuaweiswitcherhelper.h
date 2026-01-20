@@ -21,6 +21,10 @@ class QHuaWeiSwitcherHelper : public QObject
 public:
     explicit QHuaWeiSwitcherHelper(QString ip, QObject *parent = nullptr);
 
+    QString ip() const{
+        return mIp;
+    }
+
     //判断谱仪编号是否存在
     bool contains(quint8 index);
 
