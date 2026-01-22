@@ -22,6 +22,8 @@ private slots:
 
     void on_pushButton_cancel_clicked();
 
+    void on_spinBox_valueChanged(int arg1);
+
 private:
     Ui::LocalSettingWindow *ui;
 

@@ -29,7 +29,7 @@ CommHelper::~CommHelper()
 {
     this->stopServer();
 
-    for (int index = 1; index <= DET_NUM; ++index){
+    for (int index = 1; index <= mDetectorDataProcessor.size() + 1; ++index){
         DataProcessor* detectorDataProcessor = mDetectorDataProcessor[index];
         if (detectorDataProcessor)
             detectorDataProcessor->deleteLater();
@@ -48,8 +48,8 @@ void CommHelper::initSocket()
         connection->setSocketDescriptor(socketDescriptor);
         connection->setSocketOption(QAbstractSocket::KeepAliveOption, QVariant(true)); // 启用保活
         //给新上线客户端分配数据处理器
-        quint8 index = allocDataProcessor(connection);
-        if (index == 0)
+        qint8 index = allocDataProcessor(connection);
+        if (index < 0)
         {
             connection->close();
             delete connection;
@@ -88,7 +88,7 @@ void CommHelper::initSocket()
 
             //根据配置解析是哪一路探测器下线了
             qint8 index = indexOfAddress(connection->socketDescriptor());// peerAddress, peerPort);
-            if (index > 0)
+            if (index >= 0)
             {
                 handleDetectorDisconnection(index);
             }
@@ -108,7 +108,7 @@ void CommHelper::initSocket()
 
 void CommHelper::initDataProcessor()
 {
-    for (int index = 1; index <= DET_NUM; ++index){
+    for (int index = 1; index <= DET_NUM + 1; ++index){
         DataProcessor* detectorDataProcessor = new DataProcessor(index, nullptr, this);
         mDetectorDataProcessor[index] = detectorDataProcessor;
 
@@ -332,6 +332,7 @@ QHuaWeiSwitcherHelper *CommHelper::indexOfHuaWeiSwitcher(int index)
     return nullptr;
 }
 
+
 /**
  * 根据谱仪编号找到对应的交换机POE端口号
  */
@@ -346,8 +347,15 @@ quint8 CommHelper::indexOfPort(int index)
     return 0x00;
 }
 
-quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
+qint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
 {
+    QString peerAddress = socket->peerAddress().toString();
+    if (peerAddress == mExtendTimeSynModule.ip){
+        //时钟同步模块不分配数据处理器
+        socket->setProperty("isTimeSynModule", true);
+        return 0;
+    }
+
     if (socket->property("detectorIndex").isValid())
     {
         qint8 index = socket->property("detectorIndex").isValid();
@@ -360,7 +368,6 @@ quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
         }
     }
 
-    QString peerAddress = socket->peerAddress().toString();
     HDF5Settings *settings = HDF5Settings::instance();
     QMap<quint8, DetParameter>& detParameters = settings->detParameters();
 
@@ -387,7 +394,7 @@ quint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
         }
     }
 
-    return 0;
+    return -1;
 }
 
 void CommHelper::freeDataProcessor(QTcpSocket *socket)
@@ -423,6 +430,24 @@ bool CommHelper::closeSwitcherPOEPower(quint8 index)
         return false;
 
     return switcherHelper->closeSwitcherPOEPower(indexOfPort(index));
+}
+
+/*
+     打开交换机POE口输出电源(时钟同步模块)
+    */
+bool CommHelper::openSwitcherExtendPOEPower()
+{
+    mExtendTimeSynModule.reload();
+    return mHuaWeiSwitcherHelper[mExtendTimeSynModule.switcherIndex-1]->openSwitcherPOEPower(mExtendTimeSynModule.poeIndex);
+}
+
+/*
+     关闭交换机POE口输出电源(时钟同步模块)
+    */
+bool CommHelper::closeSwitcherExtendPOEPower()
+{
+    mExtendTimeSynModule.reload();
+    return mHuaWeiSwitcherHelper[mExtendTimeSynModule.switcherIndex-1]->closeSwitcherPOEPower(mExtendTimeSynModule.poeIndex);
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -522,9 +547,18 @@ void CommHelper::openPower()
 */
 void CommHelper::closePower(bool disconnect)
 {
-    for (auto switcherHelper : mHuaWeiSwitcherHelper)
-    {
-        switcherHelper->closeSwitcherPOEPower(0x00, disconnect);
+    GlobalSettings settings(CONFIG_FILENAME);
+    mHuaWeiSwitcherCount =  settings.value("Switcher/Count", 0).toUInt();
+    for (int i=0; i<mHuaWeiSwitcherCount; ++i){
+        QString ip = settings.value(QString("Switcher/%1/ip").arg(i+1), "").toString();
+        QString ass = settings.value(QString("Switcher/%1/detector").arg(i+1), "").toString();
+        for (auto switcherHelper : mHuaWeiSwitcherHelper)
+        {
+            if (switcherHelper->ip() == ip){
+                switcherHelper->setAssociatedDetector(ass);
+                switcherHelper->closeSwitcherPOEPower(0x00, disconnect);
+            }
+        }
     }
 }
 
@@ -807,12 +841,6 @@ qint8 CommHelper::indexOfAddress(qintptr socketDescriptor/*QString peerAddress, 
 void CommHelper::handleDetectorDisconnection(quint8 index)
 {
     QMutexLocker locker(&mPeersMutex);
-    
-    // 根据探测器索引找到对应的连接
-    HDF5Settings *settings = HDF5Settings::instance();
-    QMap<quint8, DetParameter>& detParameters = settings->detParameters();
-    DetParameter& detParameter = detParameters[index];
-    QString expectedAddr = QString::fromStdString(detParameter.det_Ip_port);
     
     // 在 mConnectionPeers 中查找对应的连接
     auto it = mConnectionPeers.begin();

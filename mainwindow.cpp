@@ -125,7 +125,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
 
     // 探测器
     connect(commHelper, &CommHelper::detectorOnline, this, [=](quint8 index){
-        int row = index - 1;
+        int row = index;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
         //记录联网的探测器ID
@@ -144,7 +144,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     });
 
     connect(commHelper, &CommHelper::detectorOffline, this, [=](quint8 index){
-        int row = index - 1;
+        int row = index;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 1));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
         cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
@@ -516,34 +516,47 @@ void MainWindow::initUi()
 
     ui->tableWidget_detector->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     ui->tableWidget_detector->horizontalHeader()->setFixedHeight(25);
-    for (int i=0; i<24; ++i)
+    for (int i=0; i<25; ++i)
          ui->tableWidget_detector->setRowHeight(i, 25);
-    ui->tableWidget_detector->setFixedHeight(625);
+    ui->tableWidget_detector->setRowHeight(0, 50);
+    ui->tableWidget_detector->setFixedHeight(675);
+    ui->tableWidget_detector->verticalHeaderItem(0)->setText("时间同步\n触发模块");
 
     for (int row=0; row<ui->tableWidget_detector->rowCount(); ++row){
         for (int column=0; column<=3; ++column){
             if (column == 0){
                 SwitchButton* cell = new SwitchButton();
-                cell->setContentsMargins(5, 2, 5, 0);
+                if (row == 0)
+                    cell->setContentsMargins(5, 12, 5, 12);
+                else
+                    cell->setContentsMargins(5, 2, 5, 0);
                 cell->setAutoChecked(false);
                 ui->tableWidget_detector->setCellWidget(row, column, cell);
                 connect(cell, &SwitchButton::clicked, this, [=](){
-                    if (!cell->getChecked()){
-                        if (commHelper->openSwitcherPOEPower(row+1))
-                        {
-                            commHelper->manualOpenSwitcherPOEPower(row+1);
-                            cell->setChecked(true);
-                            //打印日志
-                            qInfo().nospace() << "手动打开探测器" << row+1 << "的POE供电";
-                        }
+                    if (row == 0)
+                    {
+                        // 时间同步模块
+                        commHelper->openSwitcherPOEPower(row);
                     }
-                    else{
-                        if (commHelper->closeSwitcherPOEPower(row+1))
-                        {
-                            commHelper->manualCloseSwitcherPOEPower(row+1);
-                            cell->setChecked(false);
-                            //打印日志
-                            qInfo().nospace() << "手动关闭探测器" << row+1 << "的POE供电";
+                    else
+                    {
+                        if (!cell->getChecked()){
+                            if (commHelper->openSwitcherPOEPower(row))
+                            {
+                                commHelper->manualOpenSwitcherPOEPower(row);
+                                cell->setChecked(true);
+                                //打印日志
+                                qInfo().nospace() << "手动打开探测器" << row << "的POE供电";
+                            }
+                        }
+                        else{
+                            if (commHelper->closeSwitcherPOEPower(row))
+                            {
+                                commHelper->manualCloseSwitcherPOEPower(row);
+                                cell->setChecked(false);
+                                //打印日志
+                                qInfo().nospace() << "手动关闭探测器" << row << "的POE供电";
+                            }
                         }
                     }
                 });

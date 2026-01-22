@@ -206,6 +206,14 @@
           <property name="gridStyle">
            <enum>Qt::SolidLine</enum>
           </property>
+          <attribute name="verticalHeaderVisible">
+           <bool>true</bool>
+          </attribute>
+          <row>
+           <property name="text">
+            <string>时间同步触发模块</string>
+           </property>
+          </row>
           <row>
            <property name="text">
             <string>谱仪#1</string>
@@ -346,25 +354,6 @@
             <string>温度</string>
            </property>
           </column>
-          <item row="0" column="0">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-           <property name="flags">
-            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
-           </property>
-          </item>
-          <item row="0" column="1">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="textAlignment">
-            <set>AlignCenter</set>
-           </property>
-          </item>
           <item row="1" column="0">
            <property name="text">
             <string/>
@@ -377,6 +366,25 @@
            </property>
           </item>
           <item row="1" column="1">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+          </item>
+          <item row="2" column="0">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="textAlignment">
+            <set>AlignCenter</set>
+           </property>
+           <property name="flags">
+            <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+           </property>
+          </item>
+          <item row="2" column="1">
            <property name="text">
             <string/>
            </property>
@@ -1348,7 +1356,14 @@
                    <property name="bottomMargin">
                     <number>9</number>
                    </property>
-                   <item row="5" column="3">
+                   <item row="0" column="0">
+                    <widget class="QLabel" name="label_15">
+                     <property name="text">
+                      <string>测量模式：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="3">
                     <widget class="QCheckBox" name="checkBox_autoIncrease">
                      <property name="text">
                       <string>自动递增</string>
@@ -1358,23 +1373,81 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="3" column="2" colspan="2">
-                    <widget class="QLineEdit" name="lineEdit_triggerflag">
-                     <property name="enabled">
-                      <bool>false</bool>
-                     </property>
+                   <item row="4" column="0">
+                    <widget class="QLabel" name="label_7">
                      <property name="text">
-                      <string>未触发</string>
-                     </property>
-                     <property name="readOnly">
-                      <bool>true</bool>
+                      <string>触发状态</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="0" column="0">
-                    <widget class="QLabel" name="label_15">
+                   <item row="2" column="2" colspan="2">
+                    <widget class="QDateTimeEdit" name="dateTimeEdit_autoTrigger">
+                     <property name="toolTip">
+                      <string>系统在该时刻之前提前30s做好测试准备工作</string>
+                     </property>
+                     <property name="displayFormat">
+                      <string>yyyy/M/d H:mm:ss</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="2">
+                    <widget class="QSpinBox" name="spinBox_measureTime">
+                     <property name="minimum">
+                      <number>10</number>
+                     </property>
+                     <property name="maximum">
+                      <number>1000000</number>
+                     </property>
+                     <property name="value">
+                      <number>36000</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="0">
+                    <widget class="QLabel" name="label_5">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
                      <property name="text">
-                      <string>测量模式：</string>
+                      <string>测量发次：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="3">
+                    <widget class="QCheckBox" name="checkBox">
+                     <property name="text">
+                      <string>自动获取</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="3" column="0">
+                    <widget class="QLabel" name="label_2">
+                     <property name="text">
+                      <string>触发模式:</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="5" column="0">
+                    <widget class="QLabel" name="label_3">
+                     <property name="text">
+                      <string>打靶时刻：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="2" column="0">
+                    <widget class="QLabel" name="label_18">
+                     <property name="text">
+                      <string>开始时刻：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="7" column="3">
+                    <widget class="QCheckBox" name="checkBox_continueMeasure">
+                     <property name="text">
+                      <string>连续测量</string>
                      </property>
                     </widget>
                    </item>
@@ -1392,102 +1465,14 @@
                      </item>
                     </widget>
                    </item>
-                   <item row="5" column="2">
-                    <widget class="QLineEdit" name="lineEdit_shotNum"/>
-                   </item>
-                   <item row="3" column="0">
-                    <widget class="QLabel" name="label_7">
-                     <property name="text">
-                      <string>触发状态</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="2" column="2" colspan="2">
-                    <widget class="QComboBox" name="com_triggerModel">
-                     <item>
-                      <property name="text">
-                       <string>软件触发</string>
-                      </property>
-                     </item>
-                     <item>
-                      <property name="text">
-                       <string>外触发</string>
-                      </property>
-                     </item>
-                    </widget>
-                   </item>
-                   <item row="4" column="0">
-                    <widget class="QLabel" name="label_3">
-                     <property name="text">
-                      <string>打靶时刻：</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="5" column="0">
-                    <widget class="QLabel" name="label_5">
-                     <property name="sizePolicy">
-                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                       <horstretch>0</horstretch>
-                       <verstretch>0</verstretch>
-                      </sizepolicy>
-                     </property>
-                     <property name="text">
-                      <string>测量发次：</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="6" column="2">
-                    <widget class="QSpinBox" name="spinBox_measureTime">
-                     <property name="minimum">
-                      <number>10</number>
-                     </property>
-                     <property name="maximum">
-                      <number>1000000</number>
-                     </property>
-                     <property name="value">
-                      <number>36000</number>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="6" column="3">
-                    <widget class="QCheckBox" name="checkBox_continueMeasure">
-                     <property name="text">
-                      <string>连续测量</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="6" column="0">
+                   <item row="7" column="0">
                     <widget class="QLabel" name="label">
                      <property name="text">
                       <string>测量总时间(s):</string>
                      </property>
                     </widget>
                    </item>
-                   <item row="2" column="0">
-                    <widget class="QLabel" name="label_2">
-                     <property name="text">
-                      <string>触发模式:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="0">
-                    <widget class="QLabel" name="label_18">
-                     <property name="text">
-                      <string>开始时刻：</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="1" column="2" colspan="2">
-                    <widget class="QDateTimeEdit" name="dateTimeEdit_autoTrigger">
-                     <property name="toolTip">
-                      <string>系统在该时刻之前提前30s做好测试准备工作</string>
-                     </property>
-                     <property name="displayFormat">
-                      <string>yyyy/M/d H:mm:ss</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item row="4" column="2">
+                   <item row="5" column="2">
                     <widget class="QDateTimeEdit" name="dateTime_shotTime">
                      <property name="sizePolicy">
                       <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1514,10 +1499,47 @@
                      </property>
                     </widget>
                    </item>
-                   <item row="4" column="3">
-                    <widget class="QCheckBox" name="checkBox">
+                   <item row="3" column="2" colspan="2">
+                    <widget class="QComboBox" name="com_triggerModel">
+                     <item>
+                      <property name="text">
+                       <string>软件触发</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>外触发</string>
+                      </property>
+                     </item>
+                    </widget>
+                   </item>
+                   <item row="4" column="2" colspan="2">
+                    <widget class="QLineEdit" name="lineEdit_triggerflag">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
                      <property name="text">
-                      <string>自动获取</string>
+                      <string>未触发</string>
+                     </property>
+                     <property name="readOnly">
+                      <bool>true</bool>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="6" column="2">
+                    <widget class="QLineEdit" name="lineEdit_shotNum"/>
+                   </item>
+                   <item row="1" column="0">
+                    <widget class="QLabel" name="label_11">
+                     <property name="text">
+                      <string>冷却时长(s)：</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item row="1" column="2">
+                    <widget class="QSpinBox" name="spinBox_coolTimeLength">
+                     <property name="maximum">
+                      <number>99999999</number>
                      </property>
                     </widget>
                    </item>
@@ -1813,9 +1835,6 @@
     </property>
     <addaction name="action_energycalibration"/>
     <addaction name="action_yieldCalibration"/>
-    <addaction name="separator"/>
-    <addaction name="action_countRateStatistics"/>
-    <addaction name="action_neutronYieldStatistics"/>
    </widget>
    <widget class="QMenu" name="menu_W">
     <property name="title">

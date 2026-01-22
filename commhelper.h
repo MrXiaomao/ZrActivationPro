@@ -25,6 +25,19 @@ public:
         return &commHelper;
     }
 
+    struct extendTimeSynModule{
+        QString ip;
+        int poeIndex;
+        int switcherIndex;
+        void reload()
+        {
+            GlobalSettings settings(CONFIG_FILENAME);
+            this->ip = settings.value("TimeSynModule/ip").toString();
+            this->poeIndex = settings.value("TimeSynModule/poeIndex", 24).toInt();
+            this->switcherIndex = settings.value("TimeSynModule/switcherIndex", 1).toInt();
+        }
+    } mExtendTimeSynModule;
+
     /*
      打开服务
     */
@@ -123,6 +136,16 @@ public:
     */
     bool closeSwitcherPOEPower(quint8 port = 0);
 
+    /*
+     打开交换机POE口输出电源(时钟同步模块)
+    */
+    bool openSwitcherExtendPOEPower();
+
+    /*
+     关闭交换机POE口输出电源(时钟同步模块)
+    */
+    bool closeSwitcherExtendPOEPower();
+
     // 主动关闭POE供电，也就是温度监测被关闭的通道
     void manualCloseSwitcherPOEPower(quint8 index)
     {
@@ -195,7 +218,7 @@ private:
     /*
      分配数据处理器
     */
-    quint8 allocDataProcessor(QTcpSocket *socket);
+    qint8 allocDataProcessor(QTcpSocket *socket);
     void freeDataProcessor(QTcpSocket *socket);
 
     /*
