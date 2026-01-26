@@ -108,7 +108,7 @@ void CommHelper::initSocket()
 
 void CommHelper::initDataProcessor()
 {
-    for (int index = 1; index <= DET_NUM + 1; ++index){
+    for (int index = 0; index <= DET_NUM; ++index){
         DataProcessor* detectorDataProcessor = new DataProcessor(index, nullptr, this);
         mDetectorDataProcessor[index] = detectorDataProcessor;
 
@@ -321,7 +321,7 @@ void CommHelper::initDataProcessor()
                 quint32 utc = data.mid(6, 4).toHex().toUInt(&ok, 16); // utc时间戳
                 quint32 second = data.mid(10, 4).toHex().toUInt(&ok, 16); // 小数秒
 
-                QDateTime tm = QDateTime::fromSecsSinceEpoch(utc, Qt::TimeSpec::UTC, second);
+                QDateTime tm = QDateTime::fromSecsSinceEpoch(utc, Qt::TimeSpec::UTC, second).addSecs(8*3600);
 
                 // 上报时间戳信息
                 emit reportTimestampe(index, tm);
@@ -368,10 +368,12 @@ quint8 CommHelper::indexOfPort(int index)
 
 qint8 CommHelper::allocDataProcessor(QTcpSocket *socket)
 {
+    mExtendTimeSynModule.reload();
     QString peerAddress = socket->peerAddress().toString();
     if (peerAddress == mExtendTimeSynModule.ip){
         //时钟同步模块不分配数据处理器
         socket->setProperty("isTimeSynModule", true);
+        mDetectorDataProcessor[0]->reallocSocket(socket);
         return 0;
     }
 

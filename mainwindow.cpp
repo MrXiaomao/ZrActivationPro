@@ -24,7 +24,8 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     mAutoMeasureDelayTimer->setInterval(1000); // 每秒触发一次
     connect(mAutoMeasureDelayTimer, &QTimer::timeout, this, [=](){
         QDateTime now = QDateTime::currentDateTime();
-        QDateTime delay = ui->dateTimeEdit_autoTrigger->dateTime().addSecs(-30); // 提前30秒做好准备工作
+        quint32 coolTimelength = ui->spinBox_coolTimeLength->value();
+        QDateTime delay = ui->dateTimeEdit_autoTrigger->dateTime().addSecs(coolTimelength-30); // 提前30秒做好准备工作
         if (now >= delay)
         {
             mAutoMeasureDelayTimer->stop();

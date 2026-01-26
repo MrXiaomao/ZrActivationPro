@@ -77,6 +77,18 @@ void DataProcessor::reallocIndex(quint8 index)
     mIndex = index;
 }
 
+void DataProcessor::reallocSocket(QTcpSocket *tcpSocket)
+{
+    if (mTcpSocket){
+        disconnect(mTcpSocket, SIGNAL(readyRead()), this, nullptr);
+    }
+
+    mTcpSocket = tcpSocket;
+    if (mTcpSocket){
+        connect(mTcpSocket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+    }
+}
+
 void DataProcessor::reallocSocket(QTcpSocket *tcpSocket, DetParameter& detParameter)
 {
     if (mTcpSocket){

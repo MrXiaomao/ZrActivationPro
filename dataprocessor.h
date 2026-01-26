@@ -31,6 +31,7 @@ public:
     virtual void sendCmdToSocket(CommandItem cmdItem) const override;
 
     void reallocIndex(quint8 index);//重新分配通道索引
+    void reallocSocket(QTcpSocket *tcpSocket);
     void reallocSocket(QTcpSocket *tcpSocket, DetParameter& detParameter);
     bool isFreeSocket();//是否关联Socket
 

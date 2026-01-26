@@ -362,7 +362,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                     mValidDataPkgRef++;
                     cachePool.remove(0, onePkgSize);
 
-                    if (mIsMeasuring)
+                    if (mIsMeasuring || dataType == dtTimestamp)
                     {
                         if (dataType == dtWaveform)
                             QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
