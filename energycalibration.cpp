@@ -2,13 +2,18 @@
  * @Author: MrPan
  * @Date: 2025-12-29 22:08:10
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-12-31 12:13:47
+ * @LastEditTime: 2026-01-25 18:57:24
  * @Description: 用于能量刻度，可进行线性拟合、二次函数拟合，能量刻度点的添加、删除、拟合等功能
  */
 #include "energycalibration.h"
 #include "ui_energycalibration.h"
 #include "qcustomplot.h"
 #include "globalsettings.h"
+#include "curveFit.h"
+// #include "ap.h"
+// #include "interpolation.h"
+// #include <math.h>
+// using namespace alglib;
 
 EnergyCalibration::EnergyCalibration(QWidget *parent) :
     QWidget(parent),
@@ -330,202 +335,6 @@ void EnergyCalibration::on_pushButton_fit_clicked()
     }*/
 }
 
-/**
- * @brief 定义待拟合函数 f=kx+b
- * @param c 拟合参数c
- * @param x 自变量x
- * @param func 函数值
- * @param ptr 用于自定义传参
- */
-void EnergyCalibration::function_cx_1_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr)
-{
-    func = c[0]*x[0] + c[1];
-}
-
-/**
- * @brief 定义待拟合函数 f=ax^2+bx+c
- * @param c 拟合参数c
- * @param x 自变量x
- * @param func 函数值
- * @param ptr 用于自定义传参
- */
-void EnergyCalibration::function_cx_2_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr)
-{
-    func = c[0]*x[0]*x[0] + c[1]*x[0] + c[2];
-}
-
-/**
- * @brief lsqcurvefit1 线性拟合
- * func = c[0]*x + c[1];
- * @param fit_x //待拟合一维数组x
- * @param fit_y //待拟合一维数组y
- * @param fit_c //拟合参数一维数组c的初值 拟合成功后，会将拟合结果存放在fit_c中
- * @param R2    //拟合决定系数
- * @return
- */
-bool EnergyCalibration::lsqcurvefit1(QVector<QPointF> points, double* fit_c, double* R2, lsfitreport* rep)
-{
-    int paraNum = 2; //待拟合参数个数
-    // 补齐复数的虚数部分。直接在数组的尾部补齐虚数
-    int num = points.size();
-    try
-    {
-        //提取数据点
-        QVector<double> fit_x, fit_y;
-        for(int i=0; i<num; i++)
-        {
-            fit_x.push_back(points.at(i).x());
-            fit_y.push_back(points.at(i).y());
-        }
-        
-        //QVector容器转real_2d_array
-        alglib::real_2d_array x;
-        x.setcontent(num, 1, fit_x.constData());
-
-        // QVector容器转real_1d_array
-        alglib::real_1d_array y;
-        y.setcontent(fit_y.size(), fit_y.constData());
-
-        alglib::real_1d_array c;
-        c.setcontent(paraNum, fit_c);
-
-        const double diffstep = 1.4901e-08;
-        double epsx = 0.000001;
-        ae_int_t maxits = 10000;
-        lsfitstate state; //拟合的所有信息，每调用一次函数，相关的参数值变更新到state中存放。
-        lsfitreport rep_local;
-
-        //
-        // Fitting without weights
-        //
-        lsfitcreatef(x, y, c, diffstep, state);
-        alglib::lsfitsetcond(state, epsx, maxits);
-        alglib::lsfitfit(state, function_cx_1_func); //peak对应function_cx_1_func中void *ptr。
-        lsfitresults(state, c, rep_local); //参数存储到state中
-
-        //取出拟合参数c
-        for(int i=0; i<paraNum; i++){
-            fit_c[i] = c[i];
-        }
-
-        //计算拟合y值        
-        for(int i=0; i<num; i++)
-        {
-            double y;
-            double x_temp = fit_x.at(i);
-            alglib::real_1d_array xData;
-            xData.setlength(1);
-            xData[0] = x_temp;
-            function_cx_1_func(c, xData, y, NULL);
-        }
-        *R2 = rep_local.r2;
-        
-        // 如果提供了rep指针，则复制报告信息
-        if(rep != nullptr)
-        {
-            *rep = rep_local;
-        }
-
-        // printf("lsqcurvefit1 c:%s, chi_square=%.1f\n", c.tostring(1).c_str(), *chi_square);
-        // qDebug()<<"lsqcurvefit1 c:"<<c.tostring(1).c_str()<<", iterationscount="<<rep.iterationscount
-        //          <<", r2="<<rep.r2
-        //          <<", terminationtype="<<rep.terminationtype
-        //          <<"chi_square="<<*chi_square;
-    }
-    catch(alglib::ap_error alglib_exception)
-    {
-        printf("ALGLIB exception with message '%s'\n", alglib_exception.msg.c_str());
-        return 0;
-    }
-    return 1;
-}
-
-/**
- * @brief lsqcurvefit2 二次函数拟合
- * func = c[0]*x^2 + c[1]*x + c[2];
- * @param fit_x //待拟合一维数组x
- * @param fit_y //待拟合一维数组y
- * @param fit_c //拟合参数一维数组c的初值 拟合成功后，会将拟合结果存放在fit_c中
- * @param R2    //拟合决定系数
- * @return
- */
-bool EnergyCalibration::lsqcurvefit2(QVector<QPointF> points, double* fit_c, double* R2, lsfitreport* rep)
-{
-    int paraNum = 3; //待拟合参数个数
-    // 补齐复数的虚数部分。直接在数组的尾部补齐虚数
-    int num = points.size();
-    try
-    {
-        //提取数据点
-        QVector<double> fit_x, fit_y;
-        for(int i=0; i<num; i++)
-        {
-            fit_x.push_back(points.at(i).x());
-            fit_y.push_back(points.at(i).y());
-        }
-        
-        //QVector容器转real_2d_array
-        alglib::real_2d_array x;
-        x.setcontent(num, 1, fit_x.constData());
-
-        // QVector容器转real_1d_array
-        alglib::real_1d_array y;
-        y.setcontent(fit_y.size(), fit_y.constData());
-
-        alglib::real_1d_array c;
-        c.setcontent(paraNum, fit_c);
-
-        const double diffstep = 1.4901e-08;
-        double epsx = 0.000001;
-        ae_int_t maxits = 10000;
-        lsfitstate state; //拟合的所有信息，每调用一次函数，相关的参数值变更新到state中存放。
-        lsfitreport rep_local;
-
-        //
-        // Fitting without weights
-        //
-        lsfitcreatef(x, y, c, diffstep, state);
-        alglib::lsfitsetcond(state, epsx, maxits);
-        alglib::lsfitfit(state, function_cx_2_func); //peak对应function_cx_2_func中void *ptr。
-        lsfitresults(state, c, rep_local); //参数存储到state中
-
-        //取出拟合参数c
-        for(int i=0; i<paraNum; i++){
-            fit_c[i] = c[i];
-        }
-
-        //计算拟合y值        
-        /*for(int i=0; i<num; i++)
-        {
-            double y;
-            double x_temp = fit_x.at(i);
-            alglib::real_1d_array xData;
-            xData.setlength(1);
-            xData[0] = x_temp;
-            function_cx_2_func(c, xData, y);
-        }*/
-        *R2 = rep_local.r2;
-        
-        // 如果提供了rep指针，则复制报告信息
-        if(rep != nullptr)
-        {
-            *rep = rep_local;
-        }
-        
-        // printf("lsqcurvefit1 c:%s, chi_square=%.1f\n", c.tostring(1).c_str(), *chi_square);
-        // qDebug()<<"lsqcurvefit1 c:"<<c.tostring(1).c_str()<<", iterationscount="<<rep.iterationscount
-        //          <<", r2="<<rep.r2
-        //          <<", terminationtype="<<rep.terminationtype
-        //          <<"chi_square="<<*chi_square;
-    }
-    catch(alglib::ap_error alglib_exception)
-    {
-        printf("ALGLIB exception with message '%s'\n", alglib_exception.msg.c_str());
-        return 0;
-    }
-    return 1;
-}
-
 void EnergyCalibration::calculate(int no)
 {
     //线性拟合 y=ax+b
@@ -533,8 +342,8 @@ void EnergyCalibration::calculate(int no)
     {
         double R2 = 0.0;
         double fit_c[2] = {1.0, 1.0};
-        lsfitreport rep;
-        if(lsqcurvefit1(points, fit_c, &R2, &rep))
+        alglib::lsfitreport rep;
+        if(CurveFit::fit_linear(points, fit_c, &R2, &rep))
         {
             C[0] = fit_c[0];
             C[1] = fit_c[1];
@@ -569,8 +378,8 @@ void EnergyCalibration::calculate(int no)
     {
         double R2 = 0.0;
         double fit_c[3] = {1.0, 1.0, 1.0};
-        lsfitreport rep;
-        if(lsqcurvefit2(points, fit_c, &R2, &rep))
+        alglib::lsfitreport rep;
+        if(CurveFit::fit_poly_2terms(points, fit_c, &R2, &rep))
         {
             C[0] = fit_c[0];
             C[1] = fit_c[1];
@@ -625,24 +434,22 @@ void EnergyCalibration::calculate(int no)
         {
             if(ui->btnFit1->isChecked())
             {
-                // ny = C[0] + C[1] * x;
                 alglib::real_1d_array c;
                 c.setcontent(2, C);
                 alglib::real_1d_array xData;
                 xData.setlength(1);
                 xData[0] = nx;
-                function_cx_1_func(c, xData, ny, NULL);
+                CurveFit::function_linear(c, xData, ny, NULL);
             }
             else
             {
-                // ny = C[0] * x *x + C[1] + C[2] * x;
                 //计算y值
                 alglib::real_1d_array c;
                 c.setcontent(3, C);
                 alglib::real_1d_array xData;
                 xData.setlength(1);
                 xData[0] = nx;
-                function_cx_2_func(c, xData, ny, NULL);
+                CurveFit::function_poly_2terms(c, xData, ny, NULL);
             }
 
             keys << nx;

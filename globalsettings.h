@@ -61,7 +61,15 @@ struct SubSpectrumPacket {
 };
 #pragma pack(pop)
 
-// 完整能谱数据
+// 用于写入到HDF5文件的能谱数据
+struct H5Spectrum{
+    quint32 sequence;      // 能谱序号
+    quint32 measureTime;   // 能量测量时间间隔,单位ms
+    quint32 deathTime;      // 死时间,单位*10ns
+    quint32 spectrum[8192]; // 8192道完整数据
+};
+
+// 用于解包时的完整能谱数据
 #pragma pack(push, 1)  // 确保字节对齐
 struct FullSpectrum {
     quint32 sequence;      // 能谱序号
@@ -114,8 +122,11 @@ struct FullSpectrum {
 };
 #pragma pack(pop)
 
-// 注册 FullSpectrum 为 Qt 元类型
-Q_DECLARE_METATYPE(FullSpectrum)
+// 将FullSpectrum结构中的部分数据转化为H5Spectrum类型，用于存储。
+H5Spectrum FullSpectoH5Spec(const FullSpectrum& src);
+
+// 注册 H5Spectrum 为 Qt 元类型
+Q_DECLARE_METATYPE(H5Spectrum)
 
 #define GLOBAL_CONFIG_FILENAME "./Config/GSettings.ini" //全局配置文件，不可编辑的配置文件
 #define CONFIG_FILENAME "./Config/Settings.ini" //用户配置文件,用户可编辑的配置文件
@@ -822,10 +833,20 @@ public:
      * @brief 写入单个FullSpectrum结构体到HDF5文件
      * @param data 要写入的结构体数据
      */
-    void writeFullSpectrum(quint8 index, const FullSpectrum& data);
+    void writeH5Spectrum(quint8 index, const H5Spectrum& data);
+
+        /**
+     * @brief 从HDF5文件一次性指定探测器的全部读取H5Spectrum结构体
+     * @param filePath H5文件路径
+     * @param detectorId 探测器编号
+     * @param outData H5Spectrum结构体类型容器
+     * @return 是否读取成功
+     */
+    static bool readAllH5Spectrum(const std::string& filePath, const quint32 detectorId,
+        QVector<H5Spectrum>& outData);
 
     /**
-     * @brief 从HDF5文件读取FullSpectrum结构体
+     * @brief 从HDF5文件逐行读取H5Spectrum结构体
      * @param filePath H5文件路径
      * @param groupName 分组名称(Detector#1)
      * @param datasetName 数据集名称(Spectrum)
@@ -835,9 +856,9 @@ public:
     bool readFullSpectrum(const std::string& filePath,
                                   const std::string& groupName,
                                   const std::string& datasetName,
-                                  std::function<void(const FullSpectrum&)> callback);
+                                  std::function<void(const H5Spectrum&)> callback);
 
-    Q_SIGNAL void sigSpectrum(const FullSpectrum&);
+    Q_SIGNAL void sigSpectrum(const H5Spectrum&);
 
 private:
     H5::H5File *mfH5Setting = nullptr; // H5配置文件

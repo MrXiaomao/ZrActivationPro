@@ -501,7 +501,7 @@ void NeutronYieldStatisticsWindow::initSpectrumCustomPlot()
     customPlot->yAxis->rescale(true);
 
     // 设置刻度范围
-    customPlot->xAxis->setRange(0, 8192);
+    customPlot->xAxis->setRange(0, 2048);
     customPlot->yAxis->setRange(0, 10000);
     customPlot->yAxis->ticker()->setTickCount(5);
     customPlot->xAxis->ticker()->setTickCount(10);
@@ -626,7 +626,7 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
         spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setLabel(tr(""));
         spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setTickLabels(false);
         spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->setRange(0, 3600);
-        spec909_AxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(0, 8192);
+        spec909_AxisRect->axis(QCPAxis::AxisType::atLeft)->setRange(0, 2048);
         spec909_AxisRect->axis(QCPAxis::AxisType::atBottom)->grid()->setZeroLinePen(Qt::NoPen);
     }
 
@@ -878,12 +878,12 @@ void NeutronYieldStatisticsWindow::on_action_startMeasure_triggered()
     QString filePath = ui->textBrowser_filepath->toPlainText();
     if (QFileInfo(filePath).suffix() == "H5")
     {
-        int index = 1;
+        int index = 1; //默认读取探测器1的数据
         if (ui->tableWidget->selectedItems().count() > 0)
             index = ui->tableWidget->selectedItems()[0]->row() + 1;
         specCount = dealFile->parseH5File(filePath, index);
     }
-    else
+    else//处理网口原始数据，暂时搁置，后续有空再处理
         specCount = dealFile->parseDatFile(filePath);
 
     if (specCount <= 0)
@@ -916,9 +916,9 @@ void NeutronYieldStatisticsWindow::on_tableWidget_cellClicked(int row, int colum
     int index = row - 1;
     if (mMapSpectrum.contains(index))
     {
-        QVector<double> spectrumTotal(8192, 0); // 8192道完整数据
+        QVector<double> spectrumTotal(2048, 0); // 8192道完整数据
         QVector<double> keys;
-        for (int i=0; i<8192; ++i)
+        for (int i=0; i<2048; ++i)
         {
             keys << i;
             spectrumTotal[i] = mMapSpectrum[index][i];
@@ -1098,7 +1098,7 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
             graph->setVisible(true);
 
             QVector<double> keys, values;
-            for (int j=0; j<8192; ++j){
+            for (int j=0; j<2048; ++j){
                 keys << j + 1;
                 values << allSpectrum[i].spectrum[j] * 1.0;
             }

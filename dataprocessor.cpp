@@ -313,12 +313,19 @@ void DataProcessor::inputSpectrumData(quint8 no, QByteArray& data){
             emit reportFullSpectrum(mIndex, fullSpectrumCopy);
 
             // H5能谱文件写入
-            HDF5Settings::instance()->writeFullSpectrum(mIndex, fullSpectrumCopy);
+            H5Spectrum h5Spectrum = FullSpectoH5Spec(fullSpectrumCopy);
+            HDF5Settings::instance()->writeH5Spectrum(mIndex, h5Spectrum);
 
             if(spectrumSeq%1000 == 0){
                 qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq
                      << ", specMeasureTime(ms):" << fullSpectrum->measureTime
                      << ", deathTime(*10ns):" << fullSpectrum->deathTime;
+            }
+            if(spectrumSeq==297)
+            {
+                qDebug() << "Get a full spectrum, SpectrumID:" << spectrumSeq
+                         << ", specMeasureTime(ms):" << fullSpectrum->measureTime
+                         << ", deathTime(*10ns):" << fullSpectrum->deathTime;
             }
             // m_parseData->mergeSpecTime_online(*fullSpectrum);
 

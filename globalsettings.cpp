@@ -3,6 +3,20 @@
 #include <QApplication>
 #include <QTextCodec>
 
+H5Spectrum FullSpectoH5Spec(const FullSpectrum& src)
+{
+    H5Spectrum h5Spec{};
+    h5Spec.sequence    = src.sequence;
+    h5Spec.measureTime = src.measureTime;
+    h5Spec.deathTime   = src.deathTime;
+
+    std::memcpy(h5Spec.spectrum,
+                src.spectrum,
+                sizeof(h5Spec.spectrum));
+
+    return h5Spec;
+}
+
 /*#########################################################*/
 GlobalSettings::GlobalSettings(QObject *parent)
     : QSettings(GLOBAL_CONFIG_FILENAME, QSettings::IniFormat, parent)
@@ -566,17 +580,17 @@ H5::CompType HDF5Settings::createCfgDataType()
 // 定义FullSpectrum的HDF5复合类型
 H5::CompType HDF5Settings::createFullSpectrumType()
 {
-    H5::CompType type(offsetof(FullSpectrum, receivedMask));
+    H5::CompType type(offsetof(H5Spectrum, sequence));
 
     // 逐个成员映射（注意内存对齐，需与结构体一致）
-    type.insertMember("sequence", offsetof(FullSpectrum, sequence), H5::PredType::NATIVE_UINT32);
-    type.insertMember("measureTime", offsetof(FullSpectrum, measureTime), H5::PredType::NATIVE_UINT32);
-    type.insertMember("deathTime", offsetof(FullSpectrum, deathTime), H5::PredType::NATIVE_UINT32);
+    type.insertMember("sequence", offsetof(H5Spectrum, sequence), H5::PredType::NATIVE_UINT32);
+    type.insertMember("measureTime", offsetof(H5Spectrum, measureTime), H5::PredType::NATIVE_UINT32);
+    type.insertMember("deathTime", offsetof(H5Spectrum, deathTime), H5::PredType::NATIVE_UINT32);
 
     // 数组成员：spectrum[8192]
     hsize_t spectrum_dims[] = {8192};
     H5::ArrayType spectrum_array(H5::PredType::NATIVE_UINT32, 1, spectrum_dims);
-    type.insertMember("spectrum", offsetof(FullSpectrum, spectrum), spectrum_array);
+    type.insertMember("spectrum", offsetof(H5Spectrum, spectrum), spectrum_array);
 
     return type;
 }
@@ -586,14 +600,15 @@ H5::CompType HDF5Settings::createFullSpectrumType()
  * @param index 探测器索引（1~24)
  * @param data 要写入的结构体数据
  */
-void HDF5Settings::writeFullSpectrum(quint8 index, const FullSpectrum& data)
+void HDF5Settings::writeH5Spectrum(quint8 index, const H5Spectrum& data)
 {
     QMutexLocker locker(&mWrite_mutex);
     if (!mfH5Spectrum)
         return;
 
     try {
-        hsize_t columns = 8195;
+        // hsize_t columns = 8195;
+        hsize_t columns = sizeof(H5Spectrum) / sizeof(quint32);
 
         // 获取当前维度
         H5::DataSet dataset = mSpectrumDataset[index-1];
@@ -634,12 +649,65 @@ void HDF5Settings::writeFullSpectrum(quint8 index, const FullSpectrum& data)
     }
 }
 
+bool HDF5Settings::readAllH5Spectrum(const std::string& filePath, const quint32 detectorId,
+    QVector<H5Spectrum>& outData)
+{    
+    try {
+        // 1. 打开文件
+        H5::H5File file(filePath, H5F_ACC_RDONLY);
+
+        // 2. 打开分组核数据集
+        H5::Group group = file.openGroup(QString("Detector#%1").arg(detectorId).toStdString());
+        H5::DataSet dataset = group.openDataSet("Spectrum");
+
+        // 3. 获取数据集维度
+        H5::DataSpace file_space = dataset.getSpace();
+        hsize_t dims[2] = {0, 0};
+        file_space.getSimpleExtentDims(dims, nullptr);
+
+        hsize_t rows    = dims[0];
+        hsize_t columns = dims[1];
+
+        if (rows == 0)
+            return true;
+
+        // 4. 校验列数（非常重要，防文件结构不一致）
+        const hsize_t expectedColumns =
+            sizeof(H5Spectrum) / sizeof(quint32);
+
+        if (columns != expectedColumns) {
+            qWarning() << "H5Spectrum column mismatch:"
+                       << columns << "!=" << expectedColumns;
+            return false;
+        }
+
+        // 5. 分配输出容器
+        outData.resize(rows);
+
+        // 6. 定义内存空间（一次性读所有行）
+        hsize_t mem_dims[2] = {rows, columns};
+        H5::DataSpace mem_space(2, mem_dims);
+
+        // 7. 一次性读
+        dataset.read(outData.data(),
+                     H5::PredType::NATIVE_UINT,
+                     mem_space,
+                     file_space);
+
+        return true;
+
+    } catch (H5::Exception& e) {
+        e.printErrorStack();
+        return false;
+    }
+}
+
 bool HDF5Settings::readFullSpectrum(const std::string& filePath,
                                              const std::string& groupName,
                                              const std::string& datasetName,
-                                             std::function<void(const FullSpectrum&)> callback)
+                                             std::function<void(const H5Spectrum&)> callback)
 {
-    FullSpectrum data{};  // 初始化默认值
+    H5Spectrum data{};  // 初始化默认值
 
     try {
         // 1. 打开文件
@@ -675,7 +743,7 @@ bool HDF5Settings::readFullSpectrum(const std::string& filePath,
             else
                 QMetaObject::invokeMethod(this, "sigSpectrum",
                                           Qt::QueuedConnection,
-                                          Q_ARG(FullSpectrum, data));
+                                          Q_ARG(H5Spectrum, data));
             file_space.selectNone();
         }
         delete[] row_data;

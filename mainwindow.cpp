@@ -775,13 +775,14 @@ void MainWindow::initUi()
         qDebug()<<"Det index="<<index<<", sequenceID="<<fullSpectrum.sequence;
         //最快每秒更新一次计数率,这里不考虑丢包带来的计数率修复
         quint32 accuTime = (fullSpectrum.sequence - data.lastSpectrumID) * fullSpectrum.measureTime;//单位ms
+        double currenTime = 1.0 * fullSpectrum.sequence * fullSpectrum.measureTime / 1000; //单位s，这里最大数对应2^32/24/3600=49days
         if(accuTime >= 1000) {
             double countRate = 1000.0*data.lastAccumulateCount * 1.0 / accuTime; //cps
             data.lastSpectrumID = fullSpectrum.sequence;
             data.lastAccumulateCount = 0;
-            data.countRateHistory.append(countRate);            
+            data.countRateHistory.append(countRate);
             // 更新计数率显示
-            updateCountRateDisplay(index, countRate);
+            updateCountRateDisplay(index, currenTime, countRate);
         }
     });
     
@@ -1809,7 +1810,7 @@ void MainWindow::updateSpectrumDisplay(int detectorId, const quint32 spectrum[])
 }
 
 // 添加计数率显示更新函数
-void MainWindow::updateCountRateDisplay(int detectorId, double countRate) {
+void MainWindow::updateCountRateDisplay(int detectorId, double fpgaTime, double countRate) {
     // 计算在页面中的索引
     QCustomPlot *customPlot = getCustomPlot(detectorId, false);
     if (!customPlot)
@@ -1826,13 +1827,13 @@ void MainWindow::updateCountRateDisplay(int detectorId, double countRate) {
 
     // int currentTime = data.countRateHistory.size();
     // 添加新的数据点
-    int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
-    // qDebug().nospace()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds;
-    getGraph(detectorId, false)->addData(elapsedSeconds, countRate);
+    // int elapsedSeconds = mTotalCountdown - mRemainingCountdown;
+    // qDebug().nospace()<<"detID="<<detectorId<<", elapsedTime = "<<elapsedSeconds<<", fpgaTime = "<<fpgaTime;
+    getGraph(detectorId, false)->addData(fpgaTime, countRate);
 
     // 显示最近300秒
     const int WINDOW = 300;
-    customPlot->xAxis->setRange(qMax(0.0, elapsedSeconds*1.0 - WINDOW), elapsedSeconds + 1);
+    customPlot->xAxis->setRange(qMax(0.0, fpgaTime*1.0 - WINDOW), fpgaTime + 1);
     
     // y轴范围只由最近300秒的y决定
     auto range = calcRecentYRange(data.countRateHistory, WINDOW);

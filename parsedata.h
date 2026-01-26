@@ -42,7 +42,7 @@ public:
         qint64 currentTime; //能谱测量结束时刻，打靶时刻为零时刻，早于打靶为负数，单位ms
         quint64 specTime;   //能谱测量对应时长，单位ms
         quint64 deathTime;  //能谱测量死时间，单位ns
-        quint32 spectrum[8192];  // 能谱，前三道恒为0.
+        quint32 spectrum[2048];  // 能谱，将FPGA传输来的8192道压缩为2048道。
 
         // 1. 默认构造函数：初始化所有成员为默认值，确保spectrum前三道为0
         mergeSpecData()
@@ -50,7 +50,7 @@ public:
             specTime(0),
             deathTime(0) {
             // 初始化spectrum数组
-            for (int i = 0; i < 8192; ++i) {
+            for (int i = 0; i < 2048; ++i) {
                 spectrum[i] = 0;
             }
         }
@@ -80,16 +80,23 @@ public:
      * @brief mergeSpecTime_online
      *
      */
-    void mergeSpecTime_online(const FullSpectrum& specPack);
+    void mergeSpecTime_online(const H5Spectrum& h5Spec);
 
     // 对第一段能谱尝试寻峰
-    bool initial_PeakFind(double* spectrum, double energy_scale[], QVector<fit_result>& fit_c_2);
+    bool initial_PeakFind(double* spectrum, double energy_scale[], QVector<fit_result>& fit_c_2, bool* exitflag);
 
-    // 寻峰
-    bool PeakFind(double* spectrum, QVector<fit_result>& init_c);
+    /**
+     * @brief PeakFind 寻峰
+     * fit_type = c0*exp(-0.5*pow((x-c1)/c2,2)) + c3*x + c4
+     * @param spectrum 能谱2048道
+     * @param init_c 上一次寻峰结果
+     * @param exitflag 寻峰标志位，false:没找到峰，true:找到了峰
+     * @return 暂时不使用，恒为true
+     */
+    bool PeakFind(double* spectrum, QVector<fit_result>& init_c, bool* exitflag);
 
     // 剥谱
-    bool SpecStripping(double* spectrum, double energy_scale[], QVector<double>& init_c);
+    bool SpecStripping(double* spectrum, double energy_scale[], QVector<double>& init_c, bool* exitflag);
 
     // 拟合909全能峰计数随时间的变化
     bool fit909data();
@@ -99,16 +106,26 @@ public:
         T0_beforeShot = time;
     }
 
-    // 解析H5文件
+    /**
+     * @brief 解析H5文件，读取指定探测器的所有能谱数据，目前不支持对正在测量的实验数据的分析（没做文件锁保护）。
+     * @param filePath 文件名
+     * @param detectorId 探测器ID：1-24
+     * @return 解析到的能谱个数
+     */
     int parseH5File(const QString& filePath, const quint32 detectorId);
+
     // 解析大文件中的网络数据包（流式读取）
     int parseDatFile(const QString &filePath);
+
     // 处理缓冲区中的数据
     int processBuffer(bool isFinal);
+
     // 查找包头
     int findPacketHeader(int startPos);
+
     // 清理已处理的缓冲区数据
     void cleanupBuffer(int bytesToKeep);
+
     // 转码
     QByteArray encode(const QByteArray &data, const QByteArray &from1, const QByteArray &to1, const QByteArray &from2, const QByteArray &to2);
     // 报文完整性检查
@@ -116,8 +133,8 @@ public:
     //检查是否是能谱数据
     bool isSpecData(const QByteArray &data);
     //直接将网口数据赋值给结构体
-    static bool getDataFromQByte(const QByteArray &byteArray, FullSpectrum &DataPacket);
-    // 处理单个数据包
+    static bool getDataFromQByte(const QByteArray &byteArray, H5Spectrum &DataPacket);
+
     /**
      * @brief processSinglePacket 处理单个数据包
      * @param headerPos 包头位置
@@ -135,15 +152,16 @@ private:
     void clearFitResult();
 
     QVector<mergeSpecData> m_mergeSpec; //对原始数据汇总后的各时段能谱，对丢包带来的死时间做了相应记录
-    QVector<FullSpectrum> m_allSpec;// 总能谱
+    QVector<H5Spectrum> m_allSpec;// 从HDF5文件中读取到特定通道的所有能谱
 
     QVector<int> allSpecTime; //每一个计数点对应的时刻，考虑到可能丢包，所以时刻并不是连续的。
     QVector<int> allSpecCount; //每秒能谱总计数随时间的变化
 
     const double m_energyCalibration[2] = {511.0, 909.0}; //用于能量刻度的特征峰
-    const double energyRange[2] = {800.0, 1150.0};//设定剥谱能量范围
+    const double mStripEnRange[2] = {800.0, 1100.0};//设定剥谱能量范围
 
-    const int G_CHANNEL = 8192; //能谱的道数
+    const int mCHANNEL8192 = 8192; //能谱的道数
+    const int mCHANNEL2048 = 2048; //做能谱寻峰所用的道数
     const int specPackLen = 8237;//2050*4 + 9 +13 + 1 + 3*4+2 %完整数据包的长度（解码后长度），1是包头，9是时间信息以及空白，13是大包的帧内容
     qint32 T0_beforeShot = 0; //能谱开测时刻相对于打靶零时刻的时间（单位s，可正数可负数)T0_beforeShot = 开测时刻 - 打靶时刻
 

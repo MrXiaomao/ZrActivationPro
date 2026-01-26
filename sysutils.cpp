@@ -2,6 +2,11 @@
 
 #include <stdio.h>
 
+#include <vector>
+#include <stdexcept>
+#include <cstddef>
+#include <Eigen/Dense>
+
 SysUtils::SysUtils() {}
 
 // 滑动平均滤波函数
@@ -63,4 +68,79 @@ void SysUtils::smooth(double *data, double *output, int data_size, int window_si
         }
         output[i] = sum / count;
     }
+}
+
+
+// MATLAB-like sgolayfilt for 1D data, smoothing only (derivative order d = 0)
+// p: polynomial order, f: frame length (odd)
+std::vector<double> SysUtils::sgolayfilt_matlab_like(
+    const std::vector<double>& x,
+    int p,
+    int f
+    ) {
+    if (f <= 0 || (f % 2) == 0) {
+        throw std::invalid_argument("frame_length f must be a positive odd integer.");
+    }
+    if (p < 0) {
+        throw std::invalid_argument("polynomial order p must be >= 0.");
+    }
+    if (p >= f) {
+        throw std::invalid_argument("polynomial order p must be < frame_length f.");
+    }
+    const std::size_t N = x.size();
+    if (N < static_cast<std::size_t>(f)) {
+        // MATLAB 也要求 frame_length <= length(x)（不足会报错）
+        throw std::invalid_argument("Input length must be >= frame_length f.");
+    }
+
+    const int m = (f - 1) / 2; // half window
+
+    // 1) Build Vandermonde matrix A (f x (p+1)) with sample positions k = -m..m
+    // A(r, j) = k^j
+    Eigen::MatrixXd A(f, p + 1);
+    for (int r = 0; r < f; ++r) {
+        const double k = static_cast<double>(r - m);
+        double kj = 1.0;
+        for (int j = 0; j <= p; ++j) {
+            A(r, j) = kj;
+            kj *= k;
+        }
+    }
+
+    // 2) QR decomposition to obtain an orthonormal basis Q (f x (p+1))
+    // Projection matrix P = Q * Q^T (f x f)
+    Eigen::HouseholderQR<Eigen::MatrixXd> qr(A);
+    Eigen::MatrixXd Q = qr.householderQ() * Eigen::MatrixXd::Identity(f, p + 1);
+    Eigen::MatrixXd P = Q * Q.transpose(); // smoothing (d=0) => fitted values = P * y_window
+
+    // 3) Apply with MATLAB-like boundary handling:
+    //    - left edge: window is x[0..f-1], row = i
+    //    - middle:    window centered at i, start = i-m, row = m
+    //    - right edge:window is x[N-f..N-1], row = i - (N-f)
+    std::vector<double> y(N);
+
+    for (std::size_t i = 0; i < N; ++i) {
+        int start = 0;
+        int row = 0;
+
+        if (static_cast<int>(i) < m) {
+            start = 0;
+            row = static_cast<int>(i);
+        } else if (static_cast<int>(i) > static_cast<int>(N) - 1 - m) {
+            start = static_cast<int>(N) - f;
+            row = static_cast<int>(i) - start; // in [f-m .. f-1]
+        } else {
+            start = static_cast<int>(i) - m;
+            row = m;
+        }
+
+        // y[i] = sum_k P(row,k) * x[start+k]
+        double acc = 0.0;
+        for (int k = 0; k < f; ++k) {
+            acc += P(row, k) * x[static_cast<std::size_t>(start + k)];
+        }
+        y[i] = acc;
+    }
+
+    return y;
 }

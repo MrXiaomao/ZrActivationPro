@@ -59,8 +59,13 @@ public:
     // 更新能谱显示
     void updateSpectrumDisplay(int detectorId, const quint32 spectrum[]);
 
-    // 添加计数率显示更新函数
-    void updateCountRateDisplay(int detectorId, double countRate);
+    /**
+     * @brief 计数率显示，最快更新时间间隔不小于1000ms
+     * @param detectorId 探测器编号
+     * @param FPGATime FPGA内部时钟，当前的计数率对应的FPGA时钟，单位s，能谱数据中单位是ms，这里采用向下取整
+     * @param countRate 计数率，单位cps
+     */
+    void updateCountRateDisplay(int detectorId, double FPGATime, double countRate);
 
     // 将秒数转换为 天/时分秒 格式字符串
     QString formatTimeString(int totalSeconds);

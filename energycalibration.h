@@ -3,10 +3,10 @@
 
 #include <QWidget>
 
-#include "ap.h"
-#include "interpolation.h"
-#include <math.h>
-using namespace alglib;
+// #include "ap.h"
+// #include "interpolation.h"
+// #include <math.h>
+// using namespace alglib;
 namespace Ui {
 class EnergyCalibration;
 }
@@ -44,10 +44,6 @@ private:
     void initUI();
     
 private:
-    static void function_cx_1_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr);
-    static void function_cx_2_func(const real_1d_array &c, const real_1d_array &x, double &func, void *ptr);
-    bool lsqcurvefit1(QVector<QPointF> points, double* fit_c, double* R2, lsfitreport* rep = nullptr);
-    bool lsqcurvefit2(QVector<QPointF> points, double* fit_c, double* R2, lsfitreport* rep = nullptr);
     void calculate(int);
 
     //绘制散点与拟合曲线
