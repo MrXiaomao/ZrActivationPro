@@ -54,7 +54,7 @@ public:
         return this->mIndex;
     };
 
-    void updateSetting(DetParameter& detParameter);
+    void updateSetting(DetParameter& detParameter, bool isRead = false);
 
     bool extractSpectrumData(const QByteArray& packetData, SubSpectrumPacket& subSpec);
 

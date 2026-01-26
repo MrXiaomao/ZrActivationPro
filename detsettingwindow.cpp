@@ -119,10 +119,158 @@ DetSettingWindow::DetSettingWindow(QWidget *parent)
     }
 
     ui->tableWidget->setCurrentItem(ui->tableWidget->item(0, 0));
+
+    mCommhelper = CommHelper::instance();
+    connect(mCommhelper, &CommHelper::reportParamterData, this, [=](int, const QByteArray& cachePool){
+        //增益指令
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 10"))){
+                qInfo().noquote() << "增益：" << cachePool.at(9);
+
+            }
+        }
+
+        //死时间配置(ns)
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 11"))){
+                qInfo().noquote() << "死时间/ns：" << cachePool.mid(8, 2).toShort();
+
+            }
+        }
+
+        //触发阈值
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 12"))){
+                qInfo().noquote() << "触发阈值：" << cachePool.mid(8, 2).toShort();
+
+            }
+        }
+
+        /*********************************************************
+         波形基本配置
+        ***********************************************************/
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FC 10"))){
+                qInfo().noquote() << "触发模式：" << (cachePool.mid(7, 1).toShort() == CommandAdapter::tmTimer ? "定时触发" : "正常触发模式");
+                CommandAdapter::WaveformLength waveformLength = (CommandAdapter::WaveformLength)cachePool.mid(9, 1).toShort();
+                if (waveformLength == CommandAdapter::wl64)
+                    qInfo().noquote() << "波形长度：64";
+                else if (waveformLength == CommandAdapter::wl128)
+                    qInfo().noquote() << "波形长度：128";
+                else if (waveformLength == CommandAdapter::wl256)
+                    qInfo().noquote() << "波形长度：256";
+                else if (waveformLength == CommandAdapter::wl512)
+                    qInfo().noquote() << "波形长度：512";
+                else
+                    qInfo().noquote() << "波形长度：未知值";
+            }
+        }
+
+        /*********************************************************
+         能谱基本配置
+        ***********************************************************/
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FD 10"))){
+                qInfo().noquote() << "能谱刷新时间/ms：" << cachePool.mid(6, 4).toUInt();
+
+            }
+        }
+
+        /*********************************************************
+         梯形成型基本配置
+        ***********************************************************/
+        //梯形成型时间常数配置
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FE 10"))){
+                quint16 d1 = cachePool.mid(6, 2).toShort();
+                quint16 d2 = cachePool.mid(8, 9).toShort();
+                float f1 = (float)d1 / 65536;
+                float f2 = (float)d2 / 65536;
+                qInfo().noquote() << "梯形成型时间常数，d1=" << f1 << "，d2="<<f2;
+
+            }
+        }
+
+        //上升沿、平顶、下降沿长度配置
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FE 11"))){
+                quint8 rise = (quint8)cachePool.at(7);
+                quint8 peak = (quint8)cachePool.at(8);
+                quint8 fall = (quint8)cachePool.at(9);
+                qInfo().noquote() << "上升沿=" << rise << "，平顶="<<peak<< "，下降沿="<<fall;
+
+            }
+        }
+
+        //梯形成型使能配置
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FE 12"))){
+                quint8 rise = (quint8)cachePool.at(7);
+                quint8 peak = (quint8)cachePool.at(8);
+                quint8 fall = (quint8)cachePool.at(9);
+                qInfo().noquote() << "梯形成型使能状态：" << ((quint8)cachePool.at(9) == 0x00 ? "关闭" : "打开");
+
+            }
+        }
+
+        /*********************************************************
+         工作模式配置
+        ***********************************************************/
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FF 10"))){
+                CommandAdapter::WorkMode workMode = (CommandAdapter::WorkMode)cachePool.at(9);
+                if (workMode == CommandAdapter::wmWaveform)
+                    qInfo().noquote() << "工作模式：波形模式";
+                else if (workMode == CommandAdapter::wmSpectrum)
+                    qInfo().noquote() << "工作模式：能谱模式";
+                else if (workMode == CommandAdapter::wmParticle)
+                    qInfo().noquote() << "工作模式：粒子模式";
+                else
+                    qInfo().noquote() << "工作模式：未知";
+
+            }
+        }
+
+        /*********************************************************
+         高压电源配置
+        ***********************************************************/
+        //高压使能配置
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A F9 10"))){
+                CommandAdapter::HighVolgateOutLevelEnable highVoltageEnable = (CommandAdapter::HighVolgateOutLevelEnable)cachePool.at(9);
+                qInfo().noquote() << "高压使能状态：" << (highVoltageEnable ? "关闭" : "打开");
+
+            }
+        }
+
+        //DAC输出电平配置
+        {
+            if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A F9 11"))){
+                quint16 level = cachePool.mid(8, 2).toShort();
+                qInfo().noquote() << "DAC输出电平值：" << level;
+
+            }
+        }
+
+        /*********************************************************
+         应答类指令
+        ***********************************************************/
+        //程序版本号查询
+        if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A DA 10"))){
+            //硬件版本号
+            QString hardVersion = QString("%1.%2.%3").arg(cachePool.at(6)).arg(cachePool.at(7)).arg(cachePool.at(8));
+            //测试版本标志位
+            bool isTest = cachePool.at(9) == 0x01;
+
+            qInfo().noquote() << "硬件版本号：" << hardVersion;
+            qInfo().noquote() << "是否测试版本：" << (isTest ? "是" : "否");
+        }
+    });
 }
 
 DetSettingWindow::~DetSettingWindow()
 {
+    disconnect(mCommhelper, nullptr, this, nullptr);
     delete ui;
 }
 
@@ -309,3 +457,9 @@ void DetSettingWindow::loadAt(quint8 detId)
     //DAC高压输出电平
     ui->spinBox_highVoltageOutLevel->setValue(detParameter.highVoltageOutLevel);
 }
+
+void DetSettingWindow::on_pushButton_clicked()
+{
+
+}
+

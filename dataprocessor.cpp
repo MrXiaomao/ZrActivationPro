@@ -91,7 +91,7 @@ void DataProcessor::reallocSocket(QTcpSocket *tcpSocket, DetParameter& detParame
     }
 }
 
-void DataProcessor::updateSetting(DetParameter& detParameter)
+void DataProcessor::updateSetting(DetParameter& detParameter, bool isRead/* = false*/)
 {
     // 设置基本参数
     {
@@ -99,29 +99,30 @@ void DataProcessor::updateSetting(DetParameter& detParameter)
         this->clear();
 
         //#01 增益=1|0|1|1234000FFA1000000000ABCD
-        this->sendGain(false, detParameter.gain);
+        this->sendGain(isRead, detParameter.gain);
         //#02 死时间=1|0|3|1234000FFA1100000000ABCD
-        this->sendDeathTime(false, detParameter.deathTime);
+        this->sendDeathTime(isRead, detParameter.deathTime);
         //#03 触发阈值=1|0|5|1234000FFA1200000000ABCD
-        this->sendTriggerThold(false, detParameter.triggerThold);
+        this->sendTriggerThold(isRead, detParameter.triggerThold);
         //#04 触发模式=1|0|7|1234000FFC1000000003ABCD
-        this->sendWaveformMode(false, (TriggerMode)detParameter.waveformTriggerMode, detParameter.waveformLength);
+        this->sendWaveformMode(isRead, (TriggerMode)detParameter.waveformTriggerMode, detParameter.waveformLength);
         //#05 能谱刷新时间=1|0|9|1234000FFD1000000000ABCD
-        this->sendSprectnumRefreshTimelength(false, detParameter.spectrumRefreshTime);
+        this->sendSprectnumRefreshTimelength(isRead, detParameter.spectrumRefreshTime);
 
-        if (detParameter.trapShapeEnable){
+        if (!detParameter.trapShapeEnable || isRead){
             //#07 梯形成型常数=1|0|13|1234000FFE1000000000ABCD
-            this->sendTrapTimeConst(false, detParameter.trapShapeTimeConstD1, detParameter.trapShapeTimeConstD2);
+            this->sendTrapTimeConst(isRead, detParameter.trapShapeTimeConstD1, detParameter.trapShapeTimeConstD2);
             //#08 上升沿参数=1|0|15|1234000FFE1100000000ABCD
-            this->sendRisePeakFallPoints(false, detParameter.trapShapeRisePoint, detParameter.trapShapePeakPoint, detParameter.trapShapeFallPoint);
+            this->sendRisePeakFallPoints(isRead, detParameter.trapShapeRisePoint, detParameter.trapShapePeakPoint, detParameter.trapShapeFallPoint);
         }
+
         //#09 梯形成型使能=1|0|17|1234000FFE1200000000ABCD
-        this->sendTrapShapeEnable(false, (TrapShapeEnable)detParameter.trapShapeEnable);
+        this->sendTrapShapeEnable(isRead, (TrapShapeEnable)detParameter.trapShapeEnable);
         //#10 高压电平使能=1|0|19|1234000FF91000000000ABCD
-        this->sendHighVolgateOutLevelEnable(false, (HighVolgateOutLevelEnable)detParameter.highVoltageEnable);
+        this->sendHighVolgateOutLevelEnable(isRead, (HighVolgateOutLevelEnable)detParameter.highVoltageEnable);
         //#11 高压输出电平=1|0|21|1234000FF91100000000ABCD
-        if (detParameter.highVoltageEnable)
-            this->sendHighVolgateOutLevel(false, detParameter.highVoltageOutLevel);
+        if (!detParameter.highVoltageEnable || isRead)
+            this->sendHighVolgateOutLevel(isRead, detParameter.highVoltageOutLevel);
 
         //通知发送指令
         this->notifySendNextCmd();

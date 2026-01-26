@@ -1,4 +1,4 @@
-/*
+﻿/*
  * @Author: MrPan
  * @Date: 2025-11-13 11:36:00
  * @LastEditors: Maoxiaoqing
@@ -9,6 +9,7 @@
 #define DETSETTINGWINDOW_H
 
 #include <QWidget>
+#include "commhelper.h"
 
 namespace Ui {
 class DetSettingWindow;
@@ -34,11 +35,14 @@ private slots:
 
     void on_pushButton_cancel_clicked();
 
+    void on_pushButton_clicked();
+
 private:
     void loadAt(quint8 detId);
     void saveAt(quint8 detId);
     void updateSelectAllState();
     Ui::DetSettingWindow *ui;
+    CommHelper* mCommhelper = nullptr;
     bool mUpdatingSelectAll = true;
 };
 

@@ -104,6 +104,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 10"))){
                 qInfo().noquote() << "增益：" << cachePool.at(9);
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -114,6 +116,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 11"))){
                 qInfo().noquote() << "死时间/ns：" << cachePool.mid(8, 2).toShort();
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -123,6 +127,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
         {
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FA 12"))){
                 qInfo().noquote() << "触发阈值：" << cachePool.mid(8, 2).toShort();
+
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -147,6 +153,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 else
                     qInfo().noquote() << "波形长度：未知值";
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -158,6 +166,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
         {
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A FD 10"))){
                 qInfo().noquote() << "能谱刷新时间/ms：" << cachePool.mid(6, 4).toUInt();
+
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -176,6 +186,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 float f2 = (float)d2 / 65536;
                 qInfo().noquote() << "梯形成型时间常数，d1=" << f1 << "，d2="<<f2;
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -189,6 +201,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 quint8 fall = (quint8)cachePool.at(9);
                 qInfo().noquote() << "上升沿=" << rise << "，平顶="<<peak<< "，下降沿="<<fall;
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -201,6 +215,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 quint8 peak = (quint8)cachePool.at(8);
                 quint8 fall = (quint8)cachePool.at(9);
                 qInfo().noquote() << "梯形成型使能状态：" << ((quint8)cachePool.at(9) == 0x00 ? "关闭" : "打开");
+
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -220,7 +236,9 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 else if (workMode == wmParticle)
                     qInfo().noquote() << "工作模式：粒子模式";
                 else
-                        qInfo().noquote() << "工作模式：未知";
+                    qInfo().noquote() << "工作模式：未知";
+
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -236,6 +254,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                 HighVolgateOutLevelEnable highVoltageEnable = (HighVolgateOutLevelEnable)cachePool.at(9);
                 qInfo().noquote() << "高压使能状态：" << (highVoltageEnable ? "关闭" : "打开");
 
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
+
                 findNaul = true;
                 cachePool.remove(0, 12);
             }
@@ -246,6 +266,8 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             if (cachePool.startsWith(QByteArray::fromHex("12 34 00 0A F9 11"))){
                 quint16 level = cachePool.mid(8, 2).toShort();
                 qInfo().noquote() << "DAC输出电平值：" << level;
+
+                QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
                 findNaul = true;
                 cachePool.remove(0, 12);
@@ -264,6 +286,7 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
 
             qInfo().noquote() << "硬件版本号：" << hardVersion;
             qInfo().noquote() << "是否测试版本：" << (isTest ? "是" : "否");
+            QMetaObject::invokeMethod(this, "reportParamterData", Qt::QueuedConnection, Q_ARG(QByteArray, cachePool.left(12)));
 
             findNaul = true;
             cachePool.remove(0, 12);
@@ -312,8 +335,13 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
             }
             else if (dataType == dtParticle){
                 //粒子
-                //包头0xFFFFAAB1 + 数据类型（0x00D3）+ 能谱序号（32bit） + 粒子数据（90*96bit） + 保留位（32bit） + 包尾0xFFFFCCD1
-                onePkgSize = 4 + 2 + 4 + 90*12 + 4 + 4;
+                //包头0xFFFFAAB1 + 数据类型（0x00D3）+ 能谱序号（32bit） + 粒子数据（130*64bit） + 保留位（32bit） + 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 4 + 130*8 + 4 + 4;
+            }
+            else if (dataType == dtTimestamp){
+                //触发时间戳
+                //包头0xFFFFAAB1 + 数据类型（0x00D4）+ 分秒-毫秒（64bit）+ 保留位（32bit） + 包尾0xFFFFCCD1
+                onePkgSize = 4 + 2 + 8 + 4 + 4;
             }
             else{
                 /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
@@ -334,15 +362,20 @@ void CommandAdapter::analyzeCommands(QByteArray &cachePool)
                     mValidDataPkgRef++;
                     cachePool.remove(0, onePkgSize);
 
-                    if (dataType == dtWaveform)
-                        QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
-                    else if (dataType == dtSpectrum)
-                        QMetaObject::invokeMethod(this, "reportSpectrumData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
-                    else if (dataType == dtParticle)
-                        QMetaObject::invokeMethod(this, "reportParticleData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
+                    if (mIsMeasuring)
+                    {
+                        if (dataType == dtWaveform)
+                            QMetaObject::invokeMethod(this, "reportWaveformData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
+                        else if (dataType == dtSpectrum)
+                            QMetaObject::invokeMethod(this, "reportSpectrumData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
+                        else if (dataType == dtParticle)
+                            QMetaObject::invokeMethod(this, "reportParticleData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
+                        else if (dataType == dtTimestamp)
+                            QMetaObject::invokeMethod(this, "reportTimestampData", Qt::QueuedConnection, Q_ARG(QByteArray&, chunk));
 
-                    //上报有效数据包个数
-                    // QMetaObject::invokeMethod(this, "reportValidDataPkgRef", Qt::QueuedConnection, Q_ARG(quint32, mValidDataPkgRef));
+                        //上报有效数据包个数
+                        // QMetaObject::invokeMethod(this, "reportValidDataPkgRef", Qt::QueuedConnection, Q_ARG(quint32, mValidDataPkgRef));
+                    }
                 }
                 else {
                     /*异常数据，一定要注意！！！！！！！！！！！！！！！！！*/
@@ -599,7 +632,7 @@ void CommandAdapter::sendStopMeasure(){
     pushCmd({QString("停止测量指令"), askCurrentCmd});
 
     mAskStopMeasure = true;
-    mIsMeasuring = true;
+    mIsMeasuring = false;
 
     //通知发送指令
     this->notifySendNextCmd();

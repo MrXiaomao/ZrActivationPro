@@ -285,7 +285,7 @@ void CommHelper::initDataProcessor()
             quint32 sequence = data.left(4).toHex().toUInt(&ok, 16); // 包序号
             data.remove(0, 4);//移除序号
 
-            for (int i=0; i<90; ++i)
+            for (int i=0; i<130; ++i)
             {
                 bool ok;
                 quint32 utc = data.mid(i*12, 4).toHex().toUInt(&ok, 16); // utc时间戳
@@ -313,6 +313,25 @@ void CommHelper::initDataProcessor()
 
             // 上报计数
             emit reportParticleCurveData(index, sequence);
+        });
+
+        connect(detectorDataProcessor, &DataProcessor::reportTimestampData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+                bool ok;
+                quint32 utc = data.mid(6, 4).toHex().toUInt(&ok, 16); // utc时间戳
+                quint32 second = data.mid(10, 4).toHex().toUInt(&ok, 16); // 小数秒
+
+                QDateTime tm = QDateTime::fromSecsSinceEpoch(utc, Qt::TimeSpec::UTC, second);
+
+                // 上报时间戳信息
+                emit reportTimestampe(index, tm);
+        });
+
+        connect(detectorDataProcessor, &DataProcessor::reportParamterData, this, [=](QByteArray& data){
+            DataProcessor* processor = qobject_cast<DataProcessor*>(sender());
+
+            // 上报时间戳信息
+            emit reportParamterData(index, data);
         });
     }
 }

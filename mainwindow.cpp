@@ -162,7 +162,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
 
     //测量开始
     connect(commHelper, &CommHelper::measureStart, this, [=](quint8 index){
-        int row = index - 1;
+        int row = index;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::green));
 
@@ -177,7 +177,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
 
     //测量结束
     connect(commHelper, &CommHelper::measureStop, this, [=](quint8 index){
-        int row = index - 1;
+        int row = index;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 2));
         cell->setPixmap(dblroundPixmap(QSize(20,20), Qt::red));
 
@@ -186,7 +186,7 @@ MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
 
     //POE电源状态
     connect(commHelper, &CommHelper::reportPoePowerStatus, this, [=](quint8 index, bool on){
-        int row = index - 1;
+        int row = index;
         SwitchButton* cell =  qobject_cast<SwitchButton*>(ui->tableWidget_detector->cellWidget(row, 0));
         qInfo().nospace() << "谱仪[#" << index << "]POE电源状态: " << (on ? "开" : "关");
         cell->setChecked(on);
@@ -722,7 +722,7 @@ void MainWindow::initUi()
 
     //更新温度状态
     connect(commHelper, &CommHelper::reportDetectorTemperature, this, [=](quint8 index, float temperature){
-        int row = index - 1;
+        int row = index;
         QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(row, 3));
         cell->setText(QString::number(temperature, 'f', 1) + " ℃");
         
@@ -745,7 +745,7 @@ void MainWindow::initUi()
     }, Qt::QueuedConnection);
     
     connect(commHelper, &CommHelper::reportTemperatureTimeout, this, [=](quint8 index){
-        QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(index-1, 3));
+        QLabel* cell =  qobject_cast<QLabel*>(ui->tableWidget_detector->cellWidget(index, 3));
         cell->setStyleSheet("color: gray;");//灰色字体
         mTemperatureTimeoutDetectors.append(index);
     }, Qt::QueuedConnection);
@@ -803,6 +803,11 @@ void MainWindow::initUi()
         customPlot->yAxis->rescale(true);
         //customPlot->yAxis->setRange(0, 10000);
         customPlot->replot(QCustomPlot::rpQueuedReplot);
+    });
+
+    // 接收时间戳属性据
+    connect(commHelper, &CommHelper::reportTimestampe, this, [=](quint8 index, QDateTime& tm){
+        ui->dateTimeEdit_autoTrigger->setDateTime(tm);
     });
 
     // QTimer *timer = new QTimer(this);
@@ -1302,7 +1307,10 @@ void MainWindow::on_pushButton_startMeasure_clicked()
         QString str = QString("开始测量，通道号：");
         for (const auto &mi : rows) {
             int row = mi.row();
-            quint8 index = row + 1;
+            if (0 == row)
+                continue;
+
+            quint8 index = row;
             str += QString("%1, ").arg(index);
             commHelper->startMeasure(CommandAdapter::WorkMode::wmWaveform, index);
         }
@@ -1314,7 +1322,10 @@ void MainWindow::on_pushButton_startMeasure_clicked()
         QString str = QString("开始测量，通道号：");
         for (const auto &mi : rows) {
             int row = mi.row();
-            quint8 index = row + 1;
+            if (0 == row)
+                continue;
+
+            quint8 index = row;
             str += QString("%1, ").arg(index);
             commHelper->startMeasure(CommandAdapter::WorkMode::wmSpectrum, index);
         }
@@ -1325,7 +1336,10 @@ void MainWindow::on_pushButton_startMeasure_clicked()
     m_selectedChannels.clear();
     for (const auto &mi : rows) {
         int row = mi.row();
-        quint8 index = row + 1;
+        if (0 == row)
+            continue;
+
+        quint8 index = row;
         m_selectedChannels.append(index);
     }
 

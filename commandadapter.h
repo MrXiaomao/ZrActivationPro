@@ -32,6 +32,8 @@ public:
     Q_SIGNAL void reportSpectrumData(QByteArray&);
     Q_SIGNAL void reportWaveformData(QByteArray&);
     Q_SIGNAL void reportParticleData(QByteArray&);
+    Q_SIGNAL void reportTimestampData(QByteArray&);
+    Q_SIGNAL void reportParamterData(QByteArray&);
     Q_SIGNAL void reportTemperatureData(float temperature);
 
 // signals:
@@ -114,7 +116,8 @@ public:
     enum DataType{
         dtWaveform = 0x00D1,//波形
         dtSpectrum = 0x00D2,//能谱
-        dtParticle = 0x00D3 //粒子
+        dtParticle = 0x00D3, //粒子
+        dtTimestamp = 0x00D4 //触发时间戳
     };
 
     void sendWorkMode(bool isRead = true, WorkMode workMode = wmSpectrum);

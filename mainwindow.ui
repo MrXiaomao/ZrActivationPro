@@ -195,7 +195,7 @@
            <enum>QAbstractScrollArea::AdjustIgnored</enum>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::NoSelection</enum>
+           <enum>QAbstractItemView::MultiSelection</enum>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectItems</enum>
