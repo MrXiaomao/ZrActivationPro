@@ -526,6 +526,11 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
 {
     QCustomPlot* customPlot = ui->spectorMeter_Count;
     QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
+    customPlotHelper->setResetActionVisible(false);
+    customPlotHelper->setClearMarkerActionVisible(false);
+    customPlotHelper->setStraightLineActionVisible(false);
+    customPlotHelper->setRangeSelectActionVisible(false);
+
     customPlot->setAntialiasedElements(QCP::aeAll);
     customPlot->legend->setVisible(false);
     customPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
@@ -712,7 +717,7 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
         connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
         connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
 
-        connect(customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(slotPlotClick(QCPAbstractPlottable*,int,QMouseEvent*)));
+        //connect(customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(slotPlotClick(QCPAbstractPlottable*,int,QMouseEvent*)));
     }
 
     QList<QCPAxis*> allAxes;
@@ -731,6 +736,43 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
     connect(customPlot->yAxis, SIGNAL(rangeChanged(const QCPRange &)), customPlot->yAxis2, SLOT(setRange(const QCPRange &)));
     connect(customPlot, SIGNAL(mousePress(QMouseEvent*)), this, SLOT(slotShowTracer(QMouseEvent*)));
     connect(customPlot, SIGNAL(mouseRelease(QMouseEvent*)), this, SLOT(slotRestorePlot(QMouseEvent*)));
+
+    connect(customPlotHelper, &QCustomPlotHelper::itemActived, this, [=](QCPGraph *graph, double key, double value){
+        if (graph->name() != "timeCountGraph")
+            return;
+
+        // 显示散点、计数率和残差%
+        int index = 0;
+        double eps = 0.00001; // 单位min
+
+        //索引给出该点属于第几个点，下标从0开始
+        QVector<specStripData> count909 = dealFile->GetCount909Data();
+        for(auto data:count909)
+        {
+            if(abs(key - data.x)<eps) {
+                break;
+            }
+            index++;
+        }
+
+        QVector<specStripData> allSpec = dealFile->GetStripData(index);
+
+        std::vector<double> energy; //能量
+        std::vector<double> specCount; // 能谱计数
+        std::vector<double> fitSpecCount; // 拟合曲线
+        std::vector<double> residual;// 残差
+        int num = energy.size();
+        energy.reserve(num);
+        for(auto data:allSpec)
+        {
+            energy.push_back(data.x);
+            specCount.push_back(data.y);
+            fitSpecCount.push_back(data.fit_y);
+            residual.push_back(data.residual_rate);
+        }
+
+        slotUpdateSpec_909keV(energy, specCount, fitSpecCount, residual);
+    });
 }
 
 void NeutronYieldStatisticsWindow::initPolorCustomPlot()
@@ -815,7 +857,9 @@ void NeutronYieldStatisticsWindow::on_action_open_triggered()
         dataset.read(row_data, H5::PredType::NATIVE_UINT, mem_space, file_space);
         FullSpectrum* data = reinterpret_cast<FullSpectrum*>(row_data);
 
-        quint32 measureTimelength = rows * data->measureTime / 1000;
+        quint32 measureTimelength = rows * data->measureTime / 1000;        
+        ui->spinBox_timeEnd->setMaximum(measureTimelength / 60);
+
         emit reporWriteLog(tr("测量时长/s：%1").arg(measureTimelength));
 
         delete[] row_data;
