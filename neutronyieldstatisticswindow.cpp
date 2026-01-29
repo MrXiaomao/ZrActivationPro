@@ -2,7 +2,7 @@
  * @Author: MrPan
  * @Date: 2025-04-20 09:21:28
  * @LastEditors: Maoxiaoqing
- * @LastEditTime: 2025-08-01 16:50:56
+ * @LastEditTime: 2026-01-29 10:02:52
  * @Description: 离线数据分析
  */
 #include "neutronyieldstatisticswindow.h"
@@ -526,9 +526,9 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
 {
     QCustomPlot* customPlot = ui->spectorMeter_Count;
     QCustomPlotHelper* customPlotHelper = new QCustomPlotHelper(customPlot, this);
-    customPlotHelper->setResetActionVisible(false);
+    customPlotHelper->setResetActionVisible(true);
     customPlotHelper->setClearMarkerActionVisible(false);
-    customPlotHelper->setStraightLineActionVisible(false);
+    customPlotHelper->setStraightLineActionVisible(true);
     customPlotHelper->setRangeSelectActionVisible(false);
 
     customPlot->setAntialiasedElements(QCP::aeAll);
@@ -716,8 +716,6 @@ void NeutronYieldStatisticsWindow::initCountCustomPlot()
         connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atTop), SLOT(setRange(QCPRange)));
         connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atLeft), SIGNAL(rangeChanged(QCPRange)), timeCountRemainAxisRect->axis(QCPAxis::AxisType::atRight), SLOT(setRange(QCPRange)));
         connect(timeCountRemainAxisRect->axis(QCPAxis::AxisType::atBottom), SIGNAL(rangeChanged(QCPRange)), timeCountAxisRect->axis(QCPAxis::AxisType::atBottom), SLOT(setRange(QCPRange)));
-
-        //connect(customPlot, SIGNAL(plottableClick(QCPAbstractPlottable*,int,QMouseEvent*)), this, SLOT(slotPlotClick(QCPAbstractPlottable*,int,QMouseEvent*)));
     }
 
     QList<QCPAxis*> allAxes;
@@ -1047,12 +1045,9 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
     QCustomPlot *customPlot = ui->spectorMeter_Spectrum;
     customPlot->clearGraphs();
 
-    std::default_random_engine e;
-    std::uniform_real_distribution<double> random(0,1);
-
     //清空布局内所有的控件
     QFlowLayout *flowLayout = this->findChild<QFlowLayout*>("flowLayout");
-    QWidget* flowLayoutContainer = this->findChild<QWidget*>("flowLayoutContainer");
+    QWidget* flowLayoutContainer = ui->widget_flowLayoutContainer;
     while (QLayoutItem* item = flowLayout->takeAt(0)) {
         if (QWidget* widget = item->widget()) {
             widget->deleteLater();
@@ -1077,23 +1072,23 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
         //用横向布局包裹起来
         QWidget* w = new QWidget(flowLayoutContainer);
         w->setContentsMargins(0,0,0,0);
-        QHBoxLayout * hBoxLayout = new QHBoxLayout(flowLayoutContainer);
+        QHBoxLayout * hBoxLayout = new QHBoxLayout(w);
         //hBoxLayout->setSpacing(9);
         hBoxLayout->setMargin(0);
         w->setLayout(hBoxLayout);
         w->setFixedWidth(80);
 
-        QCheckBox *checkBox = new QCheckBox(flowLayoutContainer);
+        QCheckBox *checkBox = new QCheckBox(w);
         checkBox->setProperty("index", i+1);
         checkBox->setVisible(true);
         checkBox->setChecked(true);
-        QLabel *labelColor = new QLabel(flowLayoutContainer);
+        QLabel *labelColor = new QLabel(w);
         labelColor->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
         labelColor->setFixedWidth(20);
         labelColor->setFixedHeight(20);
         labelColor->setVisible(true);
         labelColor->setStyleSheet(QString("background-color:rgb(%1,%2,%3)").arg(color[i%5].red()).arg(color[i%5].green()).arg(color[i%5].blue()));
-        QLabel *label = new QLabel(flowLayoutContainer);
+        QLabel *label = new QLabel(w);
         label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
         label->setText(QString("#%1").arg(i+1));
         label->setVisible(true);
@@ -1120,6 +1115,7 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
         ui->widget_flowLayoutContainer->show();
     }
     connect(checkBoxAll, &QCheckBox::stateChanged, this, [=](int state){
+        // QWidget* flowLayoutContainer = ui->widget_flowLayoutContainer;
         QList<QCheckBox *>checkBoxs = flowLayoutContainer->findChildren<QCheckBox*>();
         for (auto checkBox : checkBoxs){
             checkBox->setChecked(state == Qt::CheckState::Checked ? true : false);
@@ -1137,16 +1133,18 @@ void NeutronYieldStatisticsWindow::slotUpdateMultiSegmentPlotDatas(std::vector<P
             graph->setAntialiased(true);
             graph->setPen(QPen(QBrush(color[i%5]), 2, Qt::SolidLine));
             //graph->setSelectable(QCP::SelectionType::stNone);
-            graph->setLineStyle(QCPGraph::lsLine);
-            //graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 5));//显示散点图
+            graph->setLineStyle(QCPGraph::lsNone);
+            graph->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCross, 5));//显示散点图
             graph->setVisible(true);
 
             QVector<double> keys, values;
+            QVector<QColor> colors;
             for (int j=0; j<2048; ++j){
                 keys << j + 1;
                 values << allSpectrum[i].spectrum[j] * 1.0;
+                colors << color[i%5];
             }
-            graph->setData(keys, values);
+            graph->setData(keys, values, colors);
         }
     }
 

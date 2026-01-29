@@ -6,7 +6,6 @@
 #include "clientpeerswindow.h"
 #include "detsettingwindow.h"
 #include "QGoodWindowHelper"
-#include "qcustomplothelper.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

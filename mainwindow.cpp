@@ -5,7 +5,7 @@
 #include "switchbutton.h"
 #include <QTimer>
 #include "energycalibration.h"
-
+#include "qcustomplothelper.h"
 
 MainWindow::MainWindow(bool isDarkTheme, QWidget *parent)
     : QMainWindow(parent)

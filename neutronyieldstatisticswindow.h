@@ -1,4 +1,11 @@
-﻿#ifndef NEUTRONYIELDSTATISTICSWINDOW_H
+﻿/*
+ * @Author: MrPan
+ * @Date: 2026-01-15 21:24:55
+ * @LastEditors: Maoxiaoqing
+ * @LastEditTime: 2026-01-27 20:56:03
+ * @Description: 请填写简介
+ */
+#ifndef NEUTRONYIELDSTATISTICSWINDOW_H
 #define NEUTRONYIELDSTATISTICSWINDOW_H
 
 #include <QWidget>
@@ -30,6 +37,7 @@ public:
     Q_SLOT void replyWriteLog(const QString &msg, QtMsgType msgType = QtDebugMsg);
 
 signals:
+    // void itemActived(double key, double value);//节点被鼠标点击激活
     void sigPlot(FullSpectrum);
     void sigPausePlot(bool); //是否暂停图像刷新
     void sigEnd(bool);
@@ -37,6 +45,7 @@ signals:
     void sigFail();
 
 public slots:
+    // void slotCountPlotClick(double key, double value);
     void slotFail();
     void slotSuccess();
 
